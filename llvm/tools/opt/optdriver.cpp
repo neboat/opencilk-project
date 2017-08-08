@@ -418,6 +418,7 @@ extern "C" int optMain(
   initializeCore(Registry);
   initializeScalarOpts(Registry);
   initializeVectorization(Registry);
+  initializeTapirOpts(Registry);
   initializeIPO(Registry);
   initializeAnalysis(Registry);
   initializeTransformUtils(Registry);

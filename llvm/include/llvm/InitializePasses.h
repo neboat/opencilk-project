@@ -50,6 +50,9 @@ LLVM_ABI void initializeGlobalISel(PassRegistry &);
 /// Initialize all passes linked into the CodeGen library.
 LLVM_ABI void initializeTarget(PassRegistry &);
 
+/// Initialize all passes linked into the TapirOpts library.
+LLVM_ABI void initializeTapirOpts(PassRegistry &);
+
 LLVM_ABI void initializeAAResultsWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeAlwaysInlinerLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeAssignmentTrackingAnalysisPass(PassRegistry &);
@@ -78,8 +81,10 @@ LLVM_ABI void initializeCallGraphDOTPrinterPass(PassRegistry &);
 LLVM_ABI void initializeCallGraphViewerPass(PassRegistry &);
 LLVM_ABI void initializeCallGraphWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeCheckDebugMachineModulePass(PassRegistry &);
+LLVM_ABI void initializeCilkSanitizerPass(PassRegistry &);
 LLVM_ABI void initializeCodeGenPrepareLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeComplexDeinterleavingLegacyPassPass(PassRegistry &);
+LLVM_ABI void initializeComprehensiveStaticInstrumentationPass(PassRegistry &);
 LLVM_ABI void initializeConstantHoistingLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeCycleInfoWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeDAEPass(PassRegistry &);
@@ -176,6 +181,7 @@ LLVM_ABI void initializeLoopExtractorLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeLoopInfoWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeLoopPassPass(PassRegistry &);
 LLVM_ABI void initializeLoopSimplifyPass(PassRegistry &);
+LLVM_ABI void initializeLoopSpawningPass(PassRegistry &);
 LLVM_ABI void initializeLoopStrengthReducePass(PassRegistry &);
 LLVM_ABI void initializeLoopTermFoldPass(PassRegistry &);
 LLVM_ABI void initializeLoopUnrollPass(PassRegistry &);
@@ -185,6 +191,7 @@ LLVM_ABI void initializeLowerGlobalDtorsLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeLowerIntrinsicsPass(PassRegistry &);
 LLVM_ABI void initializeLowerInvokeLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeLowerSwitchLegacyPassPass(PassRegistry &);
+LLVM_ABI void initializeLowerTapirToCilkPass(PassRegistry &);
 LLVM_ABI void initializeMIRAddFSDiscriminatorsPass(PassRegistry &);
 LLVM_ABI void initializeMIRCanonicalizerPass(PassRegistry &);
 LLVM_ABI void initializeMIRNamerPass(PassRegistry &);

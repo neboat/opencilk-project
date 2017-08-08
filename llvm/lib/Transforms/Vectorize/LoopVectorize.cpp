@@ -2628,6 +2628,8 @@ static void replaceVPBBWithIRVPBB(VPBasicBlock *VPBB, BasicBlock *IRBB) {
 void InnerLoopVectorizer::createVectorLoopSkeleton(StringRef Prefix) {
   LoopVectorPreHeader = OrigLoop->getLoopPreheader();
   assert(LoopVectorPreHeader && "Invalid loop structure");
+  assert(!isa<SyncInst>(LoopVectorPreHeader->getTerminator()) &&
+         "Loop preheader terminated by sync.");
   assert((OrigLoop->getUniqueLatchExitBlock() ||
           Cost->requiresScalarEpilogue(VF.isVector())) &&
          "loops not exiting via the latch without required epilogue?");

@@ -48,6 +48,9 @@ void initializeGlobalISel(PassRegistry &);
 /// Initialize all passes linked into the CodeGen library.
 void initializeTarget(PassRegistry &);
 
+/// Initialize all passes linked into the TapirOpts library.
+void initializeTapirOpts(PassRegistry &);
+
 void initializeAAResultsWrapperPassPass(PassRegistry &);
 void initializeAlwaysInlinerLegacyPassPass(PassRegistry &);
 void initializeAssignmentTrackingAnalysisPass(PassRegistry &);
@@ -75,8 +78,10 @@ void initializeCallGraphDOTPrinterPass(PassRegistry &);
 void initializeCallGraphViewerPass(PassRegistry &);
 void initializeCallGraphWrapperPassPass(PassRegistry &);
 void initializeCheckDebugMachineModulePass(PassRegistry &);
+void initializeCilkSanitizerPass(PassRegistry&);
 void initializeCodeGenPrepareLegacyPassPass(PassRegistry &);
 void initializeComplexDeinterleavingLegacyPassPass(PassRegistry &);
+void initializeComprehensiveStaticInstrumentationPass(PassRegistry &);
 void initializeConstantHoistingLegacyPassPass(PassRegistry &);
 void initializeCycleInfoWrapperPassPass(PassRegistry &);
 void initializeDAEPass(PassRegistry &);
@@ -170,6 +175,7 @@ void initializeLoopExtractorLegacyPassPass(PassRegistry &);
 void initializeLoopInfoWrapperPassPass(PassRegistry &);
 void initializeLoopPassPass(PassRegistry &);
 void initializeLoopSimplifyPass(PassRegistry &);
+void initializeLoopSpawningPass(PassRegistry &);
 void initializeLoopStrengthReducePass(PassRegistry &);
 void initializeLoopTermFoldPass(PassRegistry &);
 void initializeLoopUnrollPass(PassRegistry &);
@@ -180,6 +186,7 @@ void initializeLowerGlobalDtorsLegacyPassPass(PassRegistry &);
 void initializeLowerIntrinsicsPass(PassRegistry &);
 void initializeLowerInvokeLegacyPassPass(PassRegistry &);
 void initializeLowerSwitchLegacyPassPass(PassRegistry &);
+void initializeLowerTapirToCilkPass(PassRegistry&);
 void initializeKCFIPass(PassRegistry &);
 void initializeMIRAddFSDiscriminatorsPass(PassRegistry &);
 void initializeMIRCanonicalizerPass(PassRegistry &);

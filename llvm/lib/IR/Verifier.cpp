@@ -121,6 +121,7 @@
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/ModRef.h"
 #include "llvm/Support/raw_ostream.h"
+//#include "llvm/Transforms/Tapir/CilkABI.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -422,6 +423,12 @@ public:
         BB.printAsOperand(*OS, true, MST);
         *OS << "\n";
       }
+      // if (const DetachInst* Det = dyn_cast<DetachInst>(&I->back())) {
+      //   if (!cilk::verifyDetachedCFG(*Det, DT)) {
+      //     OS << "Invalid end to detached CFG\n";
+      //     return true;
+      //   }
+      // }
       return false;
     }
 

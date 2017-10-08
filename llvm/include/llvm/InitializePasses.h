@@ -191,7 +191,7 @@ LLVM_ABI void initializeLowerGlobalDtorsLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeLowerIntrinsicsPass(PassRegistry &);
 LLVM_ABI void initializeLowerInvokeLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeLowerSwitchLegacyPassPass(PassRegistry &);
-LLVM_ABI void initializeLowerTapirToCilkPass(PassRegistry &);
+LLVM_ABI void initializeLowerTapirToTargetPass(PassRegistry &);
 LLVM_ABI void initializeMIRAddFSDiscriminatorsPass(PassRegistry &);
 LLVM_ABI void initializeMIRCanonicalizerPass(PassRegistry &);
 LLVM_ABI void initializeMIRNamerPass(PassRegistry &);

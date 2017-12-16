@@ -534,7 +534,7 @@ bool StructType::containsHomogeneousTypes() const {
   return !ElementTys.empty() && all_equal(ElementTys);
 }
 
-StructType *StructType::getOrCreate(LLVMContext &Context, StringRef Name) {
+StructType *StructType::lookupOrCreate(LLVMContext &Context, StringRef Name) {
   StructType *Ty = Context.pImpl->NamedStructTypes.lookup(Name);
   if (!Ty)
     Ty = StructType::create(Context, Name);

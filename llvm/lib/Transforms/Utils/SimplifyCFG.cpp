@@ -93,7 +93,6 @@
 #include <vector>
 
 using namespace llvm;
-using namespace llvm::tapir;
 using namespace PatternMatch;
 
 #define DEBUG_TYPE "simplifycfg"

@@ -3718,6 +3718,7 @@ public:
   ///
   ///       assignment-operator: one of
   ///         = *= /= %= += -= <<= >>= &= ^= |=
+  /// [Cilk]  [= cilk_spawn]
   ///
   ///       expression: [C99 6.5.17]
   ///         assignment-expression ...[opt]
@@ -7025,6 +7026,7 @@ private:
   std::unique_ptr<PragmaHandler> MSFenvAccess;
   std::unique_ptr<PragmaHandler> MSAllocText;
   std::unique_ptr<PragmaHandler> CUDAForceHostDeviceHandler;
+  std::unique_ptr<PragmaHandler> CilkHintHandler;
   std::unique_ptr<PragmaHandler> OptimizeHandler;
   std::unique_ptr<PragmaHandler> LoopHintHandler;
   std::unique_ptr<PragmaHandler> UnrollHintHandler;
@@ -7250,6 +7252,7 @@ public:
   ///         while-statement
   ///         do-statement
   ///         for-statement
+  /// [Cilk]  cilk_for-statement
   ///
   ///       expression-statement:
   ///         expression[opt] ';'
@@ -7260,6 +7263,8 @@ public:
   ///         'break' ';'
   ///         'return' expression[opt] ';'
   /// [GNU]   'goto' '*' expression ';'
+  /// [Cilk]  cilk_spawn-statement
+  /// [Cilk]  cilk_sync-statement
   ///
   /// [OBC] objc-throw-statement:
   /// [OBC]   '@' 'throw' expression ';'
@@ -7483,6 +7488,44 @@ public:
   ///         'co_return' braced-init-list ';'
   /// \endverbatim
   StmtResult ParseReturnStatement();
+
+  /// ParseCilkSpawnStatement
+  /// \verbatim
+  /// [Cilk] cilk_spawn-statement:
+  ///         'cilk_spawn' statement ';'
+  /// \endverbatim
+  StmtResult ParseCilkSpawnStatement();
+
+  /// ParseCilkSyncStatement
+  /// \verbatim
+  /// [Cilk] cilk_sync-statement:
+  ///         'cilk_sync' ';'
+  /// \endverbatim
+  StmtResult ParseCilkSyncStatement();
+
+  /// ParseCilkForStatement
+  /// \verbatim
+  /// [Cilk] cilk_for-statement:
+  ///         'cilk_for' '(' expr[opt] ';' expr[opt] ';' expr[opt] ')' statement
+  ///         'cilk_for' '(' declaration expr[opt] ';' expr[opt] ')' statement
+  /// [C++]   'cilk_for' '(' for-init-statement condition[opt] ';' expression[opt] ')'
+  /// [C++]       statement
+  /// [C++0x] 'cilk_for'
+  ///             '(' for-range-declaration ':' for-range-initializer ')'
+  ///             statement
+  ///
+  /// [C++] for-init-statement:
+  /// [C++]   expression-statement
+  /// [C++]   simple-declaration
+  /// [C++23] alias-declaration
+  ///
+  /// [C++0x] for-range-declaration:
+  /// [C++0x]   attribute-specifier-seq[opt] type-specifier-seq declarator
+  /// [C++0x] for-range-initializer:
+  /// [C++0x]   expression
+  /// [C++0x]   braced-init-list            [TODO]
+  /// \endverbatim
+  StmtResult ParseCilkForStatement(SourceLocation *TrailingElseLoc);
 
   StmtResult ParsePragmaLoopHint(StmtVector &Stmts, ParsedStmtContext StmtCtx,
                                  SourceLocation *TrailingElseLoc,

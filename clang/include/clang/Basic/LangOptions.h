@@ -26,6 +26,7 @@
 #include "llvm/ADT/StringRef.h"
 #include "llvm/BinaryFormat/DXContainer.h"
 #include "llvm/TargetParser/Triple.h"
+#include "llvm/Transforms/Tapir/TapirTypes.h"
 #include <optional>
 #include <string>
 #include <vector>
@@ -523,6 +524,8 @@ class LangOptions : public LangOptionsBase {
 public:
   /// The used language standard.
   LangStandard::Kind LangStd;
+
+  llvm::TapirTargetType Tapir;
 
   /// Set of enabled sanitizers.
   SanitizerSet Sanitize;

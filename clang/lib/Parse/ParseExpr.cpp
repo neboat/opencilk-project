@@ -1515,6 +1515,22 @@ Parser::ParseCastExpression(CastParseKind ParseKind, bool isAddressOfOperand,
     Res = ParseExpressionTrait();
     break;
 
+  // postfix-expression: [CP]
+  //   _Cilk_spawn[opt] postfix-expression '(' argument-expression-list[opt] ')'
+  case tok::kw__Cilk_spawn: {
+    SourceLocation SpawnLoc = ConsumeToken();
+    // if (!getLangOpts().Cilk) {
+    //   Diag(SpawnLoc, diag::err_cilkplus_disable);
+    //   SkipUntil(tok::semi, StopAtSemi | StopBeforeMatch);
+    //   return ExprError();
+    // }
+
+    Res = ParseCastExpression(false);
+    if (!Res.isInvalid())
+      Res = Actions.ActOnCilkSpawnExpr(SpawnLoc, Res.get());
+    return Res;
+  }
+
   case tok::at: {
     if (NotPrimaryExpression)
       *NotPrimaryExpression = true;

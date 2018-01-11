@@ -299,6 +299,22 @@ LoopInfo::createLoopVectorizeMetadata(const LoopAttributes &Attrs,
                               llvm::Type::getInt1Ty(Ctx), AttrVal))}));
   }
 
+  // Setting tapir.loop.spawn.strategy
+  if (Attrs.SpawnStrategy != LoopAttributes::Sequential) {
+    Metadata *Vals[] = {MDString::get(Ctx, "tapir.loop.spawn.strategy"),
+                        ConstantAsMetadata::get(ConstantInt::get(
+                            Type::getInt32Ty(Ctx), Attrs.SpawnStrategy))};
+    Args.push_back(MDNode::get(Ctx, Vals));
+  }
+
+  // Setting tapir.loop.grainsize
+  if (Attrs.TapirGrainsize > 0) {
+    Metadata *Vals[] = {MDString::get(Ctx, "tapir.loop.grainsize"),
+                        ConstantAsMetadata::get(ConstantInt::get(
+                            Type::getInt32Ty(Ctx), Attrs.TapirGrainsize))};
+    Args.push_back(MDNode::get(Ctx, Vals));
+  }
+
   if (FollowupHasTransforms)
     Args.push_back(
         createFollowupMetadata("llvm.loop.vectorize.followup_all", Followup));
@@ -435,8 +451,10 @@ LoopAttributes::LoopAttributes(bool IsParallel)
       VectorizePredicateEnable(LoopAttributes::Unspecified), VectorizeWidth(0),
       VectorizeScalable(LoopAttributes::Unspecified), InterleaveCount(0),
       UnrollCount(0), UnrollAndJamCount(0),
+      TapirGrainsize(0),
       DistributeEnable(LoopAttributes::Unspecified), PipelineDisabled(false),
-      PipelineInitiationInterval(0), CodeAlign(0), MustProgress(false) {}
+      PipelineInitiationInterval(0), CodeAlign(0), MustProgress(false),
+      SpawnStrategy(LoopAttributes::Sequential) {}
 
 void LoopAttributes::clear() {
   IsParallel = false;
@@ -445,6 +463,7 @@ void LoopAttributes::clear() {
   InterleaveCount = 0;
   UnrollCount = 0;
   UnrollAndJamCount = 0;
+  TapirGrainsize = 0;
   VectorizeEnable = LoopAttributes::Unspecified;
   UnrollEnable = LoopAttributes::Unspecified;
   UnrollAndJamEnable = LoopAttributes::Unspecified;
@@ -454,6 +473,7 @@ void LoopAttributes::clear() {
   PipelineInitiationInterval = 0;
   CodeAlign = 0;
   MustProgress = false;
+  SpawnStrategy = LoopAttributes::Sequential;
 }
 
 LoopInfo::LoopInfo(BasicBlock *Header, const LoopAttributes &Attrs,
@@ -471,6 +491,7 @@ LoopInfo::LoopInfo(BasicBlock *Header, const LoopAttributes &Attrs,
   if (!Attrs.IsParallel && Attrs.VectorizeWidth == 0 &&
       Attrs.VectorizeScalable == LoopAttributes::Unspecified &&
       Attrs.InterleaveCount == 0 && Attrs.UnrollCount == 0 &&
+      Attrs.TapirGrainsize == 0 &&
       Attrs.UnrollAndJamCount == 0 && !Attrs.PipelineDisabled &&
       Attrs.PipelineInitiationInterval == 0 &&
       Attrs.VectorizePredicateEnable == LoopAttributes::Unspecified &&
@@ -478,7 +499,8 @@ LoopInfo::LoopInfo(BasicBlock *Header, const LoopAttributes &Attrs,
       Attrs.UnrollEnable == LoopAttributes::Unspecified &&
       Attrs.UnrollAndJamEnable == LoopAttributes::Unspecified &&
       Attrs.DistributeEnable == LoopAttributes::Unspecified &&
-      Attrs.CodeAlign == 0 && !StartLoc && !EndLoc && !Attrs.MustProgress)
+      Attrs.CodeAlign == 0 && !StartLoc && !EndLoc && !Attrs.MustProgress &&
+      Attrs.SpawnStrategy == LoopAttributes::Sequential)
     return;
 
   TempLoopID = MDNode::getTemporary(Header->getContext(), {});
@@ -670,6 +692,7 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
       case LoopHintAttr::VectorizeWidth:
       case LoopHintAttr::InterleaveCount:
       case LoopHintAttr::PipelineInitiationInterval:
+      case LoopHintAttr::TapirGrainsize:
         llvm_unreachable("Options cannot be disabled.");
         break;
       }
@@ -698,6 +721,7 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
       case LoopHintAttr::InterleaveCount:
       case LoopHintAttr::PipelineDisabled:
       case LoopHintAttr::PipelineInitiationInterval:
+      case LoopHintAttr::TapirGrainsize:
         llvm_unreachable("Options cannot enabled.");
         break;
       }
@@ -720,6 +744,7 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
       case LoopHintAttr::Distribute:
       case LoopHintAttr::PipelineDisabled:
       case LoopHintAttr::PipelineInitiationInterval:
+      case LoopHintAttr::TapirGrainsize:
         llvm_unreachable("Options cannot be used to assume mem safety.");
         break;
       }
@@ -742,6 +767,7 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
       case LoopHintAttr::PipelineDisabled:
       case LoopHintAttr::PipelineInitiationInterval:
       case LoopHintAttr::VectorizePredicate:
+      case LoopHintAttr::TapirGrainsize:
         llvm_unreachable("Options cannot be used with 'full' hint.");
         break;
       }
@@ -774,6 +800,8 @@ void LoopInfoStack::push(BasicBlock *Header, clang::ASTContext &Ctx,
         break;
       case LoopHintAttr::PipelineInitiationInterval:
         setPipelineInitiationInterval(ValueInt);
+      case LoopHintAttr::TapirGrainsize:
+        setTapirGrainsize(ValueInt);
         break;
       case LoopHintAttr::Unroll:
       case LoopHintAttr::UnrollAndJam:

@@ -269,6 +269,8 @@ void tools::MinGW::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     TC.addFortranRuntimeLibs(Args, CmdArgs);
   }
 
+  TC.AddTapirRuntimeLibArgs(Args, CmdArgs);
+
   // TODO: Add profile stuff here
 
   if (TC.ShouldLinkCXXStdlib(Args)) {

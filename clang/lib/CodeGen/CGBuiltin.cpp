@@ -2582,6 +2582,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   assert(!getContext().BuiltinInfo.isImmediate(BuiltinID) &&
          "Should not codegen for consteval builtins");
 
+  IsSpawnedScope SpawnedScp(this);
   const FunctionDecl *FD = GD.getDecl()->getAsFunction();
   // See if we can constant fold this builtin.  If so, don't emit it at all.
   // TODO: Extend this handling to all builtin calls that we can constant-fold.
@@ -4986,6 +4987,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
         CGM.getTypes().arrangeBuiltinFunctionCall(E->getType(), Args);
     llvm::FunctionType *FTy = CGM.getTypes().GetFunctionType(FuncInfo);
     llvm::FunctionCallee Func = CGM.CreateRuntimeFunction(FTy, LibCallName);
+    SpawnedScp.RestoreOldScope();
     return EmitCall(FuncInfo, CGCallee::forDirect(Func),
                     ReturnValueSlot(), Args);
   }
@@ -5488,6 +5490,7 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   case Builtin::BI__builtin_call_with_static_chain: {
     const CallExpr *Call = cast<CallExpr>(E->getArg(0));
     const Expr *Chain = E->getArg(1);
+    SpawnedScp.RestoreOldScope();
     return EmitCall(Call->getCallee()->getType(),
                     EmitCallee(Call->getCallee()), Call, ReturnValue,
                     EmitScalarExpr(Chain));
@@ -6314,14 +6317,18 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
   // version of the function name.
   const auto &BI = getContext().BuiltinInfo;
   if (!shouldEmitBuiltinAsIR(BuiltinID, BI, *this) &&
-      BI.isLibFunction(BuiltinID))
+      BI.isLibFunction(BuiltinID)) {
+    SpawnedScp.RestoreOldScope();
     return emitLibraryCall(*this, FD, E,
                            CGM.getBuiltinLibFunction(FD, BuiltinID));
+  }
 
   // If this is a predefined lib function (e.g. malloc), emit the call
   // using exactly the normal call path.
-  if (BI.isPredefinedLibFunction(BuiltinID))
+  if (BI.isPredefinedLibFunction(BuiltinID)) {
+    SpawnedScp.RestoreOldScope();
     return emitLibraryCall(*this, FD, E, CGM.getRawFunctionPointer(FD));
+  }
 
   // Check that a call to a target specific builtin has the correct target
   // features.

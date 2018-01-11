@@ -2218,7 +2218,23 @@ enum CXCursorKind {
    */
   CXCursor_OpenACCCacheConstruct = 333,
 
-  CXCursor_LastStmt = CXCursor_OpenACCCacheConstruct,
+  /** A cilk_spawn statement.
+   */
+  CXCursor_CilkSpawnStmt = 334,
+
+  /** Wrapper for an expression preceded by cilk_spawn.
+   */
+  CXCursor_CilkSpawnExpr = 335,
+
+  /** A cilk_sync statement.
+   */
+  CXCursor_CilkSyncStmt = 336,
+
+  /** A cilk_for statement.
+   */
+  CXCursor_CilkForStmt = 337,
+
+  CXCursor_LastStmt = CXCursor_CilkForStmt,
 
   /**
    * Cursor that represents the translation unit itself.

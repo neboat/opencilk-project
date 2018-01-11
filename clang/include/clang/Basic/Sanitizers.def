@@ -79,6 +79,9 @@ SANITIZER("thread", Thread)
 // Numerical stability sanitizer.
 SANITIZER("numerical", NumericalStability)
 
+// CilkSanitizer
+SANITIZER("cilk", Cilk)
+
 // LeakSanitizer
 SANITIZER("leak", Leak)
 

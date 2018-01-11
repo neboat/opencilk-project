@@ -115,6 +115,7 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
   case Stmt::CaseStmtClass:
   case Stmt::SEHLeaveStmtClass:
   case Stmt::SYCLKernelCallStmtClass:
+  case Stmt::CilkSyncStmtClass:
     llvm_unreachable("should have emitted these statements as simple");
 
 #define STMT(Type, Base)
@@ -174,6 +175,12 @@ void CodeGenFunction::EmitStmt(const Stmt *S, ArrayRef<const Attr *> Attrs) {
     const CapturedStmt *CS = cast<CapturedStmt>(S);
     EmitCapturedStmt(*CS, CS->getCapturedRegionKind());
     }
+    break;
+  case Stmt::CilkSpawnStmtClass:
+    EmitCilkSpawnStmt(cast<CilkSpawnStmt>(*S));
+    break;
+  case Stmt::CilkForStmtClass:
+    EmitCilkForStmt(cast<CilkForStmt>(*S), Attrs);
     break;
   case Stmt::ObjCAtTryStmtClass:
     EmitObjCAtTryStmt(cast<ObjCAtTryStmt>(*S));
@@ -545,6 +552,9 @@ bool CodeGenFunction::EmitSimpleStmt(const Stmt *S,
     // should not be called or emitted during device compilation); the SYCL
     // kernel call statement is thus handled as a null statement for the
     // purpose of code generation.
+    break;
+  case Stmt::CilkSyncStmtClass:
+    EmitCilkSyncStmt(cast<CilkSyncStmt>(*S));
     break;
   }
   return true;

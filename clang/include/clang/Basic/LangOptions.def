@@ -432,6 +432,8 @@ LANGOPT(ApplePragmaPack, 1, 0, "Apple gcc-compatible #pragma pack handling")
 
 LANGOPT(XLPragmaPack, 1, 0, "IBM XL #pragma pack handling")
 
+LANGOPT(Cilk, 1, 0, "Enable Cilk language extensions")
+
 COMPATIBLE_LANGOPT(RetainCommentsFromSystemHeaders, 1, 0, "retain documentation comments from system headers in the AST")
 
 LANGOPT(APINotes, 1, 0, "use external API notes")
@@ -442,6 +444,8 @@ LANGOPT(SanitizeAddressFieldPadding, 2, 0, "controls how aggressive is ASan "
                                            "aggressive, 2: more aggressive)")
 
 LANGOPT(Cmse, 1, 0, "ARM Security extensions support")
+
+LANGOPT(ComprehensiveStaticInstrumentation, 1, 0, "turn on Comprehensive Static Instrumentation")
 
 LANGOPT(XRayInstrument, 1, 0, "controls whether to do XRay instrumentation")
 LANGOPT(XRayAlwaysEmitCustomEvents, 1, 0,

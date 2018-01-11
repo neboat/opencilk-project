@@ -85,6 +85,9 @@ SANITIZER("numerical", NumericalStability)
 // RealtimeSanitizer
 SANITIZER("realtime", Realtime)
 
+// CilkSanitizer
+SANITIZER("cilk", Cilk)
+
 // LeakSanitizer
 SANITIZER("leak", Leak)
 

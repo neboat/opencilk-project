@@ -2665,6 +2665,9 @@ def fsanitize_skip_hot_cutoff_EQ
           "the given fraction of PGO counters "
           "(0.0 [default] = skip none; 1.0 = skip all). "
           "Argument format: <sanitizer1>=<value1>,<sanitizer2>=<value2>,...">;
+def fcsi : Flag<["-"], "fcsi">, Group<f_clang_Group>,
+           MetaVarName<"<check>">,
+           HelpText<"Turn on Comprehensive Static Instrumentation.">;
 
 } // end -f[no-]sanitize* flags
 
@@ -3419,6 +3422,12 @@ def fno_knr_functions : Flag<["-"], "fno-knr-functions">, Group<f_Group>,
   MarshallingInfoFlag<LangOpts<"DisableKNRFunctions">>,
   HelpText<"Disable support for K&R C function declarations">,
   Visibility<[ClangOption, CC1Option, CLOption]>;
+
+def ftapir : Joined<["-"], "ftapir=">, Group<f_Group>, Flags<[CC1Option]>,
+    HelpText<"Choose the backend for Tapir instructions (i.e., parallel runtime)">, Values<"cilk,cilkr,openmp,serial,none">;
+def fcilkplus : Flag<["-"], "fcilkplus">, Group<f_Group>, Flags<[CC1Option]>, HelpText<"Enable Cilk Plus extensions">;
+def frhino    : Flag <["-"], "frhino">, Group<f_Group>, Flags<[CC1Option]>, HelpText<"Enable Rhino extension to Tapir">;
+def fdetach   : Flag <["-"], "fdetach">, Group<f_Group>, Flags<[CC1Option]>, HelpText<"Disable memory optimizations and immediately lower">;
 
 def fmudflapth : Flag<["-"], "fmudflapth">, Group<f_Group>;
 def fmudflap : Flag<["-"], "fmudflap">, Group<f_Group>;

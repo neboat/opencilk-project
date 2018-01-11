@@ -411,6 +411,12 @@ static RawAddress createReferenceTemporary(CodeGenFunction &CGF,
     // promoted. This is easier on the optimizer and generally emits fewer
     // instructions.
     QualType Ty = Inner->getType();
+    if (CGF.IsSpawned) {
+      CGF.PushDetachScope();
+      return CGF.CurDetachScope->CreateDetachedMemTemp(Ty,
+                                                       M->getStorageDuration(),
+                                                       "det.ref.tmp");
+    }
     if (CGF.CGM.getCodeGenOpts().MergeAllConstants &&
         (Ty->isArrayType() || Ty->isRecordType()) &&
         Ty.isConstantStorage(CGF.getContext(), true, false))
@@ -530,6 +536,7 @@ EmitMaterializeTemporaryExpr(const MaterializeTemporaryExpr *M) {
       EmitAnyExprToMem(E, Object, Qualifiers(), /*IsInit*/true);
     }
   } else {
+    if (!IsSpawned) {
     switch (M->getStorageDuration()) {
     case SD_Automatic:
       if (auto *Size = EmitLifetimeStart(
@@ -1583,6 +1590,9 @@ LValue CodeGenFunction::EmitLValueHelper(const Expr *E,
     return EmitCXXUuidofLValue(cast<CXXUuidofExpr>(E));
   case Expr::LambdaExprClass:
     return EmitAggExprToLValue(E);
+  case Expr::CilkSpawnExprClass:
+    PushDetachScope();
+    return EmitLValue(cast<CilkSpawnExpr>(E)->getSpawnedExpr());
 
   case Expr::ExprWithCleanupsClass: {
     const auto *cleanups = cast<ExprWithCleanups>(E);
@@ -5463,11 +5473,15 @@ RValue CodeGenFunction::EmitCallExpr(const CallExpr *E,
   CGCallee callee = EmitCallee(E->getCallee());
 
   if (callee.isBuiltin()) {
+    // if (IsSpawned)
+    //   llvm::dbgs() << "Detached call to builtin!\n";
     return EmitBuiltinExpr(callee.getBuiltinDecl(), callee.getBuiltinID(),
                            E, ReturnValue);
   }
 
   if (callee.isPseudoDestructor()) {
+    // if (IsSpawned)
+    //   llvm::dbgs() << "Detached call to psudeodestructor!\n";
     return EmitCXXPseudoDestructorExpr(callee.getPseudoDestructorExpr());
   }
 
@@ -5627,6 +5641,61 @@ LValue CodeGenFunction::EmitBinaryOperatorLValue(const BinaryOperator *E) {
     case Qualifiers::OCL_ExplicitNone:
     case Qualifiers::OCL_Weak:
       break;
+    }
+
+    if (isa<CilkSpawnExpr>(E->getRHS()->IgnoreImplicit())) {
+      // Emit the LHS before the RHS.
+      LValue LV = EmitCheckedLValue(E->getLHS(), TCK_Store);
+
+      // Set up to perform a detach.
+      assert(!IsSpawned &&
+             "_Cilk_spawn statement found in spawning environment.");
+      IsSpawned = true;
+
+      // Emit the expression.
+      // TODO: Can we de-duplicate this code with the corresponding code in
+      // CGExprScalar, similar to the way EmitCompoundAssignmentLValue works?
+      RValue RV;
+      llvm::Value *Previous = nullptr;
+      QualType SrcType = E->getRHS()->getType();
+      // Check if LHS is a bitfield, if RHS contains an implicit cast expression
+      // we want to extract that value and potentially (if the bitfield sanitizer
+      // is enabled) use it to check for an implicit conversion.
+      if (E->getLHS()->refersToBitField()) {
+        llvm::Value *RHS =
+            EmitWithOriginalRHSBitfieldAssignment(E, &Previous, &SrcType);
+        RV = RValue::get(RHS);
+      } else
+        RV = EmitAnyExpr(E->getRHS());
+
+      if (RV.isScalar())
+        EmitNullabilityCheck(LV, RV.getScalarVal(), E->getExprLoc());
+
+      if (LV.isBitField()) {
+        llvm::Value *Result = nullptr;
+        // If bitfield sanitizers are enabled we want to use the result
+        // to check whether a truncation or sign change has occurred.
+        if (SanOpts.has(SanitizerKind::ImplicitBitfieldConversion))
+          EmitStoreThroughBitfieldLValue(RV, LV, &Result);
+        else
+          EmitStoreThroughBitfieldLValue(RV, LV);
+
+        // If the expression contained an implicit conversion, make sure
+        // to use the value before the scalar conversion.
+        llvm::Value *Src = Previous ? Previous : RV.getScalarVal();
+        QualType DstType = E->getLHS()->getType();
+        EmitBitfieldConversionCheck(Src, SrcType, Result, DstType,
+                                    LV.getBitFieldInfo(), E->getExprLoc());
+      } else
+        EmitStoreThroughLValue(RV, LV);
+
+      // Finish the detach.
+      assert(CurDetachScope && CurDetachScope->IsDetachStarted() &&
+             "Processing _Cilk_spawn of expression did not produce a detach.");
+      PopDetachScope();
+      IsSpawned = false;
+
+      return LV;
     }
 
     // TODO: Can we de-duplicate this code with the corresponding code in
@@ -5813,6 +5882,8 @@ RValue CodeGenFunction::EmitCall(QualType CalleeType, const CGCallee &OrigCallee
   // function type or a block pointer type.
   assert(CalleeType->isFunctionPointerType() &&
          "Call must have function pointer type!");
+
+  IsSpawnedScope SpawnScp(this);
 
   const Decl *TargetDecl =
       OrigCallee.getAbstractInfo().getCalleeDecl().getDecl();
@@ -6028,6 +6099,8 @@ RValue CodeGenFunction::EmitCall(QualType CalleeType, const CGCallee &OrigCallee
         Address(Handle, Handle->getType(), CGM.getPointerAlign()));
     Callee.setFunctionPointer(Stub);
   }
+
+  SpawnScp.RestoreOldScope();
   llvm::CallBase *CallOrInvoke = nullptr;
   RValue Call = EmitCall(FnInfo, Callee, ReturnValue, Args, &CallOrInvoke,
                          E == MustTailCall, E->getExprLoc());

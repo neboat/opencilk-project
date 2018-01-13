@@ -58,8 +58,10 @@ class BasicBlock;
 class CatchPadInst;
 class CatchReturnInst;
 class DominatorTree;
+class DetachInst;
 class FenceInst;
 class LoopInfo;
+class SyncInst;
 class TargetLibraryInfo;
 
 /// The possible results of an alias query.
@@ -620,6 +622,12 @@ public:
   LLVM_ABI ModRefInfo getModRefInfo(const CatchReturnInst *I,
                                     const MemoryLocation &Loc,
                                     AAQueryInfo &AAQI);
+  LLVM_ABI ModRefInfo getModRefInfo(const DetachInst *D,
+                                    const MemoryLocation &Loc,
+                                    AAQueryInfo &AAQI);
+  LLVM_ABI ModRefInfo getModRefInfo(const SyncInst *S,
+                                    const MemoryLocation &Loc,
+                                    AAQueryInfo &AAQI);
   LLVM_ABI ModRefInfo getModRefInfo(const Instruction *I,
                                     const std::optional<MemoryLocation> &OptLoc,
                                     AAQueryInfo &AAQIP);
@@ -630,6 +638,13 @@ public:
                                          DominatorTree *DT, AAQueryInfo &AAQIP);
   LLVM_ABI MemoryEffects getMemoryEffects(const CallBase *Call,
                                           AAQueryInfo &AAQI);
+
+  /// Return the behavior for the task detached from a given detach instruction.
+  LLVM_ABI MemoryEffects getMemoryEffects(const DetachInst *D,
+                                          AAQueryInfo &AAQI);
+
+  /// Return the behavior for a sync instruction.
+  LLVM_ABI MemoryEffects getMemoryEffects(const SyncInst *S, AAQueryInfo &AAQI);
 
 private:
   class Concept;
@@ -772,6 +787,14 @@ public:
   /// Return the behavior when calling the given function.
   virtual MemoryEffects getMemoryEffects(const Function *F) = 0;
 
+  /// Return the behavior for the task detached from a given detach instruction.
+  virtual MemoryEffects getMemoryEffects(const DetachInst *D,
+                                         AAQueryInfo &AAQI) = 0;
+
+  /// Return the behavior for a sync instruction.
+  virtual MemoryEffects getMemoryEffects(const SyncInst *S,
+                                         AAQueryInfo &AAQI) = 0;
+
   /// getModRefInfo (for call sites) - Return information about whether
   /// a particular call site modifies or reads the specified memory location.
   virtual ModRefInfo getModRefInfo(const CallBase *Call,
@@ -821,6 +844,16 @@ public:
 
   MemoryEffects getMemoryEffects(const Function *F) override {
     return Result.getMemoryEffects(F);
+  }
+
+  MemoryEffects getMemoryEffects(const DetachInst *D,
+                                 AAQueryInfo &AAQI) override {
+    return Result.getMemoryEffects(D, AAQI);
+  }
+
+  MemoryEffects getMemoryEffects(const SyncInst *S,
+                                 AAQueryInfo &AAQI) override {
+    return Result.getMemoryEffects(S, AAQI);
   }
 
   ModRefInfo getModRefInfo(const CallBase *Call, const MemoryLocation &Loc,
@@ -874,6 +907,14 @@ public:
   }
 
   MemoryEffects getMemoryEffects(const Function *F) {
+    return MemoryEffects::unknown();
+  }
+
+  MemoryEffects getMemoryEffects(const DetachInst *D, AAQueryInfo &AAQI) {
+    return MemoryEffects::unknown();
+  }
+
+  MemoryEffects getMemoryEffects(const SyncInst *S, AAQueryInfo &AAQI) {
     return MemoryEffects::unknown();
   }
 

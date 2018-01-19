@@ -20,6 +20,7 @@
 #include "clang/Basic/LangStandard.h"
 #include "clang/Basic/ObjCRuntime.h"
 #include "clang/Basic/Sanitizers.h"
+#include "clang/Basic/Tapir.h"
 #include "clang/Basic/TargetCXXABI.h"
 #include "clang/Basic/Visibility.h"
 #include "llvm/ADT/FloatingPointMode.h"
@@ -657,6 +658,9 @@ public:
   bool AtomicRemoteMemory = false;
   bool AtomicFineGrainedMemory = false;
   bool AtomicIgnoreDenormalMode = false;
+
+  /// Runtime target for Tapir.
+  TapirTargetType TapirTarget = TapirTargetType::None;
 
   LangOptions();
 

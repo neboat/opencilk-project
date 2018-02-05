@@ -763,6 +763,7 @@ enum AttributeKindCodes {
   ATTR_KIND_INITIALIZES = 94,
   ATTR_KIND_HYBRID_PATCHABLE = 95,
   ATTR_KIND_SANITIZE_CILK = 96,
+  ATTR_KIND_STEALABLE = 97,
 };
 
 enum ComdatSelectionKindCodes {

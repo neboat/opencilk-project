@@ -2994,6 +2994,10 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
       return eraseInstFromFunction(CI);
     break;
   }
+  case Intrinsic::detached_rethrow: {
+    assert(isa<CallInst>(II));
+    return eraseInstFromFunction(CI);
+  }
   case Intrinsic::assume: {
     Value *IIOperand = II->getArgOperand(0);
     SmallVector<OperandBundleDef, 4> OpBundles;

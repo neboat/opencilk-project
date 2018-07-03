@@ -69,6 +69,7 @@ void llvm::initializeAnalysis(PassRegistry &Registry) {
   initializeStackSafetyInfoWrapperPassPass(Registry);
   initializeTargetLibraryInfoWrapperPassPass(Registry);
   initializeTargetTransformInfoWrapperPassPass(Registry);
+  initializeTaskInfoWrapperPassPass(Registry);
   initializeTypeBasedAAWrapperPassPass(Registry);
   initializeScopedNoAliasAAWrapperPassPass(Registry);
   initializeStaticDataProfileInfoWrapperPassPass(Registry);

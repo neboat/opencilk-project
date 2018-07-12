@@ -224,6 +224,11 @@ checkFunctionMemoryAccess(Function &F, bool ThisBody, AAResults &AAR,
       if (AAR.pointsToConstantMemory(Loc, /*OrLocal=*/true))
         continue;
       AccessesNonArgsOrAlloca |= !IsArgumentOrAlloca(Loc.Ptr);
+    } else if (isa<SyncInst>(I) || isa<DetachInst>(I) || isa<ReattachInst>(I)) {
+      // Tapir instructions only access memory accessed by other instructions in
+      // the function.  Hence we let the other instructions determine the
+      // attribute of this function.
+      continue;
     } else {
       // If AccessesNonArgsOrAlloca has not been updated above, set it
       // conservatively.

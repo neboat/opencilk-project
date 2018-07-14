@@ -156,6 +156,8 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   addLinkerCompressDebugSectionsOption(ToolChain, Args, CmdArgs);
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
+  addCSIRuntime(ToolChain, Args, CmdArgs);
+
   // Sample these options first so they are claimed even under -nostdlib et al.
   bool NoLibc = Args.hasArg(options::OPT_nolibc);
   bool OnlyLibstdcxxStatic = Args.hasArg(options::OPT_static_libstdcxx) &&

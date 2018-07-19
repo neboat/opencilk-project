@@ -22,6 +22,7 @@ template <typename T> class ArrayRef;
 class AllocaInst;
 class DominatorTree;
 class AssumptionCache;
+class TaskInfo;
 
 /// Return true if this alloca is legal for promotion.
 ///
@@ -30,8 +31,6 @@ class AssumptionCache;
 /// ever one layer of bitcasts or GEPs between the alloca and the lifetime
 /// markers.
 LLVM_ABI bool isAllocaPromotable(const AllocaInst *AI);
-LLVM_ABI bool isAllocaParallelPromotable(const AllocaInst *AI,
-                                         DominatorTree &DT);
 
 /// Promote the specified list of alloca instructions into scalar
 /// registers, inserting PHI nodes as appropriate.
@@ -41,7 +40,8 @@ LLVM_ABI bool isAllocaParallelPromotable(const AllocaInst *AI,
 /// the same function.
 ///
 LLVM_ABI void PromoteMemToReg(ArrayRef<AllocaInst *> Allocas, DominatorTree &DT,
-                              AssumptionCache *AC = nullptr);
+                              AssumptionCache *AC = nullptr,
+                              TaskInfo *TI = nullptr);
 
 } // End llvm namespace
 

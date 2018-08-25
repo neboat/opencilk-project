@@ -332,6 +332,7 @@ LLVM_ABI void initializeTargetLibraryInfoWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeTargetPassConfigPass(PassRegistry &);
 LLVM_ABI void initializeTargetTransformInfoWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeTaskInfoWrapperPassPass(PassRegistry &);
+LLVM_ABI void initializeTaskSimplifyPass(PassRegistry &);
 LLVM_ABI void initializeTwoAddressInstructionLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeTypeBasedAAWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeTypePromotionLegacyPass(PassRegistry &);

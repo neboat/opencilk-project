@@ -316,6 +316,7 @@ void initializeTargetLibraryInfoWrapperPassPass(PassRegistry &);
 void initializeTargetPassConfigPass(PassRegistry &);
 void initializeTargetTransformInfoWrapperPassPass(PassRegistry &);
 void initializeTaskInfoWrapperPassPass(PassRegistry &);
+void initializeTaskSimplifyPass(PassRegistry &);
 void initializeTwoAddressInstructionLegacyPassPass(PassRegistry &);
 void initializeTypeBasedAAWrapperPassPass(PassRegistry &);
 void initializeTypePromotionLegacyPass(PassRegistry &);

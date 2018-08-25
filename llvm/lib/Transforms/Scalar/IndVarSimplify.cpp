@@ -38,6 +38,7 @@
 #include "llvm/Analysis/MemorySSAUpdater.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/Analysis/TapirTaskInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
@@ -76,6 +77,7 @@
 #include "llvm/Transforms/Utils/LoopUtils.h"
 #include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 #include "llvm/Transforms/Utils/SimplifyIndVar.h"
+#include "llvm/Transforms/Utils/TapirUtils.h"
 #include <cassert>
 #include <cstdint>
 #include <utility>
@@ -134,6 +136,7 @@ class IndVarSimplify {
   TargetLibraryInfo *TLI;
   const TargetTransformInfo *TTI;
   std::unique_ptr<MemorySSAUpdater> MSSAU;
+  TaskInfo *TI;
 
   SmallVector<WeakTrackingVH, 16> DeadInsts;
   bool WidenIndVars;
@@ -165,8 +168,9 @@ class IndVarSimplify {
 public:
   IndVarSimplify(LoopInfo *LI, ScalarEvolution *SE, DominatorTree *DT,
                  const DataLayout &DL, TargetLibraryInfo *TLI,
-                 TargetTransformInfo *TTI, MemorySSA *MSSA, bool WidenIndVars)
-      : LI(LI), SE(SE), DT(DT), DL(DL), TLI(TLI), TTI(TTI),
+                 TargetTransformInfo *TTI, MemorySSA *MSSA, TaskInfo *TI,
+                 bool WidenIndVars)
+      : LI(LI), SE(SE), DT(DT), DL(DL), TLI(TLI), TTI(TTI), TI(TI),
         WidenIndVars(WidenIndVars) {
     if (MSSA)
       MSSAU = std::make_unique<MemorySSAUpdater>(MSSA);
@@ -657,6 +661,12 @@ bool IndVarSimplify::simplifyAndExtend(Loop *L,
 //===----------------------------------------------------------------------===//
 //  linearFunctionTestReplace and its kin. Rewrite the loop exit condition.
 //===----------------------------------------------------------------------===//
+
+static Instruction *getExitingTerminator(Loop *L, TaskInfo *TI) {
+  if (getTaskIfTapirLoop(L, TI))
+    return L->getLoopLatch()->getTerminator();
+  return L->getExitingBlock()->getTerminator();
+}
 
 /// Given an Value which is hoped to be part of an add recurance in the given
 /// loop, return the associated Phi node if so.  Otherwise, return null.  Note
@@ -2064,7 +2074,10 @@ PreservedAnalyses IndVarSimplifyPass::run(Loop &L, LoopAnalysisManager &AM,
   Function *F = L.getHeader()->getParent();
   const DataLayout &DL = F->getDataLayout();
 
+  const auto &FAM =
+    AM.getResult<FunctionAnalysisManagerLoopProxy>(L, AR).getManager();
   IndVarSimplify IVS(&AR.LI, &AR.SE, &AR.DT, DL, &AR.TLI, &AR.TTI, AR.MSSA,
+                     FAM.getCachedResult<TaskAnalysis>(*F),
                      WidenIndVars && AllowIVWidening);
   if (!IVS.run(&L))
     return PreservedAnalyses::all();

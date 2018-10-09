@@ -13,6 +13,8 @@
 #ifndef LLVM_FRONTEND_DRIVER_CODEGENOPTIONS_H
 #define LLVM_FRONTEND_DRIVER_CODEGENOPTIONS_H
 
+#include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+
 namespace llvm {
 class Triple;
 class TargetLibraryInfoImpl;
@@ -34,7 +36,8 @@ enum class VectorLibrary {
 };
 
 TargetLibraryInfoImpl *createTLII(llvm::Triple &TargetTriple,
-                                  VectorLibrary Veclib);
+                                  VectorLibrary Veclib,
+                                  TapirTargetID TapirTarget);
 
 } // end namespace llvm::driver
 

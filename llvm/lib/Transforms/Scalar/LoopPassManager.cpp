@@ -12,6 +12,7 @@
 #include "llvm/Analysis/BranchProbabilityInfo.h"
 #include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/TapirTaskInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 
@@ -234,6 +235,7 @@ PreservedAnalyses FunctionToLoopPassAdaptor::run(Function &F,
                                      AM.getResult<ScalarEvolutionAnalysis>(F),
                                      AM.getResult<TargetLibraryAnalysis>(F),
                                      AM.getResult<TargetIRAnalysis>(F),
+                                     AM.getResult<TaskAnalysis>(F),
                                      BFI,
                                      BPI,
                                      MSSA};
@@ -356,6 +358,7 @@ PreservedAnalyses FunctionToLoopPassAdaptor::run(Function &F,
     PA.preserve<BranchProbabilityAnalysis>();
   if (UseMemorySSA)
     PA.preserve<MemorySSAAnalysis>();
+  PA.preserve<TaskAnalysis>();
   return PA;
 }
 

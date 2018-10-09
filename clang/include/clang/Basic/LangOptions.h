@@ -471,9 +471,6 @@ public:
   /// forward slash (/) elsewhere.
   bool UseTargetPathSeparator = false;
 
-  /// Runtime target for Tapir.
-  TapirTargetID TapirTarget = TapirTargetID::Last_TapirTargetID;
-
   LangOptions();
 
   /// Set language defaults for the given input language and

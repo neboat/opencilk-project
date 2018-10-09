@@ -36,6 +36,7 @@ class ProfileSummaryInfo;
 class OptimizationRemarkEmitter;
 class ScalarEvolution;
 class StringRef;
+class TaskInfo;
 class Value;
 
 using NewLoopsMap = SmallDenseMap<const Loop *, Loop *, 4>;
@@ -81,14 +82,12 @@ struct UnrollLoopOptions {
   bool RuntimeUnrollMultiExit = false;
 };
 
-LLVM_ABI LoopUnrollResult UnrollLoop(Loop *L, UnrollLoopOptions ULO,
-                                     LoopInfo *LI, ScalarEvolution *SE,
-                                     DominatorTree *DT, AssumptionCache *AC,
-                                     const llvm::TargetTransformInfo *TTI,
-                                     OptimizationRemarkEmitter *ORE,
-                                     bool PreserveLCSSA,
-                                     Loop **RemainderLoop = nullptr,
-                                     AAResults *AA = nullptr);
+LLVM_ABI LoopUnrollResult
+UnrollLoop(Loop *L, UnrollLoopOptions ULO, LoopInfo *LI, ScalarEvolution *SE,
+           DominatorTree *DT, AssumptionCache *AC, TaskInfo *TI,
+           const llvm::TargetTransformInfo *TTI, OptimizationRemarkEmitter *ORE,
+           bool PreserveLCSSA, Loop **RemainderLoop = nullptr,
+           AAResults *AA = nullptr);
 
 LLVM_ABI bool UnrollRuntimeLoopRemainder(
     Loop *L, unsigned Count, bool AllowExpensiveTripCount,

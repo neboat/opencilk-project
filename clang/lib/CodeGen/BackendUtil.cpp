@@ -86,6 +86,7 @@
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/JumpThreading.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Tapir/TapirToTarget.h"
 #include "llvm/Transforms/Utils/Debugify.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
 #include <limits>
@@ -1124,7 +1125,8 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
     } else if (PrepareForLTO) {
       MPM.addPass(PB.buildLTOPreLinkDefaultPipeline(Level));
     } else {
-      MPM.addPass(PB.buildPerModuleDefaultPipeline(Level));
+      MPM.addPass(PB.buildPerModuleDefaultPipeline(Level, false,
+                                                   TLII->hasTapirTarget()));
     }
   }
 

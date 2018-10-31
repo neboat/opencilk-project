@@ -81,10 +81,11 @@ LLVM_ABI void initializeCallGraphDOTPrinterPass(PassRegistry &);
 LLVM_ABI void initializeCallGraphViewerPass(PassRegistry &);
 LLVM_ABI void initializeCallGraphWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeCheckDebugMachineModulePass(PassRegistry &);
-LLVM_ABI void initializeCilkSanitizerPass(PassRegistry &);
+LLVM_ABI void initializeCilkSanitizerLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeCodeGenPrepareLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeComplexDeinterleavingLegacyPassPass(PassRegistry &);
-LLVM_ABI void initializeComprehensiveStaticInstrumentationPass(PassRegistry &);
+LLVM_ABI void
+initializeComprehensiveStaticInstrumentationLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeConstantHoistingLegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeCycleInfoWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeDAEPass(PassRegistry &);

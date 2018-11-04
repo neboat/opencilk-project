@@ -154,8 +154,8 @@ protected:
 bool sinkRegion(DomTreeNode *, AAResults *, LoopInfo *, DominatorTree *,
                 TargetLibraryInfo *, TargetTransformInfo *, Loop *CurLoop,
                 MemorySSAUpdater &, ICFLoopSafetyInfo *,
-                SinkAndHoistLICMFlags &, OptimizationRemarkEmitter *,
-                Loop *OutermostLoop = nullptr);
+                SinkAndHoistLICMFlags &, TaskInfo *,
+                OptimizationRemarkEmitter *, Loop *OutermostLoop = nullptr);
 
 /// Call sinkRegion on loops contained within the specified loop
 /// in order from innermost to outermost.
@@ -163,7 +163,7 @@ bool sinkRegionForLoopNest(DomTreeNode *, AAResults *, LoopInfo *,
                            DominatorTree *, TargetLibraryInfo *,
                            TargetTransformInfo *, Loop *, MemorySSAUpdater &,
                            ICFLoopSafetyInfo *, SinkAndHoistLICMFlags &,
-                           OptimizationRemarkEmitter *);
+                           TaskInfo *, OptimizationRemarkEmitter *);
 
 /// Walk the specified region of the CFG (defined by all blocks
 /// dominated by the specified block, and that are in the current loop) in depth
@@ -178,8 +178,8 @@ bool sinkRegionForLoopNest(DomTreeNode *, AAResults *, LoopInfo *,
 bool hoistRegion(DomTreeNode *, AAResults *, LoopInfo *, DominatorTree *,
                  AssumptionCache *, TargetLibraryInfo *, Loop *,
                  MemorySSAUpdater &, ScalarEvolution *, ICFLoopSafetyInfo *,
-                 SinkAndHoistLICMFlags &, OptimizationRemarkEmitter *, bool,
-                 bool AllowSpeculation);
+                 SinkAndHoistLICMFlags &, TaskInfo *,
+                 OptimizationRemarkEmitter *, bool, bool AllowSpeculation);
 
 /// Return true if the induction variable \p IV in a Loop whose latch is
 /// \p LatchBlock would become dead if the exit test \p Cond were removed.
@@ -221,8 +221,9 @@ bool promoteLoopAccessesToScalars(
     SmallVectorImpl<BasicBlock::iterator> &, SmallVectorImpl<MemoryAccess *> &,
     PredIteratorCache &, LoopInfo *, DominatorTree *, AssumptionCache *AC,
     const TargetLibraryInfo *, TargetTransformInfo *, Loop *,
-    MemorySSAUpdater &, ICFLoopSafetyInfo *, OptimizationRemarkEmitter *,
-    bool AllowSpeculation, bool HasReadsOutsideSet);
+    MemorySSAUpdater &, ICFLoopSafetyInfo *, TaskInfo *,
+    OptimizationRemarkEmitter *, bool AllowSpeculation,
+    bool HasReadsOutsideSet);
 
 /// Does a BFS from a given node to all of its children inside a given loop.
 /// The returned vector of nodes includes the starting point.
@@ -356,7 +357,7 @@ void getLoopAnalysisUsage(AnalysisUsage &AU);
 /// If \p ORE is set use it to emit optimization remarks.
 bool canSinkOrHoistInst(Instruction &I, AAResults *AA, DominatorTree *DT,
                         Loop *CurLoop, MemorySSAUpdater &MSSAU,
-                        bool TargetExecutesOncePerLoop,
+                        bool TargetExecutesOncePerLoop, TaskInfo *TI,
                         SinkAndHoistLICMFlags &LICMFlags,
                         OptimizationRemarkEmitter *ORE = nullptr);
 

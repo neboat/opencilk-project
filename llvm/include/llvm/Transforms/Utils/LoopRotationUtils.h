@@ -23,6 +23,7 @@ class Loop;
 class LoopInfo;
 class MemorySSAUpdater;
 class ScalarEvolution;
+class TaskInfo;
 struct SimplifyQuery;
 class TargetTransformInfo;
 class TaskInfo;

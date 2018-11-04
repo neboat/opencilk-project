@@ -159,7 +159,8 @@ LLVM_ABI bool sinkRegion(DomTreeNode *, AAResults *, LoopInfo *,
                          DominatorTree *, TargetLibraryInfo *,
                          TargetTransformInfo *, Loop *CurLoop,
                          MemorySSAUpdater &, ICFLoopSafetyInfo *,
-                         SinkAndHoistLICMFlags &, OptimizationRemarkEmitter *,
+                         SinkAndHoistLICMFlags &, TaskInfo *,
+                         OptimizationRemarkEmitter *,
                          Loop *OutermostLoop = nullptr);
 
 /// Call sinkRegion on loops contained within the specified loop
@@ -169,7 +170,7 @@ LLVM_ABI bool sinkRegionForLoopNest(DomTreeNode *, AAResults *, LoopInfo *,
                                     TargetTransformInfo *, Loop *,
                                     MemorySSAUpdater &, ICFLoopSafetyInfo *,
                                     SinkAndHoistLICMFlags &,
-                                    OptimizationRemarkEmitter *);
+                                    TaskInfo *, OptimizationRemarkEmitter *);
 
 /// Walk the specified region of the CFG (defined by all blocks
 /// dominated by the specified block, and that are in the current loop) in depth
@@ -185,8 +186,9 @@ LLVM_ABI bool hoistRegion(DomTreeNode *, AAResults *, LoopInfo *,
                           DominatorTree *, AssumptionCache *,
                           TargetLibraryInfo *, Loop *, MemorySSAUpdater &,
                           ScalarEvolution *, ICFLoopSafetyInfo *,
-                          SinkAndHoistLICMFlags &, OptimizationRemarkEmitter *,
-                          bool, bool AllowSpeculation);
+                          SinkAndHoistLICMFlags &, TaskInfo *,
+                          OptimizationRemarkEmitter *, bool,
+                          bool AllowSpeculation);
 
 /// Return true if the induction variable \p IV in a Loop whose latch is
 /// \p LatchBlock would become dead if the exit test \p Cond were removed.
@@ -229,8 +231,9 @@ LLVM_ABI bool promoteLoopAccessesToScalars(
     SmallVectorImpl<BasicBlock::iterator> &, SmallVectorImpl<MemoryAccess *> &,
     PredIteratorCache &, LoopInfo *, DominatorTree *, AssumptionCache *AC,
     const TargetLibraryInfo *, TargetTransformInfo *, Loop *,
-    MemorySSAUpdater &, ICFLoopSafetyInfo *, OptimizationRemarkEmitter *,
-    bool AllowSpeculation, bool HasReadsOutsideSet);
+    MemorySSAUpdater &, ICFLoopSafetyInfo *, TaskInfo *,
+    OptimizationRemarkEmitter *, bool AllowSpeculation,
+    bool HasReadsOutsideSet);
 
 /// Does a BFS from a given node to all of its children inside a given loop.
 /// The returned vector of basic blocks includes the starting point.
@@ -365,7 +368,7 @@ LLVM_ABI void getLoopAnalysisUsage(AnalysisUsage &AU);
 LLVM_ABI bool canSinkOrHoistInst(Instruction &I, AAResults *AA,
                                  DominatorTree *DT, Loop *CurLoop,
                                  MemorySSAUpdater &MSSAU,
-                                 bool TargetExecutesOncePerLoop,
+                                 bool TargetExecutesOncePerLoop, TaskInfo *TI,
                                  SinkAndHoistLICMFlags &LICMFlags,
                                  OptimizationRemarkEmitter *ORE = nullptr);
 

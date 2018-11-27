@@ -48,6 +48,7 @@ add_llvm_component_library(LLVMAnalysis
   ConstantFolding.cpp
   CtxProfAnalysis.cpp
   CycleAnalysis.cpp
+  DataRaceFreeAliasAnalysis.cpp
   DDG.cpp
   DDGPrinter.cpp
   ConstraintSystem.cpp

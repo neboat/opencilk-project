@@ -87,6 +87,7 @@ void initializeCycleInfoWrapperPassPass(PassRegistry &);
 void initializeDAEPass(PassRegistry &);
 void initializeDAHPass(PassRegistry &);
 void initializeDCELegacyPassPass(PassRegistry &);
+void initializeDRFAAWrapperPassPass(PassRegistry &);
 void initializeDXILMetadataAnalysisWrapperPassPass(PassRegistry &);
 void initializeDXILMetadataAnalysisWrapperPrinterPass(PassRegistry &);
 void initializeDXILResourceBindingWrapperPassPass(PassRegistry &);

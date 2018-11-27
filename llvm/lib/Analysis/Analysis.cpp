@@ -43,6 +43,7 @@ void llvm::initializeAnalysis(PassRegistry &Registry) {
   initializePostDomOnlyPrinterWrapperPassPass(Registry);
   initializeAAResultsWrapperPassPass(Registry);
   initializeGlobalsAAWrapperPassPass(Registry);
+  initializeDRFAAWrapperPassPass(Registry);
   initializeExternalAAWrapperPassPass(Registry);
   initializeImmutableModuleSummaryIndexWrapperPassPass(Registry);
   initializeIVUsersWrapperPassPass(Registry);

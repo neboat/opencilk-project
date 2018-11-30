@@ -115,6 +115,7 @@ class LLVMContext;
 class MemoryAccess;
 class MemorySSAWalker;
 class Module;
+class TaskInfo;
 class raw_ostream;
 
 namespace MSSAHelpers {
@@ -701,7 +702,8 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(MemoryPhi, MemoryAccess)
 /// accesses.
 class MemorySSA {
 public:
-  LLVM_ABI MemorySSA(Function &, AliasAnalysis *, DominatorTree *);
+  LLVM_ABI MemorySSA(Function &, AliasAnalysis *, DominatorTree *,
+                     TaskInfo * = nullptr);
   LLVM_ABI MemorySSA(Loop &, AliasAnalysis *, DominatorTree *);
 
   // MemorySSA must remain where it's constructed; Walkers it creates store
@@ -882,6 +884,7 @@ private:
   void renumberBlock(const BasicBlock *) const;
   AliasAnalysis *AA = nullptr;
   DominatorTree *DT;
+  TaskInfo *TI = nullptr;
   Function *F = nullptr;
   Loop *L = nullptr;
 
@@ -928,7 +931,8 @@ protected:
   // This function should not be used by new passes.
   LLVM_ABI static bool defClobbersUseOrDef(MemoryDef *MD,
                                            const MemoryUseOrDef *MU,
-                                           AliasAnalysis &AA);
+                                           AliasAnalysis &AA,
+                                           TaskInfo *TI = nullptr);
 };
 
 /// An analysis that produces \c MemorySSA for a function.

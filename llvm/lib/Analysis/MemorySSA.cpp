@@ -27,6 +27,7 @@
 #include "llvm/Analysis/IteratedDominanceFrontier.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/MemoryLocation.h"
+#include "llvm/Analysis/TapirTaskInfo.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/AssemblyAnnotationWriter.h"
 #include "llvm/IR/BasicBlock.h"
@@ -69,6 +70,7 @@ INITIALIZE_PASS_BEGIN(MemorySSAWrapperPass, "memoryssa", "Memory SSA", false,
                       true)
 INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(AAResultsWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(TaskInfoWrapperPass)
 INITIALIZE_PASS_END(MemorySSAWrapperPass, "memoryssa", "Memory SSA", false,
                     true)
 
@@ -87,6 +89,11 @@ bool llvm::VerifyMemorySSA = false;
 static cl::opt<bool, true>
     VerifyMemorySSAX("verify-memoryssa", cl::location(VerifyMemorySSA),
                      cl::Hidden, cl::desc("Enable verification of MemorySSA."));
+
+static cl::opt<bool>
+    AssumeDRF("memssa-assume-drf", cl::init(false), cl::Hidden,
+              cl::desc("Allow MemorySSA to assume the program is "
+                       "data-race free."));
 
 const static char LiveOnEntryStr[] = "liveOnEntry";
 
@@ -280,9 +287,14 @@ static bool areLoadsReorderable(const LoadInst *Use,
 template <typename AliasAnalysisType>
 static bool
 instructionClobbersQuery(const MemoryDef *MD, const MemoryLocation &UseLoc,
-                         const Instruction *UseInst, AliasAnalysisType &AA) {
+                         const Instruction *UseInst, AliasAnalysisType &AA,
+                         TaskInfo *TI = nullptr) {
   Instruction *DefInst = MD->getMemoryInst();
   assert(DefInst && "Defining instruction not actually an instruction");
+
+  if (TI && AssumeDRF)
+    if (TI->mayHappenInParallel(MD->getBlock(), UseInst->getParent()))
+      return {false, NoAlias};
 
   if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(DefInst)) {
     // These intrinsics will show up as affecting memory, but they are just
@@ -326,20 +338,21 @@ instructionClobbersQuery(const MemoryDef *MD, const MemoryLocation &UseLoc,
 template <typename AliasAnalysisType>
 static bool instructionClobbersQuery(MemoryDef *MD, const MemoryUseOrDef *MU,
                                      const MemoryLocOrCall &UseMLOC,
-                                     AliasAnalysisType &AA) {
+                                     AliasAnalysisType &AA,
+                                     TaskInfo *TI = nullptr) {
   // FIXME: This is a temporary hack to allow a single instructionClobbersQuery
   // to exist while MemoryLocOrCall is pushed through places.
   if (UseMLOC.IsCall)
     return instructionClobbersQuery(MD, MemoryLocation(), MU->getMemoryInst(),
-                                    AA);
+                                    AA, TI);
   return instructionClobbersQuery(MD, UseMLOC.getLoc(), MU->getMemoryInst(),
-                                  AA);
+                                  AA, TI);
 }
 
 // Return true when MD may alias MU, return false otherwise.
 bool MemorySSAUtil::defClobbersUseOrDef(MemoryDef *MD, const MemoryUseOrDef *MU,
-                                        AliasAnalysis &AA) {
-  return instructionClobbersQuery(MD, MU, MemoryLocOrCall(MU), AA);
+                                        AliasAnalysis &AA, TaskInfo *TI) {
+  return instructionClobbersQuery(MD, MU, MemoryLocOrCall(MU), AA, TI);
 }
 
 namespace {
@@ -397,7 +410,7 @@ LLVM_ATTRIBUTE_UNUSED static void
 checkClobberSanity(const MemoryAccess *Start, MemoryAccess *ClobberAt,
                    const MemoryLocation &StartLoc, const MemorySSA &MSSA,
                    const UpwardsMemoryQuery &Query, BatchAAResults &AA,
-                   bool AllowImpreciseClobber = false) {
+                   TaskInfo *TI = nullptr, bool AllowImpreciseClobber = false) {
   assert(MSSA.dominates(ClobberAt, Start) && "Clobber doesn't dominate start?");
 
   if (MSSA.isLiveOnEntryDef(Start)) {
@@ -429,7 +442,7 @@ checkClobberSanity(const MemoryAccess *Start, MemoryAccess *ClobberAt,
           // since MD may only act as a clobber for 1 of N MemoryLocations.
           FoundClobber = FoundClobber || MSSA.isLiveOnEntryDef(MD);
           if (!FoundClobber) {
-            if (instructionClobbersQuery(MD, MAP.second, Query.Inst, AA))
+            if (instructionClobbersQuery(MD, MAP.second, Query.Inst, AA, TI))
               FoundClobber = true;
           }
         }
@@ -444,7 +457,7 @@ checkClobberSanity(const MemoryAccess *Start, MemoryAccess *ClobberAt,
         if (MD == Start)
           continue;
 
-        assert(!instructionClobbersQuery(MD, MAP.second, Query.Inst, AA) &&
+        assert(!instructionClobbersQuery(MD, MAP.second, Query.Inst, AA, TI) &&
                "Found clobber before reaching ClobberAt!");
         continue;
       }
@@ -513,6 +526,7 @@ class ClobberWalker {
   const MemorySSA &MSSA;
   DominatorTree &DT;
   BatchAAResults *AA;
+  TaskInfo *TI = nullptr;
   UpwardsMemoryQuery *Query;
   unsigned *UpwardWalkLimit;
 
@@ -578,7 +592,7 @@ class ClobberWalker {
         if (!--*UpwardWalkLimit)
           return {Current, true};
 
-        if (instructionClobbersQuery(MD, Desc.Loc, Query->Inst, *AA))
+        if (instructionClobbersQuery(MD, Desc.Loc, Query->Inst, *AA, TI))
           return {MD, true};
       }
     }
@@ -922,8 +936,9 @@ class ClobberWalker {
   }
 
 public:
-  ClobberWalker(const MemorySSA &MSSA, DominatorTree &DT)
-      : MSSA(MSSA), DT(DT) {}
+  ClobberWalker(const MemorySSA &MSSA, DominatorTree &DT,
+                TaskInfo *TI = nullptr)
+      : MSSA(MSSA), DT(DT), TI(TI) {}
 
   /// Finds the nearest clobber for the given query, optimizing phis if
   /// possible.
@@ -959,7 +974,7 @@ public:
 
 #ifdef EXPENSIVE_CHECKS
     if (!Q.SkipSelfAccess && *UpwardWalkLimit > 0)
-      checkClobberSanity(Current, Result, Q.StartingLoc, MSSA, Q, BAA);
+      checkClobberSanity(Current, Result, Q.StartingLoc, MSSA, Q, BAA, TI);
 #endif
     return Result;
   }
@@ -1230,8 +1245,9 @@ void MemorySSA::markUnreachableAsLiveOnEntry(BasicBlock *BB) {
   }
 }
 
-MemorySSA::MemorySSA(Function &Func, AliasAnalysis *AA, DominatorTree *DT)
-    : DT(DT), F(&Func), LiveOnEntryDef(nullptr), Walker(nullptr),
+MemorySSA::MemorySSA(Function &Func, AliasAnalysis *AA, DominatorTree *DT,
+                     TaskInfo *TI)
+    : DT(DT), TI(TI), F(&Func), LiveOnEntryDef(nullptr), Walker(nullptr),
       SkipWalker(nullptr) {
   // Build MemorySSA using a batch alias analysis. This reuses the internal
   // state that AA collects during an alias()/getModRefInfo() call. This is
@@ -1304,8 +1320,8 @@ namespace llvm {
 class MemorySSA::OptimizeUses {
 public:
   OptimizeUses(MemorySSA *MSSA, CachingWalker *Walker, BatchAAResults *BAA,
-               DominatorTree *DT)
-      : MSSA(MSSA), Walker(Walker), AA(BAA), DT(DT) {}
+               DominatorTree *DT, TaskInfo *TI = nullptr)
+      : MSSA(MSSA), Walker(Walker), AA(BAA), DT(DT), TI(TI) {}
 
   void optimizeUses();
 
@@ -1335,6 +1351,7 @@ private:
   CachingWalker *Walker;
   BatchAAResults *AA;
   DominatorTree *DT;
+  TaskInfo *TI;
 };
 
 } // end namespace llvm
@@ -1466,7 +1483,7 @@ void MemorySSA::OptimizeUses::optimizeUsesInBlock(
       }
 
       MemoryDef *MD = cast<MemoryDef>(VersionStack[UpperBound]);
-      if (instructionClobbersQuery(MD, MU, UseMLOC, *AA)) {
+      if (instructionClobbersQuery(MD, MU, UseMLOC, *AA, TI)) {
         FoundClobberResult = true;
         break;
       }
@@ -1594,7 +1611,7 @@ MemorySSA::CachingWalker *MemorySSA::getWalkerImpl() {
     return Walker.get();
 
   if (!WalkerBase)
-    WalkerBase = std::make_unique<ClobberWalkerBase>(this, DT);
+    WalkerBase = std::make_unique<ClobberWalkerBase>(this, DT, TI);
 
   Walker = std::make_unique<CachingWalker>(this, WalkerBase.get());
   return Walker.get();
@@ -2371,7 +2388,9 @@ MemorySSAAnalysis::Result MemorySSAAnalysis::run(Function &F,
                                                  FunctionAnalysisManager &AM) {
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &AA = AM.getResult<AAManager>(F);
-  return MemorySSAAnalysis::Result(std::make_unique<MemorySSA>(F, &AA, &DT));
+  TaskInfo *TI = AssumeDRF ? (&AM.getResult<TaskAnalysis>(F)) : nullptr;
+  return MemorySSAAnalysis::Result(
+      std::make_unique<MemorySSA>(F, &AA, &DT, TI));
 }
 
 bool MemorySSAAnalysis::Result::invalidate(
@@ -2428,12 +2447,17 @@ void MemorySSAWrapperPass::getAnalysisUsage(AnalysisUsage &AU) const {
   AU.setPreservesAll();
   AU.addRequiredTransitive<DominatorTreeWrapperPass>();
   AU.addRequiredTransitive<AAResultsWrapperPass>();
+  if (AssumeDRF)
+    AU.addRequiredTransitive<TaskInfoWrapperPass>();
 }
 
 bool MemorySSAWrapperPass::runOnFunction(Function &F) {
   auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   auto &AA = getAnalysis<AAResultsWrapperPass>().getAAResults();
-  MSSA.reset(new MemorySSA(F, &AA, &DT));
+  TaskInfo *TI = AssumeDRF
+    ? &getAnalysis<TaskInfoWrapperPass>().getTaskInfo()
+    : nullptr;
+  MSSA.reset(new MemorySSA(F, &AA, &DT, TI));
   return false;
 }
 

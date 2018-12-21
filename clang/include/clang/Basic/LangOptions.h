@@ -442,6 +442,18 @@ public:
     CX_None
   };
 
+  enum class CSIExtensionPoint {
+    // Don't run CSI
+    CSI_None = 0,
+    // The following extension points should be consistent with the extension
+    // points allowed by the pass manager, except for EnabledOnOptLevel0.
+    CSI_EarlyAsPossible,
+    CSI_ModuleOptimizerEarly,
+    CSI_OptimizerLast,
+    CSI_TapirLate,
+    CSI_TapirLoopEnd
+  };
+
   // Define simple language options (with no accessors).
 #define LANGOPT(Name, Bits, Default, Description) unsigned Name : Bits;
 #define ENUM_LANGOPT(Name, Type, Bits, Default, Description)

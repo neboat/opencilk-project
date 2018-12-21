@@ -105,7 +105,7 @@ FEATURE(dataflow_sanitizer, LangOpts.Sanitize.has(SanitizerKind::DataFlow))
 FEATURE(scudo, LangOpts.Sanitize.hasOneOf(SanitizerKind::Scudo))
 FEATURE(cilk_sanitizer, LangOpts.Sanitize.has(SanitizerKind::Cilk))
 FEATURE(comprehensive_static_instrumentation,
-        LangOpts.ComprehensiveStaticInstrumentation)
+        LangOpts.getComprehensiveStaticInstrumentation())
 FEATURE(ptrauth_intrinsics, LangOpts.PointerAuthIntrinsics)
 FEATURE(ptrauth_calls, LangOpts.PointerAuthCalls)
 FEATURE(ptrauth_returns, LangOpts.PointerAuthReturns)

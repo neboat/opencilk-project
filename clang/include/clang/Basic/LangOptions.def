@@ -407,7 +407,8 @@ LANGOPT(SanitizeAddressFieldPadding, 2, 0, NotCompatible, "controls how aggressi
 
 LANGOPT(Cmse, 1, 0, NotCompatible, "ARM Security extensions support")
 
-LANGOPT(ComprehensiveStaticInstrumentation, 1, 0, NotCompatible, "turn on Comprehensive Static Instrumentation")
+ENUM_LANGOPT(ComprehensiveStaticInstrumentation, CSIExtensionPoint, 3,
+             CSI_None, Compatible, "turn on Comprehensive Static Instrumentation")
 
 LANGOPT(XRayInstrument, 1, 0, NotCompatible, "controls whether to do XRay instrumentation")
 LANGOPT(XRayAlwaysEmitCustomEvents, 1, 0, NotCompatible,

@@ -969,6 +969,7 @@ void JumpScopeChecker::CheckJump(Stmt *From, Stmt *To, SourceLocation DiagLoc,
         return;
       }
     }
+    // TODO: Check for jumps that cross a _Cilk_spawn or _Cilk_for scope.
   }
 
   unsigned CommonScope = GetDeepestCommonScope(FromScope, ToScope);

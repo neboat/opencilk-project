@@ -5186,6 +5186,8 @@ public:
   /// scalar type, returning the result.
   llvm::Value *EmitScalarExpr(const Expr *E, bool IgnoreResultAssign = false);
 
+  void EmitScalarExprIntoLValue(const Expr *E, LValue dest, bool isInit);
+
   /// Emit a conversion from the specified type to the specified destination
   /// type, both of which are LLVM scalar types.
   llvm::Value *EmitScalarConversion(llvm::Value *Src, QualType SrcTy,

@@ -51,11 +51,19 @@ class ComplexExprEmitter
   bool IgnoreReal;
   bool IgnoreImag;
   bool FPHasBeenPromoted;
+  bool DoSpawnedInit = false;
+  LValue LValueToSpawnInit;
 
 public:
   ComplexExprEmitter(CodeGenFunction &cgf, bool ir = false, bool ii = false)
       : CGF(cgf), Builder(CGF.Builder), IgnoreReal(ir), IgnoreImag(ii),
         FPHasBeenPromoted(false) {}
+
+  ComplexExprEmitter(CodeGenFunction &cgf, LValue LValueToSpawnInit,
+                     bool ir = false, bool ii = false)
+      : CGF(cgf), Builder(CGF.Builder), IgnoreReal(ir), IgnoreImag(ii),
+        FPHasBeenPromoted(false), DoSpawnedInit(true),
+        LValueToSpawnInit(LValueToSpawnInit) {}
 
   //===--------------------------------------------------------------------===//
   //                               Utilities
@@ -132,7 +140,18 @@ public:
   }
   ComplexPairTy VisitCilkSpawnExpr(CilkSpawnExpr *CSE) {
     CGF.PushDetachScope();
-    return Visit(CSE->getSpawnedExpr());
+    ComplexPairTy C = Visit(CSE->getSpawnedExpr());
+    if (DoSpawnedInit) {
+      assert(CGF.CurDetachScope && CGF.CurDetachScope->IsDetachStarted() &&
+             "Processing _Cilk_spawn of expression did not produce detach.");
+      LValue LV = LValueToSpawnInit;
+      EmitStoreOfComplex(C, LV, /*init*/ true);
+
+      // Pop the detach scope
+      CGF.IsSpawned = false;
+      CGF.PopDetachScope();
+    }
+    return C;
   }
 
   ComplexPairTy emitConstant(const CodeGenFunction::ConstantEmission &Constant,
@@ -1527,6 +1546,10 @@ void CodeGenFunction::EmitComplexExprIntoLValue(const Expr *E, LValue dest,
                                                 bool isInit) {
   assert(E && getComplexType(E->getType()) &&
          "Invalid complex expression to emit");
+  if (IsSpawned && isInit) {
+    ComplexExprEmitter(*this, dest).Visit(const_cast<Expr*>(E));
+    return;
+  }
   ComplexExprEmitter Emitter(*this);
   ComplexPairTy Val = Emitter.Visit(const_cast<Expr*>(E));
   Emitter.EmitStoreOfComplex(Val, dest, isInit);

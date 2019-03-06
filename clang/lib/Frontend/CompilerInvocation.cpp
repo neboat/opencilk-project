@@ -1471,6 +1471,23 @@ parseSanitizerWeightedKinds(StringRef FlagName,
   return Cutoffs;
 }
 
+static LangOptions::CilktoolKind parseCilktoolKind(StringRef FlagName,
+                                                   ArgList &Args,
+                                                   DiagnosticsEngine &Diags) {
+  if (Arg *A = Args.getLastArg(OPT_fcilktool_EQ)) {
+    StringRef Val = A->getValue();
+    LangOptions::CilktoolKind ParsedCilktool =
+      llvm::StringSwitch<LangOptions::CilktoolKind>(Val)
+      .Case("cilkscale", LangOptions::Cilktool_Cilkscale)
+      .Default(LangOptions::Cilktool_None);
+    if (ParsedCilktool == LangOptions::Cilktool_None)
+      Diags.Report(diag::err_drv_invalid_value) << FlagName << Val;
+    else
+      return ParsedCilktool;
+  }
+  return LangOptions::Cilktool_None;
+}
+
 static LangOptions::CSIExtensionPoint
 parseCSIExtensionPoint(StringRef FlagName, ArgList &Args,
                        DiagnosticsEngine &Diags) {
@@ -3996,6 +4013,8 @@ bool CompilerInvocation::ParseLangArgs(LangOptions &Opts, ArgList &Args,
     if (Args.hasArg(OPT_fcsi_EQ) || Args.hasArg(OPT_fcsi))
       Opts.setComprehensiveStaticInstrumentation(
           parseCSIExtensionPoint("-fcsi=", Args, Diags));
+    if (Args.hasArg(OPT_fcilktool_EQ))
+      Opts.setCilktool(parseCilktoolKind("-fcilktool=", Args, Diags));
 
     return Diags.getNumErrors() == NumErrorsBefore;
   }
@@ -4456,6 +4475,10 @@ bool CompilerInvocation::ParseLangArgs(LangOptions &Opts, ArgList &Args,
   if (Args.hasArg(OPT_fcsi_EQ) || Args.hasArg(OPT_fcsi))
     Opts.setComprehensiveStaticInstrumentation(
         parseCSIExtensionPoint("-fcsi=", Args, Diags));
+
+  // -fcilktool=
+  if (Args.hasArg(OPT_fcilktool_EQ))
+    Opts.setCilktool(parseCilktoolKind("-fcilktool=", Args, Diags));
 
   if (Arg *A = Args.getLastArg(OPT_fclang_abi_compat_EQ)) {
     Opts.setClangABICompat(LangOptions::ClangABI::Latest);

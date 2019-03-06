@@ -514,6 +514,12 @@ public:
     CSI_TapirLoopEnd
   };
 
+  enum CilktoolKind {
+    // No Cilktool
+    Cilktool_None = 0,
+    Cilktool_Cilkscale
+  };
+  
   // Define simple language options (with no accessors).
 #define LANGOPT(Name, Bits, Default, Compatibility, Description)               \
   unsigned Name : Bits;

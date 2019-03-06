@@ -147,6 +147,7 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   AddLinkerInputs(ToolChain, Inputs, Args, CmdArgs, JA);
 
   addCSIRuntime(ToolChain, Args, CmdArgs);
+  addCilktoolRuntime(ToolChain, Args, CmdArgs);
 
   // Sample these options first so they are claimed even under -nostdlib et al.
   bool NoLibc = Args.hasArg(options::OPT_nolibc);

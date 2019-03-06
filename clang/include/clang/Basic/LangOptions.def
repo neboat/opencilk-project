@@ -395,6 +395,9 @@ LANGOPT(XLPragmaPack, 1, 0, NotCompatible, "IBM XL #pragma pack handling")
 
 LANGOPT(Cilk, 1, 0, NotCompatible, "Enable Cilk language extensions")
 
+ENUM_LANGOPT(Cilktool, CilktoolKind, 3, Cilktool_None, Compatible,
+             "turn on the specified Cilk tool")
+
 LANGOPT(RetainCommentsFromSystemHeaders, 1, 0, Compatible, "retain documentation comments from system headers in the AST")
 
 LANGOPT(APINotes, 1, 0, NotCompatible, "use external API notes")

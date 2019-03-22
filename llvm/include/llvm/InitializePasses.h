@@ -186,6 +186,7 @@ LLVM_ABI void initializeLoopSimplifyPass(PassRegistry &);
 LLVM_ABI void initializeLoopSpawningPass(PassRegistry &);
 LLVM_ABI void initializeLoopSpawningTIPass(PassRegistry &);
 LLVM_ABI void initializeLoopStrengthReducePass(PassRegistry &);
+LLVM_ABI void initializeLoopStripMinePass(PassRegistry &);
 LLVM_ABI void initializeLoopTermFoldPass(PassRegistry &);
 LLVM_ABI void initializeLoopUnrollPass(PassRegistry &);
 LLVM_ABI void initializeLowerAtomicLegacyPassPass(PassRegistry &);

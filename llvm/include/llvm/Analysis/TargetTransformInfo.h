@@ -671,6 +671,29 @@ public:
   LLVM_ABI TailFoldingStyle
   getPreferredTailFoldingStyle(bool IVUpdateMayOverflow = true) const;
 
+  /// Parameters that control the generic loop stripmining transformation.
+  struct StripMiningPreferences {
+    /// A forced stripmining factor (the number of iterations of the original
+    /// loop in the stripmined inner-loop body). When set to 0, the stripmining
+    /// transformation will select an stripmining factor based on the current
+    /// cost threshold and other factors.
+    unsigned Count;
+    /// Allow emitting expensive instructions (such as divisions) when computing
+    /// the trip count of a loop for runtime unrolling.
+    bool AllowExpensiveTripCount;
+    /// Default factor for coarsening a task to amortize the cost of creating
+    /// it.
+    unsigned DefaultCoarseningFactor;
+    /// Allow unrolling of all the iterations of the runtime loop remainder.
+    bool UnrollRemainder;
+  };
+
+  /// Get target-customized preferences for the generic Tapir loop stripmining
+  /// transformation. The caller will initialize SMP with the current
+  /// target-independent defaults.
+  LLVM_ABI void getStripMiningPreferences(Loop *L, ScalarEvolution &,
+                                          StripMiningPreferences &SMP) const;
+
   // Parameters that control the loop peeling transformation
   struct PeelingPreferences {
     /// A forced peeling factor (the number of bodied of the original loop

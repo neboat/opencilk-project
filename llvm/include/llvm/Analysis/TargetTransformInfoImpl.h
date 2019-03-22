@@ -263,6 +263,9 @@ public:
   virtual void getPeelingPreferences(Loop *, ScalarEvolution &,
                                      TTI::PeelingPreferences &) const {}
 
+  virtual void getStripMiningPreferences(Loop *, ScalarEvolution &,
+                                         TTI::StripMiningPreferences &) const {}
+
   virtual bool isLegalAddImmediate(int64_t Imm) const { return false; }
 
   virtual bool isLegalAddScalableImmediate(int64_t Imm) const { return false; }

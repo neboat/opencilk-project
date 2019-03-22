@@ -92,6 +92,7 @@ LLVM_ABI void initializeDAEPass(PassRegistry &);
 LLVM_ABI void initializeDAHPass(PassRegistry &);
 LLVM_ABI void initializeDCELegacyPassPass(PassRegistry &);
 LLVM_ABI void initializeDRFAAWrapperPassPass(PassRegistry &);
+LLVM_ABI void initializeDRFScopedNoAliasWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeDXILMetadataAnalysisWrapperPassPass(PassRegistry &);
 LLVM_ABI void initializeDXILMetadataAnalysisWrapperPrinterPass(PassRegistry &);
 LLVM_ABI void initializeDXILResourceBindingWrapperPassPass(PassRegistry &);

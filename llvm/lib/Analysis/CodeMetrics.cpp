@@ -14,6 +14,7 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IntrinsicInst.h"
@@ -129,7 +130,7 @@ static bool extendsConvergenceOutsideLoop(const Instruction &I, const Loop *L) {
 void CodeMetrics::analyzeBasicBlock(
     const BasicBlock *BB, const TargetTransformInfo &TTI,
     const SmallPtrSetImpl<const Value *> &EphValues, bool PrepareForLTO,
-    const Loop *L) {
+    const Loop *L, TargetLibraryInfo *TLI) {
   ++NumBlocks;
   InstructionCost NumInstsBeforeThisBB = NumInsts;
   for (const Instruction &I : *BB) {
@@ -161,6 +162,12 @@ void CodeMetrics::analyzeBasicBlock(
 
         if (IsLoweredToCall)
           ++NumCalls;
+
+        // Check for a call to a builtin function.
+        LibFunc LF;
+        if (TLI && TLI->getLibFunc(*F, LF))
+          ++NumBuiltinCalls;
+
       } else {
         // We don't want inline asm to count as a call - that would prevent loop
         // unrolling. The argument setup cost is still real, though.

@@ -125,6 +125,13 @@ static bool extendsConvergenceOutsideLoop(const Instruction &I, const Loop *L) {
   return false;
 }
 
+static bool isDuplicatableIntrinsic(const Instruction &I) {
+  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I))
+    if (Intrinsic::syncregion_start == II->getIntrinsicID())
+      return true;
+  return false;
+}
+
 /// Fill in the current structure with information gleaned from the specified
 /// block.
 void CodeMetrics::analyzeBasicBlock(
@@ -185,7 +192,7 @@ void CodeMetrics::analyzeBasicBlock(
       ++NumVectorInsts;
 
     if (I.getType()->isTokenTy() && !isa<ConvergenceControlInst>(I) &&
-        I.isUsedOutsideOfBlock(BB)) {
+        I.isUsedOutsideOfBlock(BB) && !isDuplicatableIntrinsic(I)) {
       LLVM_DEBUG(dbgs() << I
                         << "\n  Cannot duplicate a token value used outside "
                            "the current block (except convergence control).\n");

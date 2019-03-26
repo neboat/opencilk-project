@@ -30,6 +30,7 @@
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/Analysis/TapirTaskInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
@@ -146,6 +147,13 @@ static cl::opt<bool, true> HoistRuntimeChecks(
         "Hoist inner loop runtime memory checks to outer loop if possible"),
     cl::location(VectorizerParams::HoistRuntimeChecks), cl::init(true));
 bool VectorizerParams::HoistRuntimeChecks;
+
+/// Enable analysis using Tapir based on the data-race-free assumption.
+static cl::opt<bool> EnableDRFAA(
+    "enable-drf-laa", cl::Hidden,
+    cl::desc("Enable analysis using Tapir based on the data-race-free "
+             "assumption"),
+    cl::init(false));
 
 bool VectorizerParams::isInterleaveForced() {
   return ::VectorizationInterleave.getNumOccurrences() > 0;
@@ -1779,6 +1787,12 @@ void MemoryDepChecker::mergeInStatus(VectorizationSafetyStatus S) {
     Status = S;
 }
 
+/// Returns true if this loop is logically parallel as indicated by Tapir.
+static bool isLogicallyParallelViaTapir(const Loop *L, TaskInfo *TI) {
+  return L->wasDerivedFromTapirLoop() ||
+    (TI && getTaskIfTapirLoopStructure(L, TI));
+}
+
 /// Given a dependence-distance \p Dist between two
 /// memory accesses, that have strides in the same direction whose absolute
 /// value of the maximum stride is given in \p MaxStride, and that have the same
@@ -1895,6 +1909,11 @@ MemoryDepChecker::getDependenceDistanceStrideAndSize(
 
   Type *ATy = getLoadStoreType(AInst);
   Type *BTy = getLoadStoreType(BInst);
+
+  // Under certain assumptions, Tapir can guarantee that there are no
+  // loop-carried dependencies.
+  if (EnableDRFAA && isLogicallyParallelViaTapir(InnermostLoop, TI))
+    return Dependence::NoDep;
 
   // We cannot check pointers in different address spaces.
   if (APtr->getType()->getPointerAddressSpace() !=
@@ -2296,6 +2315,12 @@ bool MemoryDepChecker::areDepsSafe(const DepCandidates &AccessSets,
 
             Dependence::DepType Type =
                 isDependent(*A.first, A.second, *B.first, B.second);
+            // Backward dependencies cannot happen in Tapir loops.
+            if ((Dependence::Backward == Type ||
+                 Dependence::BackwardVectorizable == Type ||
+                 Dependence::BackwardVectorizableButPreventsForwarding == Type)
+                && isLogicallyParallelViaTapir(InnermostLoop, TI))
+              Type = Dependence::NoDep;
             mergeInStatus(Dependence::isSafeForVectorization(Type));
 
             // Gather dependences unless we accumulated MaxDependences
@@ -2396,7 +2421,7 @@ bool LoopAccessInfo::canAnalyzeLoop() {
 
 bool LoopAccessInfo::analyzeLoop(AAResults *AA, const LoopInfo *LI,
                                  const TargetLibraryInfo *TLI,
-                                 DominatorTree *DT) {
+                                 DominatorTree *DT, TaskInfo *TI) {
   // Holds the Load and Store instructions.
   SmallVector<LoadInst *, 16> Loads;
   SmallVector<StoreInst *, 16> Stores;
@@ -2414,7 +2439,8 @@ bool LoopAccessInfo::analyzeLoop(AAResults *AA, const LoopInfo *LI,
   PtrRtChecking->Pointers.clear();
   PtrRtChecking->Need = false;
 
-  const bool IsAnnotatedParallel = TheLoop->isAnnotatedParallel();
+  const bool IsAnnotatedParallel = TheLoop->isAnnotatedParallel() ||
+    (EnableDRFAA && isLogicallyParallelViaTapir(TheLoop, TI));
 
   const bool EnableMemAccessVersioningOfLoop =
       EnableMemAccessVersioning &&
@@ -3017,7 +3043,7 @@ void LoopAccessInfo::collectStridedAccess(Value *MemAccess) {
 LoopAccessInfo::LoopAccessInfo(Loop *L, ScalarEvolution *SE,
                                const TargetTransformInfo *TTI,
                                const TargetLibraryInfo *TLI, AAResults *AA,
-                               DominatorTree *DT, LoopInfo *LI)
+                               DominatorTree *DT, LoopInfo *LI, TaskInfo *TI)
     : PSE(std::make_unique<PredicatedScalarEvolution>(*SE, *L)),
       PtrRtChecking(nullptr), TheLoop(L) {
   unsigned MaxTargetVectorWidthInBits = std::numeric_limits<unsigned>::max();
@@ -3036,10 +3062,10 @@ LoopAccessInfo::LoopAccessInfo(Loop *L, ScalarEvolution *SE,
       MaxTargetVectorWidthInBits = std::numeric_limits<unsigned>::max();
   }
   DepChecker = std::make_unique<MemoryDepChecker>(*PSE, L, SymbolicStrides,
-                                                  MaxTargetVectorWidthInBits);
+                                                  MaxTargetVectorWidthInBits, TI);
   PtrRtChecking = std::make_unique<RuntimePointerChecking>(*DepChecker, SE);
   if (canAnalyzeLoop())
-    CanVecMem = analyzeLoop(AA, LI, TLI, DT);
+    CanVecMem = analyzeLoop(AA, LI, TLI, DT, TI);
 }
 
 void LoopAccessInfo::print(raw_ostream &OS, unsigned Depth) const {

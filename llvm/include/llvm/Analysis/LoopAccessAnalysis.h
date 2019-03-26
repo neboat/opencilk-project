@@ -182,9 +182,9 @@ public:
 
   MemoryDepChecker(PredicatedScalarEvolution &PSE, const Loop *L,
                    const DenseMap<Value *, const SCEV *> &SymbolicStrides,
-                   unsigned MaxTargetVectorWidthInBits)
+                   unsigned MaxTargetVectorWidthInBits, TaskInfo *TI = nullptr)
       : PSE(PSE), InnermostLoop(L), SymbolicStrides(SymbolicStrides),
-        MaxTargetVectorWidthInBits(MaxTargetVectorWidthInBits) {}
+        MaxTargetVectorWidthInBits(MaxTargetVectorWidthInBits), TI(TI) {}
 
   /// Register the location (instructions are given increasing numbers)
   /// of a write access.
@@ -359,6 +359,9 @@ private:
 
   /// Cache for the loop guards of InnermostLoop.
   std::optional<ScalarEvolution::LoopGuards> LoopGuards;
+
+  /// Optional TaskInfo
+  TaskInfo *TI;
 
   /// Check whether there is a plausible dependence between the two
   /// accesses.
@@ -671,7 +674,7 @@ public:
                           const TargetTransformInfo *TTI,
                           const TargetLibraryInfo *TLI, AAResults *AA,
                           DominatorTree *DT, LoopInfo *LI,
-                          bool AllowPartial = false);
+                          bool AllowPartial = false, TaskInfo *TI = nullptr);
 
   /// Return true we can analyze the memory accesses in the loop and there are
   /// no memory dependence cycles. Note that for dependences between loads &
@@ -764,7 +767,8 @@ private:
   /// Analyze the loop. Returns true if all memory access in the loop can be
   /// vectorized.
   bool analyzeLoop(AAResults *AA, const LoopInfo *LI,
-                   const TargetLibraryInfo *TLI, DominatorTree *DT);
+                   const TargetLibraryInfo *TLI, DominatorTree *DT,
+                   TaskInfo *TI);
 
   /// Check if the structure of the loop allows it to be analyzed by this
   /// pass.

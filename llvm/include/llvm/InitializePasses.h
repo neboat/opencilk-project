@@ -310,6 +310,7 @@ LLVM_ABI void initializeScavengerTestPass(PassRegistry &);
 LLVM_ABI void initializeScopedNoAliasAAWrapperPassPass(PassRegistry &);
 LLVM_ABI void
 initializeSeparateConstOffsetFromGEPLegacyPassPass(PassRegistry &);
+LLVM_ABI void initializeSerializeSmallTasksPass(PassRegistry &);
 LLVM_ABI void initializeShadowStackGCLoweringPass(PassRegistry &);
 LLVM_ABI void initializeShrinkWrapLegacyPass(PassRegistry &);
 LLVM_ABI void initializeSingleLoopExtractorPass(PassRegistry &);

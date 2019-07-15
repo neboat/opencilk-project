@@ -14,6 +14,7 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/StmtCilk.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtObjC.h"
 #include "clang/AST/StmtOpenACC.h"
@@ -591,6 +592,79 @@ void JumpScopeChecker::BuildScopeInformation(Stmt *S,
     break;
   }
 
+  case Stmt::CilkSpawnStmtClass: {
+    // Disallow jumps into or out of _Cilk_spawn statements.
+    CilkSpawnStmt *CS = cast<CilkSpawnStmt>(S);
+    unsigned NewParentScope = Scopes.size();
+    Scopes.push_back(GotoScope(ParentScope,
+                               diag::note_protected_by_spawn,
+                               diag::note_exits_spawn,
+                               CS->getBeginLoc()));
+    BuildScopeInformation(CS->getSpawnedStmt(), NewParentScope);
+    return;
+  }
+
+  case Stmt::CilkForStmtClass: {
+    CilkForStmt *CF = cast<CilkForStmt>(S);
+
+    if (Stmt *Init = CF->getInit())
+      BuildScopeInformation(Init, ParentScope);
+    // if (Stmt *Limit = CF->getLimitStmt())
+    //   BuildScopeInformation(Limit, ParentScope);
+    // if (Stmt *Begin = CF->getBeginStmt())
+    //   BuildScopeInformation(Begin, ParentScope);
+    // if (Stmt *End = CF->getEndStmt())
+    //   BuildScopeInformation(End, ParentScope);
+
+    // Cannot jump into the middle of the condition.
+    unsigned NewParentScope;
+    if (Expr *InitCond = CF->getInitCond()) {
+      NewParentScope = Scopes.size();
+      Scopes.push_back(GotoScope(ParentScope,
+                                 diag::note_protected_by_cilk_for,
+                                 diag::note_exits_cilk_for,
+                                 CF->getBeginLoc()));
+      BuildScopeInformation(InitCond, NewParentScope);
+    }
+    if (Expr *Cond = CF->getCond()) {
+      NewParentScope = Scopes.size();
+      Scopes.push_back(GotoScope(ParentScope,
+                                 diag::note_protected_by_cilk_for,
+                                 diag::note_exits_cilk_for,
+                                 CF->getBeginLoc()));
+      BuildScopeInformation(Cond, NewParentScope);
+    }
+
+    // Cannot jump into the increment.
+    if (Expr *Inc = CF->getInc()) {
+      NewParentScope = Scopes.size();
+      Scopes.push_back(GotoScope(ParentScope,
+                                 diag::note_protected_by_cilk_for,
+                                 diag::note_exits_cilk_for,
+                                 CF->getBeginLoc()));
+      BuildScopeInformation(Inc, NewParentScope);
+    }
+
+    // Cannot jump into the loop-variable declaration
+    if (VarDecl *LV = CF->getLoopVariable()) {
+      NewParentScope = Scopes.size();
+      Scopes.push_back(GotoScope(ParentScope,
+                                 diag::note_protected_by_cilk_for,
+                                 diag::note_exits_cilk_for,
+                                 CF->getBeginLoc()));
+      BuildScopeInformation(LV, NewParentScope);
+    }
+
+    // Cannot jump into the loop body
+    NewParentScope = Scopes.size();
+    Scopes.push_back(GotoScope(ParentScope,
+                               diag::note_protected_by_cilk_for,
+                               diag::note_exits_cilk_for,
+                               CF->getBeginLoc()));
+    BuildScopeInformation(CF->getBody(), NewParentScope);
+    return;
+  }
+
   case Stmt::CaseStmtClass:
   case Stmt::DefaultStmtClass:
   case Stmt::LabelStmtClass:
@@ -948,6 +1022,13 @@ void JumpScopeChecker::CheckJump(Stmt *From, Stmt *To, SourceLocation DiagLoc,
       if (Scopes[I].InDiag == diag::note_protected_by_seh_finally) {
         S.Diag(From->getBeginLoc(), diag::warn_jump_out_of_seh_finally);
         break;
+      } else if (Scopes[I].InDiag == diag::note_protected_by_spawn) {
+        // Similarly, check for jumps out of _Cilk_spawn or _Cilk_for.
+        S.Diag(From->getBeginLoc(), diag::err_jump_out_of_spawn);
+        break;
+      } else if (Scopes[I].InDiag == diag::note_protected_by_cilk_for) {
+        S.Diag(From->getBeginLoc(), diag::err_jump_out_of_cilk_for);
+        break;
       } else if (Scopes[I].InDiag ==
                  diag::note_omp_protected_structured_block) {
         S.Diag(From->getBeginLoc(), diag::err_goto_into_protected_scope);
@@ -960,7 +1041,6 @@ void JumpScopeChecker::CheckJump(Stmt *From, Stmt *To, SourceLocation DiagLoc,
         return;
       }
     }
-    // TODO: Check for jumps that cross a _Cilk_spawn or _Cilk_for scope.
   }
 
   unsigned CommonScope = GetDeepestCommonScope(FromScope, ToScope);

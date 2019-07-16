@@ -116,6 +116,8 @@ STATISTIC(
     "Number of stores rewritten into predicated loads to allow promotion");
 STATISTIC(NumDeleted, "Number of instructions deleted");
 STATISTIC(NumVectorized, "Number of vectorized aggregates");
+STATISTIC(NumNotParallelPromotable, "Number of alloca's not promotable due to "
+          "Tapir instructions");
 
 /// Disable running mem2reg during SROA in order to test or debug SROA.
 static cl::opt<bool> SROASkipMem2Reg("sroa-skip-mem2reg", cl::init(false),
@@ -4930,6 +4932,8 @@ AllocaInst *SROA::rewritePartition(AllocaInst &AI, AllocaSlices &AS,
   }
 
   // Check if any detaches block promotion.
+  if (!TI->isAllocaParallelPromotable(NewAI))
+    ++NumNotParallelPromotable;
   Promotable &= TI->isAllocaParallelPromotable(NewAI);
 
   if (Promotable) {

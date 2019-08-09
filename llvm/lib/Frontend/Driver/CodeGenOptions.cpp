@@ -10,6 +10,7 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/ProfileData/InstrProfCorrelator.h"
 #include "llvm/TargetParser/Triple.h"
+#include "llvm/Transforms/Tapir/TapirTargetIDs.h"
 
 namespace llvm {
 extern llvm::cl::opt<bool> DebugInfoCorrelate;
@@ -20,7 +21,8 @@ extern llvm::cl::opt<llvm::InstrProfCorrelator::ProfCorrelatorKind>
 namespace llvm::driver {
 
 TargetLibraryInfoImpl *createTLII(const llvm::Triple &TargetTriple,
-                                  driver::VectorLibrary Veclib) {
+                                  driver::VectorLibrary Veclib,
+                                  TapirTargetID TapirTarget) {
   TargetLibraryInfoImpl *TLII = new TargetLibraryInfoImpl(TargetTriple);
 
   using VectorLibrary = llvm::driver::VectorLibrary;
@@ -60,6 +62,9 @@ TargetLibraryInfoImpl *createTLII(const llvm::Triple &TargetTriple,
   default:
     break;
   }
+
+  TLII->setTapirTarget(TapirTarget);
+
   return TLII;
 }
 

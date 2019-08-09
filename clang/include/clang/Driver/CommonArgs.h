@@ -285,6 +285,10 @@ void handleVectorizeLoopsArgs(const llvm::opt::ArgList &Args,
 void handleVectorizeSLPArgs(const llvm::opt::ArgList &Args,
                             llvm::opt::ArgStringList &CmdArgs);
 
+/// Enable -fstripmine based on the optimization level selected.
+void handleStripmineLoopsArgs(const llvm::opt::ArgList &Args,
+                              llvm::opt::ArgStringList &CmdArgs);
+
 // Parse -mprefer-vector-width=. Return the Value string if well-formed.
 // Otherwise, return an empty string and issue a diagnosic message if needed.
 StringRef parseMPreferVectorWidthOption(clang::DiagnosticsEngine &Diags,

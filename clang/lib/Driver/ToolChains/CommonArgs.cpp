@@ -3316,6 +3316,18 @@ void tools::handleInterchangeLoopsArgs(const ArgList &Args,
     CmdArgs.push_back("-floop-interchange");
 }
 
+void tools::handleStripmineLoopsArgs(const ArgList &Args,
+                                     ArgStringList &CmdArgs) {
+  // For now, we enable stripmining when the optimization level enables
+  // vectorization.
+  bool EnableStripmine = shouldEnableVectorizerAtOLevel(Args, false);
+  OptSpecifier StripmineAliasOption =
+      EnableStripmine ? options::OPT_O_Group : options::OPT_fstripmine;
+  if (Args.hasFlag(options::OPT_fstripmine, StripmineAliasOption,
+                   options::OPT_fno_stripmine, EnableStripmine))
+    CmdArgs.push_back("-stripmine-loops");
+}
+
 // Parse -mprefer-vector-width=. Return the Value string if well-formed.
 // Otherwise, return an empty string and issue a diagnosic message if needed.
 StringRef tools::parseMPreferVectorWidthOption(clang::DiagnosticsEngine &Diags,

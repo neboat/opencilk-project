@@ -7499,6 +7499,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 
   handleVectorizeLoopsArgs(Args, CmdArgs);
   handleVectorizeSLPArgs(Args, CmdArgs);
+  handleStripmineLoopsArgs(Args, CmdArgs);
 
   StringRef VecWidth = parseMPreferVectorWidthOption(D.getDiags(), Args);
   if (!VecWidth.empty())

@@ -316,6 +316,7 @@ void initializeStripDebugMachineModulePass(PassRegistry &);
 void initializeStructurizeCFGLegacyPassPass(PassRegistry &);
 void initializeTailCallElimPass(PassRegistry &);
 void initializeTailDuplicateLegacyPass(PassRegistry &);
+void initializeTapirRaceDetectWrapperPassPass(PassRegistry &);
 void initializeTargetLibraryInfoWrapperPassPass(PassRegistry &);
 void initializeTargetPassConfigPass(PassRegistry &);
 void initializeTargetTransformInfoWrapperPassPass(PassRegistry &);

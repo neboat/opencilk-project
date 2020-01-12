@@ -319,6 +319,8 @@ LLVM_ABI TransformationMode hasUnrollAndJamTransformation(const Loop *L);
 LLVM_ABI TransformationMode hasVectorizeTransformation(const Loop *L);
 LLVM_ABI TransformationMode hasDistributeTransformation(const Loop *L);
 LLVM_ABI TransformationMode hasLICMVersioningTransformation(const Loop *L);
+LLVM_ABI TransformationMode hasLoopStripmineTransformation(const Loop *L);
+LLVM_ABI TransformationMode hasLoopSpawningTransformation(const Loop *L);
 /// @}
 
 /// Set input string into loop metadata by keeping other values intact.

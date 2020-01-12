@@ -299,6 +299,8 @@ TransformationMode hasUnrollAndJamTransformation(const Loop *L);
 TransformationMode hasVectorizeTransformation(const Loop *L);
 TransformationMode hasDistributeTransformation(const Loop *L);
 TransformationMode hasLICMVersioningTransformation(const Loop *L);
+TransformationMode hasLoopStripmineTransformation(const Loop *L);
+TransformationMode hasLoopSpawningTransformation(const Loop *L);
 /// @}
 
 /// Set input string into loop metadata by keeping other values intact.
@@ -348,7 +350,8 @@ void getLoopAnalysisUsage(AnalysisUsage &AU);
 bool canSinkOrHoistInst(Instruction &I, AAResults *AA, DominatorTree *DT,
                         Loop *CurLoop, MemorySSAUpdater &MSSAU,
                         bool TargetExecutesOncePerLoop,
-                        SinkAndHoistLICMFlags &LICMFlags, TaskInfo *TI,
+                        TaskInfo *TI,
+                        SinkAndHoistLICMFlags &LICMFlags,
                         OptimizationRemarkEmitter *ORE = nullptr);
 
 /// Returns the comparison predicate used when expanding a min/max reduction.

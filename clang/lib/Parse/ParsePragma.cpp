@@ -229,7 +229,7 @@ struct PragmaOpenACCHandler
 
 struct PragmaCilkHintHandler : public PragmaHandler {
   PragmaCilkHintHandler() : PragmaHandler("cilk") {}
-  void HandlePragma(Preprocessor &PP, PragmaIntroducerKind Introducer,
+  void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer,
                     Token &FirstToken) override;
 };
 
@@ -3775,7 +3775,7 @@ void PragmaUnrollHintHandler::HandlePragma(Preprocessor &PP,
 ///    constant-expression
 ///
 void PragmaCilkHintHandler::HandlePragma(Preprocessor &PP,
-                                         PragmaIntroducerKind Introducer,
+                                         PragmaIntroducer Introducer,
                                          Token &Tok) {
   // Incoming token is "cilk" for "#pragma cilk grainsize".
   Token PragmaName = Tok;
@@ -3837,7 +3837,7 @@ void PragmaCilkHintHandler::HandlePragma(Preprocessor &PP,
   std::copy(TokenList.begin(), TokenList.end(), TokenArray.get());
 
   PP.EnterTokenStream(std::move(TokenArray), TokenList.size(),
-                      /*DisableMacroExpansion=*/false);
+                      /*DisableMacroExpansion=*/false, /*IsReinject=*/false);
 }
 
 /// Handle the Microsoft \#pragma intrinsic extension.

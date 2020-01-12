@@ -6244,7 +6244,7 @@ RValue CodeGenFunction::EmitCall(QualType CalleeType,
         Address(Handle, Handle->getType(), CGM.getPointerAlign()));
     Callee.setFunctionPointer(Stub);
   }
-  SpawnScp.RestoreOldScope();
+  SpawnedScp.RestoreOldScope();
   llvm::CallBase *LocalCallOrInvoke = nullptr;
   RValue Call = EmitCall(FnInfo, Callee, ReturnValue, Args, &LocalCallOrInvoke,
                          E == MustTailCall, E->getExprLoc());

@@ -621,6 +621,11 @@ LLVM_ABI FunctionPass *createCallBrPass();
 /// Creates Windows Secure Hot Patch pass. \see WindowsSecureHotPatching.cpp
 LLVM_ABI ModulePass *createWindowsSecureHotPatchingPass();
 
+/// Clean up any remaining Tapir instructions.  Typically, this pass should
+/// have no effect, because Tapir instructions should have been lowered
+/// already to a particular parallel runtime.
+LLVM_ABI FunctionPass *createTapirCleanupPass();
+
 /// Lowers KCFI operand bundles for indirect calls.
 LLVM_ABI FunctionPass *createKCFIPass();
 } // namespace llvm

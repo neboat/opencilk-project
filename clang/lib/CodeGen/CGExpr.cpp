@@ -448,11 +448,6 @@ static RawAddress createReferenceTemporary(CodeGenFunction &CGF,
     // promoted. This is easier on the optimizer and generally emits fewer
     // instructions.
     QualType Ty = Inner->getType();
-    if (CGF.IsSpawned) {
-      CGF.PushDetachScope();
-      return CGF.CurDetachScope->CreateDetachedMemTemp(
-          Ty, M->getStorageDuration(), "det.ref.tmp");
-    }
     if (CGF.CGM.getCodeGenOpts().MergeAllConstants &&
         (Ty->isArrayType() || Ty->isRecordType()) &&
         Ty.isConstantStorage(CGF.getContext(), true, false))
@@ -475,6 +470,11 @@ static RawAddress createReferenceTemporary(CodeGenFunction &CGF,
         // FIXME: Should we put the new global into a COMDAT?
         return RawAddress(C, GV->getValueType(), alignment);
       }
+    if (CGF.IsSpawned) {
+      CGF.PushDetachScope();
+      return CGF.CurDetachScope->CreateDetachedMemTemp(
+          Ty, M->getStorageDuration(), "det.ref.tmp");
+    }
     return CGF.CreateMemTemp(Ty, "ref.tmp", Alloca);
   }
   case SD_Thread:
@@ -6054,6 +6054,11 @@ RValue CodeGenFunction::EmitCall(QualType CalleeType,
   // function type or a block pointer type.
   assert(CalleeType->isFunctionPointerType() &&
          "Call must have function pointer type!");
+
+  if (IsSpawned) {
+    PushDetachScope();
+    CurDetachScope->EnsureTaskFrame();
+  }
 
   IsSpawnedScope SpawnedScp(this);
 

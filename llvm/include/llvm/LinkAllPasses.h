@@ -149,6 +149,7 @@ struct ForcePassLinking {
     (void)llvm::createUnifyLoopExitsPass();
     (void)llvm::createFixIrreduciblePass();
     (void)llvm::createSelectOptimizePass();
+    (void)llvm::createTaskCanonicalizePass();
     (void)llvm::createTaskSimplifyPass();
 
     (void)new llvm::ScalarEvolutionWrapperPass();

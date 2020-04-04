@@ -92,6 +92,8 @@ enum CleanupKind : unsigned {
   // markers chiefly to be ignored in most contexts.
   FakeUse = 0x10,
   NormalFakeUse = FakeUse | NormalCleanup,
+
+  TaskExit = 0x20,
 };
 
 /// A stack of scopes which respond to exceptions, including cleanups

@@ -459,6 +459,12 @@ public:
     Cilktool_None = 0,
     Cilktool_Cilkscale
   };
+
+  enum CilkVersion {
+    Cilk_none = 0,
+    Cilk_plus = 1,
+    Cilk_opencilk = 2
+  };
   
   // Define simple language options (with no accessors).
 #define LANGOPT(Name, Bits, Default, Description) unsigned Name : Bits;

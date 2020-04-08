@@ -393,7 +393,7 @@ LANGOPT(ApplePragmaPack, 1, 0, NotCompatible, "Apple gcc-compatible #pragma pack
 
 LANGOPT(XLPragmaPack, 1, 0, NotCompatible, "IBM XL #pragma pack handling")
 
-LANGOPT(Cilk, 1, 0, NotCompatible, "Enable Cilk language extensions")
+ENUM_LANGOPT(Cilk, CilkVersion, 3, Cilk_none, NotCompatible, "Enable Cilk language extensions")
 
 ENUM_LANGOPT(Cilktool, CilktoolKind, 3, Cilktool_None, Compatible,
              "turn on the specified Cilk tool")

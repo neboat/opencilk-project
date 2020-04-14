@@ -2936,11 +2936,6 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
     }
   }
 
-  // For Cilk functions, ensure that a sync is implicitly executed before this
-  // function returns.
-  if (getLangOpts().Cilk)
-    EHStack.pushCleanup<ImplicitSyncCleanup>(NormalCleanup);
-
   // FIXME: We no longer need the types from FunctionArgList; lift up and
   // simplify.
 
@@ -3794,8 +3789,6 @@ void CodeGenFunction::EmitFunctionEpilog(const CGFunctionInfo &FI,
     Builder.CreateUnreachable();
     return;
   }
-
-  PopSyncRegion();
 
   // Functions with no result always return void.
   if (!ReturnValue.isValid()) {

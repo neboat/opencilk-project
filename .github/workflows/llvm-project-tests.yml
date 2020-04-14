@@ -44,7 +44,7 @@ on:
         # to install a python version linked against a newer version of glibc.
         # TODO(boomanaiden154): Bump the Ubuntu version once the version in the
         # container is bumped.
-        default: '["ubuntu-22.04", "windows-2019", "macOS-13"]'
+        default: '["ubuntu-22.04", "macOS-13"]'
 
       python_version:
         required: false

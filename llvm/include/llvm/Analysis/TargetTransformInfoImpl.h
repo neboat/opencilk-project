@@ -773,6 +773,9 @@ public:
     case Intrinsic::experimental_widenable_condition:
     case Intrinsic::ssa_copy:
     case Intrinsic::syncregion_start:
+    case Intrinsic::taskframe_create:
+    case Intrinsic::taskframe_use:
+    case Intrinsic::taskframe_load_guard:
       // These intrinsics don't actually represent code after lowering.
       return 0;
     }

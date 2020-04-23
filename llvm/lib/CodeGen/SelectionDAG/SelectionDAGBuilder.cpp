@@ -3379,6 +3379,10 @@ void SelectionDAGBuilder::visitInvoke(const InvokeInst &I) {
       llvm_unreachable("SelectionDAGBuilder shouldn't visit detached_rethrow "
                        "instructions!");
       break;
+    case Intrinsic::sync_unwind:
+      // Treat sync_unwind intrinsics like donothing: ignore them and jump
+      // directly to the next BB.
+      break;
     }
   } else if (I.hasDeoptState()) {
     // Currently we do not lower any intrinsic calls with deopt operand bundles.
@@ -8194,21 +8198,22 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
     visitVectorHistogram(I, Intrinsic);
     return;
   }
-    // Tapir intrinsics
-    //
-    // Lower the starting point of a sync region to a no-op.
+  // Tapir intrinsics
   case Intrinsic::syncregion_start:
     // Lower the starting point of a Tapir sync region to a no-op.
     return;
   case Intrinsic::taskframe_load_guard:
     // Discard any taskframe.load.guards.
-    break;
+    return;
   case Intrinsic::taskframe_create:
     // Discard any taskframe.creates.
-    break;
+    return;
   case Intrinsic::taskframe_use:
     // Discard any taskframe.uses.
-    break;
+    return;
+  case Intrinsic::sync_unwind:
+    // Discard any sync.unwinds.
+    return;
   }
 }
 

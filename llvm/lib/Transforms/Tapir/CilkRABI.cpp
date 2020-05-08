@@ -100,17 +100,18 @@ CilkRABI::CilkRABI(Module &M, bool OpenCilk)
       if (StackFrameTy->isOpaque())
         StackFrameTy->setBody(Int32Ty, // flags
                               Int32Ty, // magic
+                              Int32Ty, // mxcsr
                               StackFramePtrTy, // call_parent
                               WorkerPtrTy, // worker
                               // VoidPtrTy, // except_data
-                              ContextTy, // ctx
-                              Int32Ty // mxcsr only
+                              ContextTy // ctx
                               );
       StackFrameFieldFlags = 0;
-      StackFrameFieldParent = 2;
-      StackFrameFieldWorker = 3;
-      StackFrameFieldContext = 4;
-      StackFrameFieldMXCSR = 5;
+      StackFrameFieldMagic = 1;
+      StackFrameFieldParent = 3;
+      StackFrameFieldWorker = 4;
+      StackFrameFieldContext = 5;
+      StackFrameFieldMXCSR = 2;
       StackFrameFieldFPCSR = -1;
     }
     else {
@@ -123,6 +124,7 @@ CilkRABI::CilkRABI(Module &M, bool OpenCilk)
                               ContextTy // ctx
                               );
       StackFrameFieldFlags = 0;
+      StackFrameFieldMagic = 1;
       StackFrameFieldParent = 2;
       StackFrameFieldWorker = 3;
       StackFrameFieldContext = 4;
@@ -147,6 +149,7 @@ CilkRABI::CilkRABI(Module &M, bool OpenCilk)
     StackFrameFieldContext = 3;
     StackFrameFieldMXCSR = 4;
     StackFrameFieldFPCSR = 5;
+    StackFrameFieldMagic = 7;
   }
 
   PointerType *StackFramePtrPtrTy = PointerType::getUnqual(StackFramePtrTy);

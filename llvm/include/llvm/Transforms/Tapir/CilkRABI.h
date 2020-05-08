@@ -34,6 +34,7 @@ class CilkRABI : public TapirTarget {
   short StackFrameFieldContext = -1;
   short StackFrameFieldMXCSR = -1;
   short StackFrameFieldFPCSR = -1;
+  short StackFrameFieldMagic = -1;
   short WorkerFieldTail = 0;
   short WorkerFieldFrame = 7;
 

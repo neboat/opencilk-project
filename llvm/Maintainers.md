@@ -405,6 +405,16 @@ i@maskray.me (email), [MaskRay](https://github.com/MaskRay) (GitHub)
 Teresa Johnson \
 tejohnson@google.com (email), [teresajohnson](https://github.com/teresajohnson) (GitHub)
 
+#### Comprehensive Static Instrumentation (CSI) and CilkSanitizer
+
+Tao B. Schardl \
+neboat@mit.edu (email), [neboat](https://github.com/neboat) (GitHub)
+
+### Tapir
+
+Tao B. Schardl \
+neboat@mit.edu (email), [neboat](https://github.com/neboat) (GitHub)
+
 ### Other
 
 #### Release management

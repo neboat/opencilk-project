@@ -417,6 +417,16 @@ agrossman154@yahoo.com (email), [boomanaiden154](https://github.com/boomanaiden1
 Matt Arsenault \
 Matthew.Arsenault@amd.com, arsenm2@gmail.com (email), [arsenm](https://github.com/arsenm) (GitHub)
 
+#### Comprehensive Static Instrumentation (CSI) and CilkSanitizer
+
+Tao B. Schardl \
+neboat@mit.edu (email), [neboat](https://github.com/neboat) (GitHub)
+
+### Tapir
+
+Tao B. Schardl \
+neboat@mit.edu (email), [neboat](https://github.com/neboat) (GitHub)
+
 ### Other
 
 #### Release management

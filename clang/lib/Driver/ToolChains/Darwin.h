@@ -672,6 +672,9 @@ private:
                                StringRef Sanitizer,
                                bool shared = true) const;
 
+  void AddCilktoolRTLibs(const llvm::opt::ArgList &Args,
+                         llvm::opt::ArgStringList &CmdArgs) const;
+
   void
   AddGnuCPlusPlusIncludePaths(const llvm::opt::ArgList &DriverArgs,
                               llvm::opt::ArgStringList &CC1Args) const override;

@@ -9427,3 +9427,19 @@ silence diagnostics with code like:
   __attribute__((nonstring)) char NotAStr[3] = "foo"; // Not diagnosed
   }];
 }
+
+def StrandPureDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+The ``strand_pure`` attribute denotes that the function acts like a pure function
+when called multiple times within the same strand.
+  }];
+}
+
+def StealableDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+The ``stealable`` attribute denotes that the function contains a continuation that
+can be stolen by a work-stealing scheduler.
+  }];
+}

@@ -438,6 +438,7 @@ def BlocksSupported : LangOpt<"Blocks">;
 def ObjCAutoRefCount : LangOpt<"ObjCAutoRefCount">;
 def ObjCNonFragileRuntime
     : LangOpt<"", "LangOpts.ObjCRuntime.allowsClassStubs()">;
+def Cilk : LangOpt<"Cilk", "LangOpts.getCilk() != LangOptions::Cilk_none">;
 
 def HLSL : LangOpt<"HLSL">;
 
@@ -5226,4 +5227,18 @@ def NonString : InheritableAttr {
   let Spellings = [GCC<"nonstring">];
   let Subjects = SubjectList<[Var, Field]>;
   let Documentation = [NonStringDocs];
+}
+
+// Cilk attributes
+
+def Stealable : InheritableAttr {
+  let Spellings = [Clang<"stealable">];
+  let Subjects = SubjectList<[FunctionLike]>;
+  let Documentation = [StealableDocs];
+}
+
+def StrandPure : InheritableAttr {
+  let Spellings = [Clang<"strand_pure">];
+  let Subjects = SubjectList<[FunctionLike]>;
+  let Documentation = [StrandPureDocs];
 }

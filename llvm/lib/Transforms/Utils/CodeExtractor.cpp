@@ -983,6 +983,7 @@ Function *CodeExtractor::constructFunctionDeclaration(
       case Attribute::SkipProfile:
       case Attribute::SanitizeCilk:
       case Attribute::Stealable:
+      case Attribute::StrandPure:
         break;
       // These attributes cannot be applied to functions.
       case Attribute::Alignment:

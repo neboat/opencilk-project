@@ -1721,6 +1721,14 @@ static bool isSafeToExecuteUnconditionally(
       isSafeToSpeculativelyExecute(&Inst, CtxI, AC, DT, TLI))
     return true;
 
+  if (CtxI)
+    if (const CallBase *CB = dyn_cast<CallBase>(&Inst)) {
+      const Function *Callee = CB->getCalledFunction();
+      if (Callee && Callee->isStrandPure())
+        return (TI->getSpindleFor(Inst.getParent()) ==
+                TI->getSpindleFor(CtxI->getParent()));
+    }
+
   bool GuaranteedToExecute =
       SafetyInfo->isGuaranteedToExecute(Inst, DT, TI, CurLoop);
 

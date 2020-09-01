@@ -302,11 +302,11 @@ CILKSAN_API void __csan_func_entry(const csi_id_t func_id,
     CheckingRAII nocheck_init;
     static bool first_call = true;
     if (first_call) {
+      first_call = false;
       CilkSanImpl.init();
       enable_instrumentation();
       // Note that we start executing the program in series.
       parallel_execution.push_back(0);
-      first_call = false;
     }
   }
 
@@ -1238,10 +1238,14 @@ typedef cilkred_map *(*merge_two_rmaps_t)(__cilkrts_worker *, cilkred_map *,
                                           cilkred_map *);
 static merge_two_rmaps_t dl_merge_two_rmaps = NULL;
 
-CILKSAN_API __attribute__((weak)) cilkred_map *
+CILKSAN_API
+#ifdef __linux__
+__attribute__((weak))
+#endif
+cilkred_map *
 __cilkrts_internal_merge_two_rmaps(__cilkrts_worker *ws, cilkred_map *left,
                                    cilkred_map *right) {
-  if (__builtin_expect(dl_merge_two_rmaps == NULL, 0)) {
+  if (__builtin_expect(dl_merge_two_rmaps == NULL, false)) {
     dl_merge_two_rmaps = (merge_two_rmaps_t)dlsym(
         RTLD_NEXT, "__cilkrts_internal_merge_two_rmaps");
     char *error = dlerror();

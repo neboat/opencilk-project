@@ -611,8 +611,6 @@ void darwin::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   if (getToolChain().ShouldLinkCXXStdlib(Args))
     getToolChain().AddCXXStdlibLibArgs(Args, CmdArgs);
 
-  getMachOToolChain().AddLinkTapirRuntime(Args, CmdArgs);
-
   bool NoStdOrDefaultLibs =
       Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs);
   bool ForceLinkBuiltins = Args.hasArg(options::OPT_fapple_link_rtlib);
@@ -633,6 +631,8 @@ void darwin::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       Args.ClaimAllArgs(options::OPT_pthreads);
     }
   }
+
+  getMachOToolChain().AddLinkTapirRuntime(Args, CmdArgs);
 
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     // endfile_spec is empty.

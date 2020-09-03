@@ -1525,7 +1525,7 @@ Parser::ParseCastExpression(CastParseKind ParseKind, bool isAddressOfOperand,
     //   return ExprError();
     // }
 
-    Res = ParseCastExpression(false);
+    Res = ParseCastExpression(AnyCastExpr);
     if (!Res.isInvalid())
       Res = Actions.ActOnCilkSpawnExpr(SpawnLoc, Res.get());
     return Res;

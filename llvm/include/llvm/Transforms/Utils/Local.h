@@ -434,8 +434,7 @@ LLVM_ABI bool removeUnreachableBlocks(Function &F,
 /// tasks.
 ///
 /// Returns true if any basic block was removed.
-bool removeDeadDetachUnwinds(Function &F, LazyValueInfo *LVI = nullptr,
-                             DomTreeUpdater *DTU = nullptr,
+bool removeDeadDetachUnwinds(Function &F, DomTreeUpdater *DTU = nullptr,
                              MemorySSAUpdater *MSSAU = nullptr);
 
 /// Combine the metadata of two instructions so that K can replace J. This

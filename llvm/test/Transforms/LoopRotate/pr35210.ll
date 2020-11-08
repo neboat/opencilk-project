@@ -35,8 +35,8 @@
 ; MSSA-NEXT: Running analysis: MemorySSAAnalysis on f
 ; MSSA-NEXT: Running analysis: AAManager on f
 ; MSSA-NEXT: Running analysis: TargetLibraryAnalysis on f
-; MSSA-NEXT: Running analysis: ScalarEvolutionAnalysis on f
 ; MSSA-NEXT: Running analysis: TaskAnalysis on f
+; MSSA-NEXT: Running analysis: ScalarEvolutionAnalysis on f
 ; MSSA-NEXT: Running analysis: InnerAnalysisManagerProxy{{.*}} on f
 ; MSSA-NEXT: Running pass: LoopRotatePass on loop %bb in function f
 ; MSSA-NEXT: Folding loop latch bb4 into bb

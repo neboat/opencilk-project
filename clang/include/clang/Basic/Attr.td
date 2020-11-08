@@ -4991,3 +4991,9 @@ def StrandPure : InheritableAttr {
   let Subjects = SubjectList<[FunctionLike]>;
   let Documentation = [StrandPureDocs];
 }
+
+def StrandMalloc : InheritableAttr {
+  let Spellings = [Clang<"strand_malloc">];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [StrandMallocDocs];
+}

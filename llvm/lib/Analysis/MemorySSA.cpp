@@ -292,7 +292,7 @@ template <typename AliasAnalysisType>
 static bool
 instructionClobbersQuery(const MemoryDef *MD, const MemoryLocation &UseLoc,
                          const Instruction *UseInst, AliasAnalysisType &AA,
-                         TaskInfo *TI = nullptr) {
+                         TaskInfo *TI) {
   Instruction *DefInst = MD->getMemoryInst();
   assert(DefInst && "Defining instruction not actually an instruction");
 
@@ -362,8 +362,7 @@ instructionClobbersQuery(const MemoryDef *MD, const MemoryLocation &UseLoc,
 template <typename AliasAnalysisType>
 static bool instructionClobbersQuery(MemoryDef *MD, const MemoryUseOrDef *MU,
                                      const MemoryLocOrCall &UseMLOC,
-                                     AliasAnalysisType &AA,
-                                     TaskInfo *TI = nullptr) {
+                                     AliasAnalysisType &AA, TaskInfo *TI) {
   // FIXME: This is a temporary hack to allow a single instructionClobbersQuery
   // to exist while MemoryLocOrCall is pushed through places.
   if (UseMLOC.IsCall)
@@ -550,7 +549,7 @@ class ClobberWalker {
   const MemorySSA &MSSA;
   DominatorTree &DT;
   BatchAAResults *AA;
-  TaskInfo *TI = nullptr;
+  TaskInfo *TI;
   UpwardsMemoryQuery *Query;
   unsigned *UpwardWalkLimit;
 
@@ -960,8 +959,7 @@ class ClobberWalker {
   }
 
 public:
-  ClobberWalker(const MemorySSA &MSSA, DominatorTree &DT,
-                TaskInfo *TI = nullptr)
+  ClobberWalker(const MemorySSA &MSSA, DominatorTree &DT, TaskInfo *TI)
       : MSSA(MSSA), DT(DT), TI(TI) {}
 
   /// Finds the nearest clobber for the given query, optimizing phis if
@@ -1345,7 +1343,7 @@ namespace llvm {
 class MemorySSA::OptimizeUses {
 public:
   OptimizeUses(MemorySSA *MSSA, CachingWalker *Walker, BatchAAResults *BAA,
-               DominatorTree *DT, TaskInfo *TI = nullptr)
+               DominatorTree *DT, TaskInfo *TI)
       : MSSA(MSSA), Walker(Walker), AA(BAA), DT(DT), TI(TI) {}
 
   void optimizeUses();

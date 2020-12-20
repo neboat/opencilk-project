@@ -25,7 +25,6 @@ builtin_check_c_compiler_flag(-fconvergent-functions COMPILER_RT_HAS_FCONVERGENT
 builtin_check_c_compiler_flag("-Xclang -mcode-object-version=none" COMPILER_RT_HAS_CODE_OBJECT_VERSION_FLAG)
 builtin_check_c_compiler_flag(-Wbuiltin-declaration-mismatch COMPILER_RT_HAS_WBUILTIN_DECLARATION_MISMATCH_FLAG)
 builtin_check_c_compiler_flag(/Zl COMPILER_RT_HAS_ZL_FLAG)
-builtin_check_c_compiler_flag(-fopencilk            COMPILER_RT_HAS_CILK_FLAG)
 
 builtin_check_c_compiler_source(COMPILER_RT_HAS_ATOMIC_KEYWORD
 "

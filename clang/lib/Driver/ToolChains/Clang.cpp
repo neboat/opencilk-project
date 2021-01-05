@@ -6668,6 +6668,7 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
 	D.Diag(diag::err_drv_cilk_unsupported);
 	break;
       }
+      getToolChain().AddOpenCilkBitcodeABI(Args, CmdArgs);
     }
   }
 

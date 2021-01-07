@@ -25,7 +25,6 @@
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Linker/Linker.h"
-#include "llvm/Transforms/IPO/Internalize.h"
 #include "llvm/Transforms/Tapir/CilkRTSCilkFor.h"
 #include "llvm/Transforms/Tapir/Outline.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -113,9 +112,6 @@ void OpenCilkABI::prepareModule() {
         [](Module &M, const StringSet<> &GVS) {
           LLVM_DEBUG(dbgs() << "Linking with bitcode file "
                             << OpenCilkRuntimeBCPath << "\n");
-          internalizeModule(M, [&GVS](const GlobalValue &GV) {
-            return !GV.hasName() || GVS.count(GV.getName()) == 0;
-          });
           LLVM_DEBUG({
             for (StringRef GVName : GVS.keys())
               dbgs() << GVName << "\n";

@@ -15,6 +15,7 @@
 #define LLVM_CLANG_BASIC_LANGOPTIONS_H
 
 #include "clang/Basic/CFProtectionOptions.h"
+#include "clang/Basic/Cilk.h"
 #include "clang/Basic/CommentOptions.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/LangStandard.h"
@@ -681,6 +682,9 @@ public:
   bool AtomicRemoteMemory = false;
   bool AtomicFineGrainedMemory = false;
   bool AtomicIgnoreDenormalMode = false;
+
+  /// Set of enabled Cilk options.
+  CilkOptionSet CilkOptions;
 
   LangOptions();
 

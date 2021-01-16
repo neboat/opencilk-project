@@ -116,6 +116,8 @@ public:
     return false;
   }
 
+  bool hasSjLjLowering() const override { return true; }
+
   void setArchFeatures();
 
   void getTargetDefinesARMV81A(const LangOptions &Opts,

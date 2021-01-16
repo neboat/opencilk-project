@@ -727,6 +727,8 @@ private:
   SDValue LowerDYNAMIC_STACKALLOC(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerAVG(SDValue Op, SelectionDAG &DAG, unsigned NewOp) const;
+  SDValue LowerSetjmp(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerLongjmp(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue LowerFixedLengthVectorIntDivideToSVE(SDValue Op,
                                                SelectionDAG &DAG) const;
@@ -878,6 +880,10 @@ private:
   bool shouldScalarizeBinop(SDValue VecOp) const override {
     return VecOp.getOpcode() == ISD::SETCC;
   }
+
+  MachineBasicBlock *EmitSetjmp(MachineInstr &MI, MachineBasicBlock *MBB) const;
+  MachineBasicBlock *EmitLongjmp(MachineInstr &MI,
+                                 MachineBasicBlock *MBB) const;
 };
 
 namespace AArch64 {

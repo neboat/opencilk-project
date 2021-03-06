@@ -835,7 +835,9 @@ bool tools::addCilktoolRuntime(const ToolChain &TC, const ArgList &Args,
                                ArgStringList &CmdArgs) {
   if (Arg *A = Args.getLastArg(options::OPT_fcilktool_EQ)) {
     StringRef Val = A->getValue();
-    CmdArgs.push_back(TC.getCompilerRTArgString(Args, Val));
+    CmdArgs.push_back(
+        TC.getCompilerRTArgString(Args, Val, ToolChain::FT_Shared));
+    addArchSpecificRPath(TC, Args, CmdArgs);
     // Link in the C++ standard library
     TC.AddCXXStdlibLibArgs(Args, CmdArgs);
     return true;

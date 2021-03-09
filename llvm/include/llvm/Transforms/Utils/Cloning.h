@@ -43,6 +43,7 @@ class LoopInfo;
 class Module;
 class PGOContextualProfile;
 class ProfileSummaryInfo;
+class ResumeInst;
 class ReturnInst;
 class DomTreeUpdater;
 

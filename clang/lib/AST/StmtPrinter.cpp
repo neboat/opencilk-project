@@ -2935,7 +2935,7 @@ void StmtPrinter::VisitCilkForStmt(CilkForStmt *Node) {
   }
   OS << ") ";
 
-  if (const DeclStmt *DS = Node->getLoopVarDecl()) {
+  if (const DeclStmt *DS = Node->getLoopVarStmt()) {
     OS << "{\n";
     PrintRawDeclStmt(DS);
   }
@@ -2948,7 +2948,7 @@ void StmtPrinter::VisitCilkForStmt(CilkForStmt *Node) {
     PrintStmt(Node->getBody());
   }
 
-  if (Node->getLoopVarDecl())
+  if (Node->getLoopVarStmt())
     Indent() << "}";
 }
 

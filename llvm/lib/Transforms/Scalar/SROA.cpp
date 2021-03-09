@@ -43,11 +43,8 @@
 #include "llvm/Analysis/GlobalsModRef.h"
 #include "llvm/Analysis/Loads.h"
 #include "llvm/Analysis/PtrUseVisitor.h"
-<<<<<<< HEAD
-#include "llvm/Analysis/ValueTracking.h"
-=======
 #include "llvm/Analysis/TapirTaskInfo.h"
->>>>>>> 61744981e724 ([TapirTaskInfo] Updating passes to use isAllocaParallelPromotable method in TapirTaskInfo.)
+#include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
@@ -5848,7 +5845,7 @@ std::pair<bool /*Changed*/, bool /*CFGChanged*/> SROA::runSROA(Function &F) {
          I != E; ++I) {
       if (AllocaInst *AI = dyn_cast<AllocaInst>(I)) {
         if (DL.getTypeAllocSize(AI->getAllocatedType()).isScalable() &&
-            isAllocaPromotable(AI) && isAllocaParallelPromotable(AI, *DT))
+            isAllocaPromotable(AI) && TI->isAllocaParallelPromotable(AI))
           PromotableAllocas.insert(AI);
         else
           Worklist.insert(AI);

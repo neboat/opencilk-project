@@ -13,6 +13,7 @@
 #include "clang/AST/DependenceFlags.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/ExprCilk.h"
 #include "clang/AST/ExprConcepts.h"
 #include "clang/AST/ExprObjC.h"
 #include "clang/AST/ExprOpenMP.h"
@@ -964,4 +965,8 @@ ExprDependence clang::computeDependence(OpenACCAsteriskSizeExpr *E) {
   // This represents a simple asterisk as typed, so cannot be dependent in any
   // way.
   return ExprDependence::None;
+}
+
+ExprDependence clang::computeDependence(CilkSpawnExpr *E) {
+  return E->getSpawnedExpr()->getDependence();
 }

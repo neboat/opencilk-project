@@ -86,6 +86,7 @@
 ---
 name:            main
 exposesReturnsTwice: true
+exposesOpaqueReturnsTwice: true
 frameInfo:
   adjustsStack:    true
 stack:

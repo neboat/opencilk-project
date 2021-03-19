@@ -226,8 +226,12 @@ void FunctionLoweringInfo::set(const Function &fn, MachineFunction &mf,
         }
 
         // Determine if there is a call to setjmp in the machine function.
-        if (Call->hasFnAttr(Attribute::ReturnsTwice))
+        if (Call->hasFnAttr(Attribute::ReturnsTwice)) {
           MF->setExposesReturnsTwice(true);
+          if (const Function *Called = Call->getCalledFunction())
+            if (Called->getIntrinsicID() != Intrinsic::eh_sjlj_setjmp)
+              MF->setExposesOpaqueReturnsTwice(true);
+        }
       }
 
       // Mark values used outside their block as exported, by allocating

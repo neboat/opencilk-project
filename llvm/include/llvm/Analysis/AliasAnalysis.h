@@ -57,8 +57,10 @@ class BasicBlock;
 class CatchPadInst;
 class CatchReturnInst;
 class DominatorTree;
+class DetachInst;
 class FenceInst;
 class LoopInfo;
+class SyncInst;
 class TargetLibraryInfo;
 
 /// The possible results of an alias query.

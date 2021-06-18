@@ -142,12 +142,13 @@ void CilkABI::prepareModule() {
                           );
   }
   PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrPtrTy = PointerType::getUnqual(StackFramePtrTy);
   if (WorkerTy->isOpaque())
-    WorkerTy->setBody(PointerType::getUnqual(StackFramePtrTy), // tail
-                      PointerType::getUnqual(StackFramePtrTy), // head
-                      PointerType::getUnqual(StackFramePtrTy), // exc
-                      PointerType::getUnqual(StackFramePtrTy), // protected_tail
-                      PointerType::getUnqual(StackFramePtrTy), // ltq_limit
+    WorkerTy->setBody(PointerType::getUnqual(StackFramePtrPtrTy), // tail
+                      PointerType::getUnqual(StackFramePtrPtrTy), // head
+                      PointerType::getUnqual(StackFramePtrPtrTy), // exc
+                      PointerType::getUnqual(StackFramePtrPtrTy), // protected_tail
+                      PointerType::getUnqual(StackFramePtrPtrTy), // ltq_limit
                       Int32Ty, // self
                       VoidPtrTy, // g
                       VoidPtrTy, // l
@@ -447,7 +448,7 @@ Function *CilkABI::Get__cilkrts_pop_frame() {
 /// void __cilkrts_detach(struct __cilkrts_stack_frame *sf) {
 ///   struct __cilkrts_worker *w = sf->worker;
 ///   struct __cilkrts_stack_frame *parent = sf->call_parent;
-///   struct __cilkrts_stack_frame *volatile *tail = w->tail;
+///   struct __cilkrts_stack_frame *volatile *tail = *w->tail;
 ///
 ///   sf->spawn_helper_pedigree = w->pedigree;
 ///   parent->parent_pedigree = w->pedigree;
@@ -458,7 +459,7 @@ Function *CilkABI::Get__cilkrts_pop_frame() {
 ///   StoreStore_fence();
 ///
 ///   *tail++ = parent;
-///   w->tail = tail;
+///   *w->tail = tail;
 ///
 ///   sf->flags |= CILK_FRAME_DETACHED;
 /// }
@@ -467,6 +468,7 @@ Function *CilkABI::Get__cilkrts_detach() {
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
   PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrPtrTy = PointerType::getUnqual(StackFramePtrTy);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilkrts_detach",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -493,10 +495,20 @@ Function *CilkABI::Get__cilkrts_detach() {
                                /*isVolatile=*/false,
                                AtomicOrdering::NotAtomic);
 
-  // __cilkrts_stack_frame *volatile *tail = w->tail;
-  Value *Tail = LoadSTyField(B, DL, WorkerTy, W,
-                             WorkerFields::tail, /*isVolatile=*/false,
-                             AtomicOrdering::Acquire);
+  // __cilkrts_stack_frame *volatile *tail = *w->tail;
+  // Value *Tail = LoadSTyField(B, DL, WorkerTy, W,
+  //                            WorkerFields::tail, /*isVolatile=*/false,
+  //                            AtomicOrdering::Acquire);
+  Value *TailPtr = LoadSTyField(B, DL, WorkerTy, W, WorkerFields::tail,
+                                /*isVolatile=*/false, AtomicOrdering::Acquire);
+  Value *Tail;
+  {
+    LoadInst *TailLd =
+        B.CreateAlignedLoad(StackFramePtrPtrTy, TailPtr,
+                            DL.getPrefTypeAlignment(StackFramePtrPtrTy));
+    TailLd->setOrdering(AtomicOrdering::Acquire);
+    Tail = TailLd;
+  }
 
   // sf->spawn_helper_pedigree = w->pedigree;
   Value *WorkerPedigree = LoadSTyField(B, DL, WorkerTy, W,
@@ -535,9 +547,12 @@ Function *CilkABI::Get__cilkrts_detach() {
   B.CreateStore(Parent, Tail, /*isVolatile=*/true);
   Tail = B.CreateConstGEP1_32(Tail, 1);
 
-  // w->tail = tail;
-  StoreSTyField(B, DL, WorkerTy, Tail, W, WorkerFields::tail,
-                /*isVolatile=*/false, AtomicOrdering::Release);
+  // *w->tail = tail;
+  // StoreSTyField(B, DL, WorkerTy, Tail, W, WorkerFields::tail,
+  //               /*isVolatile=*/false, AtomicOrdering::Release);
+  StoreInst *TailStore = B.CreateAlignedStore(
+      Tail, TailPtr, DL.getPrefTypeAlignment(StackFramePtrPtrTy));
+  TailStore->setOrdering(AtomicOrdering::Release);
 
   // sf->flags |= CILK_FRAME_DETACHED;
   {

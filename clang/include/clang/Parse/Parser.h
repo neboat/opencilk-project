@@ -7238,6 +7238,7 @@ public:
   /// [OBC]   objc-synchronized-statement
   /// [GNU]   asm-statement
   /// [OMP]   openmp-construct             [TODO]
+  /// [Cilk] cilk_scope-statement
   ///
   ///       labeled-statement:
   ///         identifier ':' statement
@@ -7526,6 +7527,13 @@ public:
   /// [C++0x]   braced-init-list            [TODO]
   /// \endverbatim
   StmtResult ParseCilkForStatement(SourceLocation *TrailingElseLoc);
+
+  /// ParseCilkScopeStatement
+  /// \verbatim
+  /// [Cilk] cilk_scope-statement:
+  ///         'cilk_scope' statement
+  /// \endverbatim
+  StmtResult ParseCilkScopeStatement();
 
   StmtResult ParsePragmaLoopHint(StmtVector &Stmts, ParsedStmtContext StmtCtx,
                                  SourceLocation *TrailingElseLoc,

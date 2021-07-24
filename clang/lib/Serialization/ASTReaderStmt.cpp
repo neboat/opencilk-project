@@ -2834,7 +2834,7 @@ void ASTStmtReader::VisitOpenACCLoopConstruct(OpenACCLoopConstruct *S) {
 }
 
 //===----------------------------------------------------------------------===//
-// Cilk spawn, Cilk sync, Cilk for
+// Cilk spawn, Cilk sync, Cilk for, Cilk scope
 //===----------------------------------------------------------------------===//
 
 void ASTStmtReader::VisitCilkSpawnStmt(CilkSpawnStmt *S) {
@@ -2852,6 +2852,12 @@ void ASTStmtReader::VisitCilkSpawnExpr(CilkSpawnExpr *E) {
 void ASTStmtReader::VisitCilkSyncStmt(CilkSyncStmt *S) {
   VisitStmt(S);
   S->setSyncLoc(readSourceLocation());
+}
+
+void ASTStmtReader::VisitCilkScopeStmt(CilkScopeStmt *S) {
+  VisitStmt(S);
+  S->setScopeLoc(readSourceLocation());
+  S->setBody(Record.readSubStmt());
 }
 
 void ASTStmtReader::VisitCilkForStmt(CilkForStmt *S) {
@@ -3088,6 +3094,10 @@ Stmt *ASTReader::ReadStmtFromStream(ModuleFile &F) {
 
     case STMT_CILKFOR:
       S = new (Context) CilkForStmt(Empty);
+      break;
+
+    case STMT_CILKSCOPE:
+      S = new (Context) CilkScopeStmt(Empty);
       break;
 
     case EXPR_PREDEFINED:

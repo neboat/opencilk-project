@@ -2053,6 +2053,7 @@ enum StmtCode {
   EXPR_CILKSPAWN,
   STMT_CILKSYNC,
   STMT_CILKFOR,
+  STMT_CILKSCOPE,
 };
 
 /// The kinds of designators that can occur in a

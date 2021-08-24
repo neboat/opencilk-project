@@ -52,7 +52,8 @@ enum class VectorLibrary {
 
 LLVM_ABI TargetLibraryInfoImpl *createTLII(const llvm::Triple &TargetTriple,
                                            VectorLibrary Veclib,
-                                           TapirTargetID TapirTarget);
+                                           TapirTargetID TapirTarget,
+                                           std::string OpenCilkABIBitcodeFile);
 
 enum ProfileInstrKind {
   ProfileNone,       // Profile instrumentation is turned off.

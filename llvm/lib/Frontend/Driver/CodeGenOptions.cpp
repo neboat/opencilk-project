@@ -11,6 +11,7 @@
 #include "llvm/ProfileData/InstrProfCorrelator.h"
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include <memory>
 
 namespace llvm {
 extern llvm::cl::opt<bool> DebugInfoCorrelate;
@@ -22,7 +23,8 @@ namespace llvm::driver {
 
 TargetLibraryInfoImpl *createTLII(const llvm::Triple &TargetTriple,
                                   driver::VectorLibrary Veclib,
-                                  TapirTargetID TapirTarget) {
+                                  TapirTargetID TapirTarget,
+                                  std::string OpenCilkABIBitcodeFile) {
   TargetLibraryInfoImpl *TLII = new TargetLibraryInfoImpl(TargetTriple);
 
   using VectorLibrary = llvm::driver::VectorLibrary;
@@ -64,6 +66,8 @@ TargetLibraryInfoImpl *createTLII(const llvm::Triple &TargetTriple,
   }
 
   TLII->setTapirTarget(TapirTarget);
+  TLII->setTapirTargetOptions(
+      std::make_unique<OpenCilkABIOptions>(OpenCilkABIBitcodeFile));
   TLII->addTapirTargetLibraryFunctions();
 
   return TLII;

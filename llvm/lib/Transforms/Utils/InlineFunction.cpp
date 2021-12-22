@@ -655,7 +655,7 @@ static void HandleInlinedTasksHelper(
         // Create an unwind edge for the taskframe.
         BasicBlock *TaskFrameUnwindEdge = CreateSubTaskUnwindEdge(
             Intrinsic::taskframe_resume, TFCreate, UnwindEdge,
-            Unreachable);
+            Unreachable, TFCreate);
 
         // Recursively check all blocks
         HandleInlinedTasksHelper(BlocksToProcess, NewBB, TaskFrameUnwindEdge,
@@ -721,7 +721,7 @@ static void HandleInlinedTasksHelper(
         // detached-rethrow.
         BasicBlock *SubTaskUnwindEdge = CreateSubTaskUnwindEdge(
             Intrinsic::detached_rethrow, DI->getSyncRegion(), UnwindEdge,
-            Unreachable);
+            Unreachable, DI);
         // Recursively check all blocks in the detached task.
         HandleInlinedTasksHelper(BlocksToProcess, DI->getDetached(),
                                  SubTaskUnwindEdge, Unreachable,
@@ -3470,7 +3470,7 @@ llvm::InlineResult llvm::InlineFunction(CallBase &CB, InlineFunctionInfo &IFI,
       // Create an unwind edge for the taskframe.
       BasicBlock *TaskFrameUnwindEdge = CreateSubTaskUnwindEdge(
           Intrinsic::taskframe_resume, TFCreate, UnwindEdge,
-          UnreachableBlk);
+          UnreachableBlk, II);
 
       for (PHINode &PN : UnwindEdge->phis())
         PN.replaceIncomingBlockWith(II->getParent(), TaskFrameUnwindEdge);

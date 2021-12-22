@@ -1102,7 +1102,7 @@ protected:
   /// Finalize the CSI pass.
   void finalizeCsi();
 
-  /// Initialize llvm::Functions for the CSI hooks.
+  /// Initialize FunctionCallees for the CSI hooks.
   /// @{
   void initializeLoadStoreHooks();
   void initializeFuncHooks();
@@ -1114,6 +1114,9 @@ protected:
   void initializeTapirHooks();
   void initializeAllocFnHooks();
   /// @}
+
+  /// Initialize the CSI-stackframe type.
+  void initializeStackFrameTy();
 
   static StructType *getUnitFedTableType(LLVMContext &C,
                                          PointerType *EntryPointerType);
@@ -1148,6 +1151,8 @@ protected:
           &LoadAndStoreProperties,
       SmallVectorImpl<Instruction *> &BBLoadsAndStores);
 
+  Value *getCsiStackFrameForBlock(BasicBlock *BB);
+
   /// Insert calls to the instrumentation hooks.
   /// @{
   void addLoadStoreInstrumentation(Instruction *I, FunctionCallee BeforeFn,
@@ -1158,13 +1163,13 @@ protected:
   void instrumentAtomic(Instruction *I);
   bool instrumentMemIntrinsic(Instruction *I);
   void instrumentCallsite(Instruction *I, DominatorTree *DT);
-  void instrumentBasicBlock(BasicBlock &BB);
+  void instrumentBasicBlock(BasicBlock &BB, TaskInfo &TI);
   void instrumentLoop(Loop &L, TaskInfo &TI, ScalarEvolution *SE);
 
   void instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
                         LoopInfo &LI,
                         const DenseMap<Value *, Value *> &TrackVars);
-  void instrumentSync(SyncInst *SI,
+  void instrumentSync(SyncInst *SI, TaskInfo &TI,
                       const DenseMap<Value *, Value *> &TrackVars);
   void instrumentAlloca(Instruction *I);
   void instrumentAllocFn(Instruction *I, DominatorTree *DT,
@@ -1459,7 +1464,7 @@ protected:
     }
   }
 
-  void linkInToolFromBitcode(const std::string &bitcodePath);
+  void linkInToolFromBitcode(const std::string &BitcodePath);
   void loadConfiguration();
 
   Module &M;
@@ -1481,6 +1486,12 @@ protected:
 
   SizeTable BBSize;
   SmallVector<Constant *, 1> UnitSizeTables;
+
+  // __csi_stack_frame_t information: type, null-pointer constant, and map of
+  // basic blocks to inserted allocas.
+  StructType *CsiStackFrameTy = nullptr;
+  Constant *NullCsiStackFramePtr = nullptr;
+  DenseMap<BasicBlock *, Value *> StackFrameAllocas;
 
   // Instrumentation hooks
   FunctionCallee CsiFuncEntry = nullptr, CsiFuncExit = nullptr;
@@ -1515,6 +1526,8 @@ protected:
 
   // Declarations of interposition functions.
   DenseMap<Function *, Function *> InterpositionFunctions;
+
+  SmallPtrSet<Value *, 16> LinkedFromBitcode;
 
   // // Cached results of calls to GetUnderlyingObject.
   // using UnderlyingObjMapTy = DenseMap<Value *, Value *>;

@@ -2123,6 +2123,71 @@ void CSIImpl::finalizeCsi() {
   CNCtor->addCalledFunction(Call, CNFunc);
 }
 
+static GlobalVariable *copyGlobalArray(const char *Array, Module &M) {
+  // Get the current set of static global constructors.
+  if (GlobalVariable *GVA = M.getNamedGlobal(Array)) {
+    if (Constant *Init = GVA->getInitializer()) {
+      // Copy the existing global constructors into a new variable.
+      GlobalVariable *NGV = new GlobalVariable(
+          Init->getType(), GVA->isConstant(), GVA->getLinkage(), Init, "",
+          GVA->getThreadLocalMode());
+      GVA->getParent()->getGlobalList().insert(GVA->getIterator(), NGV);
+      return NGV;
+    }
+  }
+  return nullptr;
+}
+
+// Replace the modified global array list with the copy of the old version.
+static void replaceGlobalArray(const char *Array, Module &M,
+                               GlobalVariable *GVACopy) {
+  // Get the current version of the global array.
+  GlobalVariable *GVA = M.getNamedGlobal(Array);
+  GVACopy->takeName(GVA);
+
+  // Nuke the old list, replacing any uses with the new one.
+  if (!GVA->use_empty()) {
+    Constant *V = GVACopy;
+    if (V->getType() != GVA->getType())
+      V = ConstantExpr::getBitCast(V, GVA->getType());
+    GVA->replaceAllUsesWith(V);
+  }
+  GVA->eraseFromParent();
+}
+
+// Restore the global array to its copy of its previous value.
+static void restoreGlobalArray(const char *Array, Module &M,
+                               GlobalVariable *GVACopy, bool GVAModified) {
+  if (GVACopy) {
+    if (GVAModified) {
+      // Replace the new global array with the old copy.
+      replaceGlobalArray(Array, M, GVACopy);
+    } else {
+      // The bitcode file doesn't add to the global array, so just delete the
+      // copy.
+      assert(GVACopy->use_empty());
+      GVACopy->eraseFromParent();
+    }
+  } else { // No global array was copied.
+    if (GVAModified) {
+      // Create a zero-initialized version of the global array.
+      GlobalVariable *NewGV = M.getNamedGlobal(Array);
+      ConstantArray *NewCA = cast<ConstantArray>(NewGV->getInitializer());
+      Constant *CARepl = ConstantArray::get(
+          ArrayType::get(NewCA->getType()->getElementType(), 0), {});
+      GlobalVariable *GVRepl = new GlobalVariable(
+          CARepl->getType(), NewGV->isConstant(), NewGV->getLinkage(), CARepl,
+          "", NewGV->getThreadLocalMode());
+      NewGV->getParent()->getGlobalList().insert(NewGV->getIterator(), GVRepl);
+
+      // Replace the global array with the zero-initialized version.
+      replaceGlobalArray(Array, M, GVRepl);
+    } else {
+      // Nothing to do.
+    }
+  }
+}
+
 void llvm::CSIImpl::linkInToolFromBitcode(const std::string &BitcodePath) {
   if (BitcodePath != "") {
     LLVMContext &C = M.getContext();
@@ -2134,6 +2199,10 @@ void llvm::CSIImpl::linkInToolFromBitcode(const std::string &BitcodePath) {
     if (!ToolModule)
       C.emitError("CSI: Failed to parse bitcode file: " + BitcodePath);
 
+    GlobalVariable *GVCtorCopy = copyGlobalArray("llvm.global_ctors", M);
+    GlobalVariable *GVDtorCopy = copyGlobalArray("llvm.global_dtors", M);
+    bool BitcodeAddsCtors = false, BitcodeAddsDtors = false;
+
     // Link the external module into the current module, copying over global
     // values.
     bool Fail = Linker::linkModules(
@@ -2141,8 +2210,13 @@ void llvm::CSIImpl::linkInToolFromBitcode(const std::string &BitcodePath) {
         [&](Module &M, const StringSet<> &GVS) {
           for (StringRef GVName : GVS.keys()) {
             LLVM_DEBUG(dbgs() << "Linking global value " << GVName << "\n");
-            if (GVName == "llvm.global_ctors" || GVName == "llvm.global_dtors")
+            if (GVName == "llvm.global_ctors") {
+              BitcodeAddsCtors = true;
               continue;
+            } else if (GVName == "llvm.global_dtors") {
+              BitcodeAddsDtors = true;
+              continue;
+            }
             // Record this GlobalValue as linked from the bitcode.
             LinkedFromBitcode.insert(M.getNamedValue(GVName));
             if (Function *Fn = M.getFunction(GVName)) {
@@ -2164,6 +2238,9 @@ void llvm::CSIImpl::linkInToolFromBitcode(const std::string &BitcodePath) {
         });
     if (Fail)
       C.emitError("CSI: Failed to link bitcode file: " + Twine(BitcodePath));
+
+    restoreGlobalArray("llvm.global_ctors", M, GVCtorCopy, BitcodeAddsCtors);
+    restoreGlobalArray("llvm.global_dtors", M, GVDtorCopy, BitcodeAddsDtors);
   }
 }
 

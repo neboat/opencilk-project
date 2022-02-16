@@ -126,6 +126,10 @@ static cl::opt<bool>
         cl::desc("Ignore the 'sanitize_cilk' attribute when choosing what to "
                  "instrument."));
 
+static cl::opt<std::string> ClCilksanBCPath(
+    "cilksan-bc-path", cl::init(""), cl::Hidden,
+    cl::desc("Path to the bitcode file for the Cilksan library."));
+
 static const unsigned SERIESPARALLEL = 0x1;
 static const unsigned SHADOWMEMORY = 0x2;
 static cl::opt<unsigned> InstrumentationSet(
@@ -757,6 +761,8 @@ bool CilkSanitizerImpl::setup() {
 }
 
 bool CilkSanitizerImpl::run() {
+  // Link the tool bitcode once initially, to get type definitions.
+  linkInToolFromBitcode(ClCilksanBCPath);
   // Initialize components of the CSI and Cilksan system.
   initializeCsi();
   initializeFEDTables();
@@ -787,6 +793,9 @@ bool CilkSanitizerImpl::run() {
   collectUnitFEDTables();
   collectUnitObjectTables();
   finalizeCsi();
+
+  // Link the tool bitcode a second time, for definitions of used functions.
+  linkInToolFromBitcode(ClCilksanBCPath);
   return true;
 }
 

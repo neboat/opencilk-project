@@ -1,6 +1,6 @@
 ; Check that resumes are properly unified when inlining a function that spawns.
 ;
-; RUN: opt < %s -inline -S -o - | FileCheck %s
+; RUN: opt < %s -enable-new-pm=0 -inline -S -o - | FileCheck %s
 ; RUN: opt < %s -passes='cgscc(repeat<2>(inline))' -S -o - | FileCheck %s
 ; REQUIRES: x86-registered-target
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"

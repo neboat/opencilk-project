@@ -1471,6 +1471,24 @@ static LangOptions::CilktoolKind parseCilktoolKind(StringRef FlagName,
   return LangOptions::Cilktool_None;
 }
 
+static Optional<StringRef> serializeCilktoolKind(LangOptions::CilktoolKind K) {
+  Optional<StringRef> CilktoolStr;
+  switch (K) {
+  case LangOptions::Cilktool_Cilkscale:
+    CilktoolStr = "cilkscale";
+    break;
+  case LangOptions::Cilktool_Cilkscale_InstructionCount:
+    CilktoolStr = "cilkscale-instructions";
+    break;
+  case LangOptions::Cilktool_Cilkscale_Benchmark:
+    CilktoolStr = "cilkscale-benchmark";
+    break;
+  case LangOptions::Cilktool_None:
+    break;
+  }
+  return CilktoolStr;
+}
+
 static LangOptions::CSIExtensionPoint
 parseCSIExtensionPoint(StringRef FlagName, ArgList &Args,
                        DiagnosticsEngine &Diags) {
@@ -1493,6 +1511,31 @@ parseCSIExtensionPoint(StringRef FlagName, ArgList &Args,
     // Use TapirLate extension point by default, for backwards compatability.
     return LangOptions::CSI_TapirLate;
   return LangOptions::CSI_None;
+}
+
+static Optional<StringRef>
+serializeCSIExtensionPoint(LangOptions::CSIExtensionPoint X) {
+  Optional<StringRef> CSIExtPtStr;
+  switch (X) {
+  case LangOptions::CSI_EarlyAsPossible:
+    CSIExtPtStr = "first";
+    break;
+  case LangOptions::CSI_ModuleOptimizerEarly:
+    CSIExtPtStr = "early";
+    break;
+  case LangOptions::CSI_OptimizerLast:
+    CSIExtPtStr = "last";
+    break;
+  case LangOptions::CSI_TapirLate:
+    CSIExtPtStr = "tapirlate";
+    break;
+  case LangOptions::CSI_TapirLoopEnd:
+    CSIExtPtStr = "aftertapirloops";
+    break;
+  case LangOptions::CSI_None:
+    break;
+  }
+  return CSIExtPtStr;
 }
 
 static void parseXRayInstrumentationBundle(StringRef FlagName, StringRef Bundle,
@@ -1668,6 +1711,10 @@ void CompilerInvocationBase::GenerateCodeGenArgs(const CodeGenOptions &Opts,
     GenerateArg(Consumer, OPT_fdirect_access_external_data);
   else if (!Opts.DirectAccessExternalData && LangOpts->PICLevel == 0)
     GenerateArg(Consumer, OPT_fno_direct_access_external_data);
+
+  if (Optional<StringRef> TapirTargetStr =
+          serializeTapirTarget(Opts.getTapirTarget()))
+    GenerateArg(Consumer, OPT_ftapir_EQ, *TapirTargetStr);
 
   std::optional<StringRef> DebugInfoVal;
   switch (Opts.DebugInfo) {
@@ -3819,6 +3866,12 @@ void CompilerInvocationBase::GenerateLangArgs(const LangOptions &Opts,
       GenerateArg(Consumer, OPT_exception_model,
                   getExceptionHandlingName(Opts.ExceptionHandling));
     }
+    if (Optional<StringRef> CSIExtPt = serializeCSIExtensionPoint(
+            Opts.getComprehensiveStaticInstrumentation()))
+      GenerateArg(Consumer, OPT_fcsi_EQ, *CSIExtPt);
+    if (Optional<StringRef> Cilktool =
+            serializeCilktoolKind(Opts.getCilktool()))
+      GenerateArg(Consumer, OPT_fcilktool_EQ, *Cilktool);
 
     return;
   }
@@ -3886,6 +3939,13 @@ void CompilerInvocationBase::GenerateLangArgs(const LangOptions &Opts,
 
   if (Opts.IgnoreXCOFFVisibility)
     GenerateArg(Consumer, OPT_mignore_xcoff_visibility);
+
+  if (Opts.getCilk() == LangOptions::Cilk_opencilk)
+    GenerateArg(Consumer, OPT_fopencilk);
+  if (Opts.getCilk() == LangOptions::Cilk_plus)
+    GenerateArg(Consumer, OPT_fcilkplus);
+  if (Opts.CilkOptions.has(CilkOpt_Pedigrees))
+    GenerateArg(Consumer, OPT_fopencilk_enable_pedigrees);
 
   if (Opts.SignedOverflowBehavior == LangOptions::SOB_Trapping) {
     GenerateArg(Consumer, OPT_ftrapv);
@@ -4022,6 +4082,12 @@ void CompilerInvocationBase::GenerateLangArgs(const LangOptions &Opts,
     GenerateArg(Consumer, OPT_ffp_contract, "off");
   else if (Opts.DefaultFPContractMode == LangOptions::FPM_FastHonorPragmas)
     GenerateArg(Consumer, OPT_ffp_contract, "fast-honor-pragmas");
+
+  if (Optional<StringRef> CSIExtPt = serializeCSIExtensionPoint(
+          Opts.getComprehensiveStaticInstrumentation()))
+    GenerateArg(Consumer, OPT_fcsi_EQ, *CSIExtPt);
+  if (Optional<StringRef> Cilktool = serializeCilktoolKind(Opts.getCilktool()))
+    GenerateArg(Consumer, OPT_fcilktool_EQ, *Cilktool);
 
   for (StringRef Sanitizer : serializeSanitizerKinds(Opts.Sanitize))
     GenerateArg(Consumer, OPT_fsanitize_EQ, Sanitizer);

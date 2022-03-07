@@ -2234,9 +2234,9 @@ enum CXCursorKind {
    */
   CXCursor_CilkForStmt = 337,
 
-  /** A _Cilk_scope statement.
+  /** A cilk_scope statement.
    */
-  CXCursor_CilkScopeStmt                 = 292,
+  CXCursor_CilkScopeStmt = 338,
 
   CXCursor_LastStmt = CXCursor_CilkScopeStmt,
 

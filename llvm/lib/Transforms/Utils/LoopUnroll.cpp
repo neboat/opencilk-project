@@ -441,6 +441,7 @@ static bool canHaveUnrollRemainder(const Loop *L) {
   return true;
 }
 
+namespace llvm {
 // Wrapper class for GraphTraits to examine task exits of a loop.
 template <class GraphType> struct TaskExitGraph {
   const GraphType &Graph;
@@ -472,6 +473,7 @@ template <> struct GraphTraits<TaskExitGraph<BasicBlock *>> {
     return make_filter_range(successors(N), TaskExitFilter(N)).end();
   }
 };
+} // namespace llvm
 
 // Clone task-exit blocks that are effectively part of the loop but don't appear
 // to be based on standard loop analysis.

@@ -1155,10 +1155,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
     if (LangOpts.Sanitize.has(SanitizerKind::Cilk))
       PB.registerTapirLateEPCallback(
           [](ModulePassManager &MPM, OptimizationLevel Level) {
-            // CilkSanitizer performs significant changes to the CFG before
-            // attempting to analyze and insert instrumentation.  Hence we
-            // invalidate all analysis passes before running CilkSanitizer.
-            MPM.addPass(InvalidateAllAnalysesPass());
+            MPM.addPass(CSISetupPass());
             MPM.addPass(CilkSanitizerPass());
             PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
           });
@@ -1170,10 +1167,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CilktoolKind::Cilktool_Cilkscale:
         PB.registerTapirLoopEndEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CilkSanitizer performs significant changes to the CFG before
-              // attempting to analyze and insert instrumentation.  Hence we
-              // invalidate all analysis passes before running CilkSanitizer.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass(getCSIOptionsForCilkscale(false)));
               MPM.addPass(ComprehensiveStaticInstrumentationPass(
                   getCSIOptionsForCilkscale(false)));
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
@@ -1182,10 +1176,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CilktoolKind::Cilktool_Cilkscale_InstructionCount:
         PB.registerTapirLoopEndEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CilkSanitizer performs significant changes to the CFG before
-              // attempting to analyze and insert instrumentation.  Hence we
-              // invalidate all analysis passes before running CilkSanitizer.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass(getCSIOptionsForCilkscale(true)));
               MPM.addPass(ComprehensiveStaticInstrumentationPass(
                   getCSIOptionsForCilkscale(true)));
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
@@ -1194,12 +1185,9 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CilktoolKind::Cilktool_Cilkscale_Benchmark:
           PB.registerTapirLoopEndEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CSI performs significant changes to the CFG before attempting
-              // to analyze and insert instrumentation.  Hence we invalidate all
-              // analysis passes before running CSI.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass(getCSIOptionsForCilkscaleBenchmark()));
               MPM.addPass(ComprehensiveStaticInstrumentationPass(
-                              getCSIOptionsForCilkscaleBenchmark()));
+                  getCSIOptionsForCilkscaleBenchmark()));
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
             });
         break;
@@ -1212,10 +1200,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CSI_ModuleOptimizerEarly:
         PB.registerPipelineStartEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CSI performs significant changes to the CFG before attempting
-              // to analyze and insert instrumentation.  Hence we invalidate all
-              // analysis passes before running CSI.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass());
               MPM.addPass(ComprehensiveStaticInstrumentationPass());
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
             });
@@ -1223,10 +1208,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CSI_TapirLate:
         PB.registerTapirLateEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CSI performs significant changes to the CFG before attempting
-              // to analyze and insert instrumentation.  Hence we invalidate all
-              // analysis passes before running CSI.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass());
               MPM.addPass(ComprehensiveStaticInstrumentationPass());
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
             });
@@ -1234,10 +1216,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CSI_TapirLoopEnd:
         PB.registerTapirLoopEndEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CSI performs significant changes to the CFG before attempting
-              // to analyze and insert instrumentation.  Hence we invalidate all
-              // analysis passes before running CSI.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass());
               MPM.addPass(ComprehensiveStaticInstrumentationPass());
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
             });
@@ -1245,10 +1224,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       case LangOptions::CSI_OptimizerLast:
         PB.registerOptimizerLastEPCallback(
             [](ModulePassManager &MPM, OptimizationLevel Level) {
-              // CSI performs significant changes to the CFG before attempting
-              // to analyze and insert instrumentation.  Hence we invalidate all
-              // analysis passes before running CSI.
-              MPM.addPass(InvalidateAllAnalysesPass());
+              MPM.addPass(CSISetupPass());
               MPM.addPass(ComprehensiveStaticInstrumentationPass());
               PassBuilder::addPostCilkInstrumentationPipeline(MPM, Level);
             });

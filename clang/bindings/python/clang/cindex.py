@@ -1384,6 +1384,21 @@ class CursorKind(BaseEnumeration):
     # OpenACC Compute Construct.
     OPEN_ACC_COMPUTE_DIRECTIVE = 320
 
+    # Cilk cilk_spawn statement.
+    CILK_SPAWN_STMT = 321
+
+    # Cilk wrapper for an expression preceded by cilk_spawn.
+    CILK_SPAWN_EXPR = 322
+
+    # Cilk cilk_sync statement.
+    CILK_SYNC_STMT = 323
+
+    # Cilk cilk_for statement.
+    CILK_FOR_STMT = 324
+
+    # Cilk cilk_scope statement.
+    CILK_SCOPE_STMT = 325
+
     ###
     # Other Kinds
 

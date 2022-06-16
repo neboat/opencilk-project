@@ -904,12 +904,17 @@ Function *CodeExtractor::constructFunctionDeclaration(
       case Attribute::AllocSize:
       case Attribute::Builtin:
       case Attribute::Convergent:
+      case Attribute::HyperToken:
+      case Attribute::HyperView:
+      case Attribute::Injective:
       case Attribute::JumpTable:
       case Attribute::Naked:
       case Attribute::NoBuiltin:
       case Attribute::NoMerge:
       case Attribute::NoReturn:
       case Attribute::NoSync:
+      case Attribute::ReducerRegister:
+      case Attribute::ReducerUnregister:
       case Attribute::ReturnsTwice:
       case Attribute::Speculatable:
       case Attribute::StackAlignment:

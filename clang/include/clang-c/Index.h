@@ -3042,7 +3042,9 @@ enum CXTypeKind {
 
   /* HLSL Types */
   CXType_HLSLResource = 179,
-  CXType_HLSLAttributedResource = 180
+  CXType_HLSLAttributedResource = 180,
+
+  CXType_Hyperobject = 181
 };
 
 /**

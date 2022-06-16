@@ -6248,6 +6248,10 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     auto Str = CGM.GetAddrOfConstantCString(Name, "");
     return RValue::get(Str.getPointer());
   }
+  case Builtin::BI__hyper_lookup: {
+    Function *F = CGM.getIntrinsic(Intrinsic::hyper_lookup);
+    return RValue::get(Builder.CreateCall(F, {EmitScalarExpr(E->getArg(0))}));
+  }
   }
   IsSpawnedScope SpawnedScp(this);
 

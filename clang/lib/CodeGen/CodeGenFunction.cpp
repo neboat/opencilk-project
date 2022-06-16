@@ -306,6 +306,10 @@ TypeEvaluationKind CodeGenFunction::getEvaluationKind(QualType type) {
     case Type::Atomic:
       type = cast<AtomicType>(type)->getValueType();
       continue;
+
+    case Type::Hyperobject:
+      type = cast<HyperobjectType>(type)->getElementType();
+      continue;
     }
     llvm_unreachable("unknown type kind!");
   }
@@ -1017,6 +1021,9 @@ void CodeGenFunction::StartFunction(GlobalDecl GD, QualType RetTy,
     if (D->getAttr<StealableAttr>())
       Fn->addFnAttr(llvm::Attribute::Stealable);
   }
+
+  if (D && D->getAttr<InjectiveAttr>())
+    Fn->addFnAttr(llvm::Attribute::Injective);
 
   // Add no-jump-tables value.
   if (CGM.getCodeGenOpts().NoUseJumpTables)
@@ -2559,6 +2566,10 @@ void CodeGenFunction::EmitVariablyModifiedType(QualType type) {
     case Type::IncompleteArray:
       // Losing element qualification here is fine.
       type = cast<ArrayType>(ty)->getElementType();
+      break;
+
+    case Type::Hyperobject:
+      type = cast<HyperobjectType>(ty)->getElementType();
       break;
 
     case Type::VariableArray: {

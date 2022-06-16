@@ -7181,6 +7181,9 @@ public:
                    SourceLocation TemplateKWLoc = SourceLocation(),
                    const TemplateArgumentListInfo *TemplateArgs = nullptr);
 
+  Expr *BuildHyperobjectLookup(Expr *, bool Pointer = false);
+  Expr *ValidateReducerCallback(Expr *E, unsigned NumArgs);
+
   bool UseArgumentDependentLookup(const CXXScopeSpec &SS, const LookupResult &R,
                                   bool HasTrailingLParen);
 
@@ -14967,6 +14970,8 @@ public:
                               SourceLocation AttrLoc);
   QualType BuildMatrixType(QualType T, Expr *NumRows, Expr *NumColumns,
                            SourceLocation AttrLoc);
+  QualType BuildHyperobjectType(QualType Element, Expr *Identity, Expr *Reduce,
+                                Expr *Destroy, SourceLocation Loc);
 
   QualType BuildCountAttributedArrayOrPointerType(QualType WrappedTy,
                                                   Expr *CountExpr,

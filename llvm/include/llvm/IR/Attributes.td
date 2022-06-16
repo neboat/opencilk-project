@@ -147,6 +147,9 @@ def InAlloca : TypeAttr<"inalloca", IntersectPreserve, [ParamAttr]>;
 /// Pointer argument memory is initialized.
 def Initializes : ConstantRangeListAttr<"initializes", IntersectPreserve, [ParamAttr]>;
 
+/// Distinct arguments to this function yield distinct return values.
+def Injective : EnumAttr<"injective", [FnAttr]>;
+
 /// Source said inlining was desirable.
 def InlineHint : EnumAttr<"inlinehint", IntersectAnd, [FnAttr]>;
 
@@ -273,6 +276,12 @@ def ReadNone : EnumAttr<"readnone", IntersectAnd, [ParamAttr]>;
 
 /// Function only reads from memory.
 def ReadOnly : EnumAttr<"readonly", IntersectAnd, [ParamAttr]>;
+
+/// Tapir reducer-related attributes.
+def HyperView : EnumAttr<"hyper_view", [FnAttr]>;
+def HyperToken : EnumAttr<"hyper_token", [FnAttr]>;
+def ReducerRegister : EnumAttr<"reducer_register", [FnAttr]>;
+def ReducerUnregister : EnumAttr<"reducer_unregister", [FnAttr]>;
 
 /// Return value is always equal to this argument.
 def Returned : EnumAttr<"returned", IntersectAnd, [ParamAttr]>;

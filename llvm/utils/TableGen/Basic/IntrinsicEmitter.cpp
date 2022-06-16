@@ -443,7 +443,10 @@ static bool hasFnAttributes(const CodeGenIntrinsic &Int) {
   return !Int.canThrow || Int.isNoReturn || Int.isNoCallback || Int.isNoSync ||
          Int.isNoFree || Int.isWillReturn || Int.isCold || Int.isNoDuplicate ||
          Int.isNoMerge || Int.isConvergent || Int.isSpeculatable ||
-         Int.isStrictFP || getEffectiveME(Int) != MemoryEffects::unknown();
+         Int.isStrictFP || Intrinsic.isInjective || Intrinsic.isStrandPure ||
+         Intrinsic.isReducerRegister || Intrinsic.isReducerUnregister ||
+         Intrinsic.isHyperView || Intrinsic.isHyperToken ||
+         getEffectiveME(Int) != MemoryEffects::unknown();
 }
 
 namespace {

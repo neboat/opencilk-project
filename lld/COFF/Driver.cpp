@@ -859,6 +859,7 @@ static std::string createResponseFile(const opt::InputArgList &args,
     case OPT_deffile:
     case OPT_manifestinput:
     case OPT_natvis:
+    case OPT_opencilk_abi_bitcode:
       os << arg->getSpelling() << quote(rewritePath(arg->getValue())) << '\n';
       break;
     case OPT_order: {
@@ -2165,6 +2166,10 @@ void LinkerDriver::linkerMain(ArrayRef<const char *> argsArr) {
 
   if (args.hasFlag(OPT_inferasanlibs, OPT_inferasanlibs_no, false))
     Warn(ctx) << "ignoring '/inferasanlibs', this flag is not supported";
+
+  config->opencilkABIBitcodeFile = args.getLastArgValue(OPT_opencilk_abi_bitcode);
+  config->tapirTarget =
+      args::parseTapirTarget(args.getLastArgValue(OPT_tapir_target));
 
   if (config->incremental && args.hasArg(OPT_profile)) {
     Warn(ctx) << "ignoring '/incremental' due to '/profile' specification";

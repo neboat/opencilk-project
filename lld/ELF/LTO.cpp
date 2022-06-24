@@ -127,6 +127,9 @@ static lto::Config createConfig(Ctx &ctx) {
   c.DebugPassManager = ctx.arg.ltoDebugPassManager;
   c.DwoDir = std::string(ctx.arg.dwoDir);
 
+  c.TapirTarget = ctx.arg.tapirTarget;
+  c.OpenCilkABIBitcodeFile = std::string(ctx.arg.opencilkABIBitcodeFile);
+
   c.HasWholeProgramVisibility = ctx.arg.ltoWholeProgramVisibility;
   c.ValidateAllVtablesHaveTypeInfos =
       ctx.arg.ltoValidateAllVtablesHaveTypeInfos;

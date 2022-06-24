@@ -113,6 +113,10 @@ Optional<APInt> getAllocSize(
       return V;
     });
 
+/// Gets the size arguments for the requested allocation.
+std::pair<Value *, Value *> getAllocSizeArgs(const CallBase *CB,
+                                             const TargetLibraryInfo *TLI);
+
 /// If this is a call to an allocation function that initializes memory to a
 /// fixed value, return said value in the requested type.  Otherwise, return
 /// nullptr.

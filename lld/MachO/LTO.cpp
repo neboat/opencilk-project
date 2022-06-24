@@ -61,6 +61,9 @@ static lto::Config createConfig() {
   c.DisableVerify = config->disableVerify;
   c.OptLevel = config->ltoo;
   c.CGOptLevel = config->ltoCgo;
+  if (args::validTapirTarget(config->tapirTarget))
+    c.TapirTarget = config->tapirTarget;
+  c.OpenCilkABIBitcodeFile = std::string(config->opencilkABIBitcodeFile);
   if (config->saveTemps)
     checkError(c.addSaveTemps(config->outputFile.str() + ".",
                               /*UseInputModulePath=*/true));

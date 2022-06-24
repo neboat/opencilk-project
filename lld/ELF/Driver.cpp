@@ -1380,7 +1380,8 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
   ctx.arg.nostdlib = args.hasArg(OPT_nostdlib);
   ctx.arg.oFormatBinary = isOutputFormatBinary(ctx, args);
   ctx.arg.omagic = args.hasFlag(OPT_omagic, OPT_no_omagic, false);
-  ctx.arg.opencilkABIBitcodeFile = args.getLastArgValue(OPT_opencilk_abi_bitcode);
+  ctx.arg.opencilkABIBitcodeFile =
+      args.getLastArgValue(OPT_opencilk_abi_bitcode);
   ctx.arg.optRemarksFilename = args.getLastArgValue(OPT_opt_remarks_filename);
   ctx.arg.optStatsFilename = args.getLastArgValue(OPT_plugin_opt_stats_file);
 
@@ -1448,7 +1449,8 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
       getZFlag(args, "sectionheader", "nosectionheader", true);
   ctx.arg.strip = getStrip(ctx, args); // needs zSectionHeader
   ctx.arg.sysroot = args.getLastArgValue(OPT_sysroot);
-  ctx.arg.tapirTarget = args::parseTapirTarget(args.getLastArgValue(OPT_tapir_target));
+  ctx.arg.tapirTarget =
+      args::parseTapirTarget(args.getLastArgValue(OPT_tapir_target));
   ctx.arg.target1Rel = args.hasFlag(OPT_target1_rel, OPT_target1_abs, false);
   ctx.arg.target2 = getTarget2(ctx, args);
   ctx.arg.thinLTOCacheDir = args.getLastArgValue(OPT_thinlto_cache_dir);

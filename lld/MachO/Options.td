@@ -156,6 +156,12 @@ defm pgo_warn_mismatch: BB<"pgo-warn-mismatch",
 defm warn_thin_archive_missing_members : BB<"warn-thin-archive-missing-members",
   "Warn on missing object files referenced by thin archives (default)",
   "Do not warn on missing object files referenced by thin archives">, Group<grp_lld>;
+def tapir_target: Joined<["--"], "tapir-target=">,
+    HelpText<"Specify the target for Tapir lowering">,
+    Group<grp_lld>;
+def opencilk_abi_bitcode: Joined<["--"], "opencilk-abi-bitcode=">,
+    HelpText<"Path to the OpenCilk ABI bitcode file">,
+    Group<grp_lld>;
 
 // This is a complete Options.td compiled from Apple's ld(1) manpage
 // dated 2018-03-07 and cross checked with ld64 source code in repo

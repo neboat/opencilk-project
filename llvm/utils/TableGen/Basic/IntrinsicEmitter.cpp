@@ -418,7 +418,9 @@ static bool compareFnAttributes(const CodeGenIntrinsic *L,
     return std::tie(I->canThrow, I->isNoDuplicate, I->isNoMerge, I->isNoReturn,
                     I->isNoCallback, I->isNoSync, I->isNoFree, I->isWillReturn,
                     I->isCold, I->isConvergent, I->isSpeculatable,
-                    I->hasSideEffects, I->isStrictFP);
+                    I->hasSideEffects, I->isStrictFP, I->isInjective,
+                    I->isStrandPure, I->isReducerRegister,
+                    I->isReducerUnregister, I->isHyperView, I->isHyperToken);
   };
 
   auto TieL = TieBoolAttributes(L);
@@ -608,6 +610,18 @@ static AttributeSet getIntrinsicFnAttributeSet(LLVMContext &C, unsigned ID) {
       addAttribute("Speculatable");
     if (Int.isStrictFP)
       addAttribute("StrictFP");
+    if (Int.isInjective)
+      addAttribute("Injective");
+    if (Int.isStrandPure)
+      addAttribute("StrandPure");
+    if (Int.isReducerRegister)
+      addAttribute("ReducerRegister");
+    if (Int.isReducerUnregister)
+      addAttribute("ReducerUnregister");
+    if (Int.isHyperView)
+      addAttribute("HyperView");
+    if (Int.isHyperView)
+      addAttribute("HyperToken");
 
     const MemoryEffects ME = getEffectiveME(Int);
     if (ME != MemoryEffects::unknown()) {

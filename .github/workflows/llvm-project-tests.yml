@@ -44,10 +44,9 @@ jobs:
       - name: Setup MacOS
         if: startsWith(matrix.os, 'macos')
         run: |
-          ls $(brew --prefix llvm)/include/c++/v1
           ls /Library/Developer/CommandLineTools/SDKs
           find /Library/Developer/CommandLineTools/SDKs -name "cmath"
-          find $(brew --prefix llvm)/include/c++/v1 -name "cmath"
+          find /usr -name "cmath"
       - name: Install Ninja
         uses: llvm/actions/install-ninja@main
       - uses: actions/checkout@v1

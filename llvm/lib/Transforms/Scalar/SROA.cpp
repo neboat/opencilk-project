@@ -2833,8 +2833,11 @@ private:
   Value *rewriteIntegerLoad(LoadInst &LI) {
     assert(IntTy && "We cannot insert an integer to the alloca");
     assert(!LI.isVolatile());
-    Value *V = IRB.CreateAlignedLoad(NewAI.getAllocatedType(), &NewAI,
-                                     NewAI.getAlign(), "load");
+    LoadInst *NewLI = IRB.CreateAlignedLoad(NewAI.getAllocatedType(), &NewAI,
+                                            NewAI.getAlign(), "load");
+    if (LI.isAtomic())
+      NewLI->setAtomic(LI.getOrdering(), LI.getSyncScopeID());
+    Value *V = NewLI;
     V = convertValue(DL, IRB, V, IntTy);
     assert(NewBeginOffset >= NewAllocaBeginOffset && "Out of bounds offset");
     uint64_t Offset = NewBeginOffset - NewAllocaBeginOffset;
@@ -3026,6 +3029,9 @@ private:
     if (AATags)
       Store->setAAMetadata(AATags.adjustForAccess(NewBeginOffset - BeginOffset,
                                                   V->getType(), DL));
+
+    if (SI.isAtomic())
+      Store->setAtomic(SI.getOrdering(), SI.getSyncScopeID());
 
     migrateDebugInfo(&OldAI, IsSplit, NewBeginOffset * 8, SliceSize * 8, &SI,
                      Store, Store->getPointerOperand(),

@@ -14971,7 +14971,7 @@ public:
   QualType BuildMatrixType(QualType T, Expr *NumRows, Expr *NumColumns,
                            SourceLocation AttrLoc);
   QualType BuildHyperobjectType(QualType Element, Expr *Identity, Expr *Reduce,
-                                Expr *Destroy, SourceLocation Loc);
+                                SourceLocation Loc);
 
   QualType BuildCountAttributedArrayOrPointerType(QualType WrappedTy,
                                                   Expr *CountExpr,

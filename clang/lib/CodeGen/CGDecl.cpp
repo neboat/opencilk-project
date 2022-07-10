@@ -1937,7 +1937,6 @@ bool CodeGenFunction::getReducer(const VarDecl *D, ReducerCallbacks &CB) {
     if (H->hasCallbacks()) {
       CB.Identity = H->getIdentity();
       CB.Reduce = H->getReduce();
-      CB.Destroy = H->getDestroy();
       return true;
     }
   }
@@ -1963,7 +1962,6 @@ void CodeGenFunction::EmitReducerInit(const VarDecl *D,
                                       llvm::Value *Addr) {
   RValue Identity = EmitAnyExpr(C.Identity);
   RValue Reduce = EmitAnyExpr(C.Reduce);
-  RValue Destroy = EmitAnyExpr(C.Destroy);
 
   llvm::Type *SizeType = ConvertType(getContext().getSizeType());
   unsigned SizeBits = SizeType->getIntegerBitWidth();
@@ -1985,8 +1983,7 @@ void CodeGenFunction::EmitReducerInit(const VarDecl *D,
     CGM.getIntrinsic(llvm::Intrinsic::reducer_register, Types);
   llvm::Value *IdentityV = Identity.getScalarVal();
   llvm::Value *ReduceV = Reduce.getScalarVal();
-  llvm::Value *DestroyV = Destroy.getScalarVal();
-  Builder.CreateCall(F, {Addr, Size, IdentityV, ReduceV, DestroyV});
+  Builder.CreateCall(F, {Addr, Size, IdentityV, ReduceV});
 }
 
 void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
@@ -2000,7 +1997,7 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
   ApplyAtomGroup Grp(getDebugInfo());
   QualType type = D.getType();
 
-  ReducerCallbacks RCB = {0, 0, 0};
+  ReducerCallbacks RCB = {0, 0};
   bool Reducer = false;
   if (const HyperobjectType *H = type->getAs<HyperobjectType>()) {
     type = H->getElementType();

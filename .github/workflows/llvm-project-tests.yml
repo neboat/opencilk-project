@@ -43,8 +43,8 @@ jobs:
           arch: amd64
       - name: Setup MacOS
         if: startsWith(matrix.os, 'macos')
-	run: |
-	  find /usr/local -name "cmath*"
+        run: |
+          find /usr/local -name "cmath*"
       - name: Install Ninja
         uses: llvm/actions/install-ninja@main
       - uses: actions/checkout@v1

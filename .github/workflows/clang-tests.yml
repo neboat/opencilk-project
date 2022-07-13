@@ -27,7 +27,8 @@ concurrency:
 jobs:
   check_clang:
     name: Test clang,lldb,libclc
-    uses: OpenCilk/opencilk-project/.github/workflows/llvm-project-tests.yml@dev/14.x
+    # uses: OpenCilk/opencilk-project/.github/workflows/llvm-project-tests.yml@dev/14.x
+    uses: neboat/opencilk-project/.github/workflows/llvm-project-tests.yml@ci/macos-test-20220713
     with:
       build_target: check-clang
       projects: clang;lldb;libclc

@@ -575,30 +575,43 @@ Constant *FrontEndDataTable::insertIntoModule(Module &M) const {
   return ConstantExpr::getGetElementPtr(GV->getValueType(), GV, GepArgs);
 }
 
+/// CSI stack frame type initialization
+void CSIImpl::initializeStackFrameTy() {
+  LLVMContext &C = M.getContext();
+  CsiStackFrameTy = StructType::lookupOrCreate(C, "struct.__csi_stack_frame_t");
+  NullCsiStackFramePtr =
+      ConstantPointerNull::get(PointerType::getUnqual(CsiStackFrameTy));
+}
+
 /// Function entry and exit hook initialization
 void CSIImpl::initializeFuncHooks() {
   LLVMContext &C = M.getContext();
   IRBuilder<> IRB(C);
   // Initialize function entry hook
+  Type *StackFramePtrTy = PointerType::getUnqual(CsiStackFrameTy);
   Type *FuncPropertyTy = CsiFuncProperty::getType(C);
-  CsiFuncEntry = M.getOrInsertFunction("__csi_func_entry", IRB.getVoidTy(),
-                                       IRB.getInt64Ty(), FuncPropertyTy);
+  CsiFuncEntry =
+      M.getOrInsertFunction("__csi_func_entry", IRB.getVoidTy(),
+                            StackFramePtrTy, IRB.getInt64Ty(), FuncPropertyTy);
   // Initialize function exit hook
   Type *FuncExitPropertyTy = CsiFuncExitProperty::getType(C);
   CsiFuncExit = M.getOrInsertFunction("__csi_func_exit", IRB.getVoidTy(),
-                                      IRB.getInt64Ty(), IRB.getInt64Ty(),
-                                      FuncExitPropertyTy);
+                                      StackFramePtrTy, IRB.getInt64Ty(),
+                                      IRB.getInt64Ty(), FuncExitPropertyTy);
 }
 
 /// Basic-block hook initialization
 void CSIImpl::initializeBasicBlockHooks() {
   LLVMContext &C = M.getContext();
   IRBuilder<> IRB(C);
+  Type *StackFramePtrTy = PointerType::getUnqual(CsiStackFrameTy);
   Type *PropertyTy = CsiBBProperty::getType(C);
-  CsiBBEntry = M.getOrInsertFunction("__csi_bb_entry", IRB.getVoidTy(),
-                                     IRB.getInt64Ty(), PropertyTy);
-  CsiBBExit = M.getOrInsertFunction("__csi_bb_exit", IRB.getVoidTy(),
-                                    IRB.getInt64Ty(), PropertyTy);
+  CsiBBEntry =
+      M.getOrInsertFunction("__csi_bb_entry", IRB.getVoidTy(), StackFramePtrTy,
+                            IRB.getInt64Ty(), PropertyTy);
+  CsiBBExit =
+      M.getOrInsertFunction("__csi_bb_exit", IRB.getVoidTy(), StackFramePtrTy,
+                            IRB.getInt64Ty(), PropertyTy);
 }
 
 /// Loop hook initialization
@@ -725,34 +738,34 @@ void CSIImpl::initializeMemIntrinsicsHooks() {
 void CSIImpl::initializeTapirHooks() {
   LLVMContext &C = M.getContext();
   IRBuilder<> IRB(C);
+  Type *StackFramePtrTy = PointerType::getUnqual(CsiStackFrameTy);
   Type *IDType = IRB.getInt64Ty();
   Type *RetType = IRB.getVoidTy();
   Type *TaskPropertyTy = CsiTaskProperty::getType(C);
   Type *TaskExitPropertyTy = CsiTaskExitProperty::getType(C);
   Type *DetContPropertyTy = CsiDetachContinueProperty::getType(C);
 
-  CsiDetach = M.getOrInsertFunction("__csi_detach", RetType,
+  CsiDetach = M.getOrInsertFunction("__csi_detach", RetType, StackFramePtrTy,
                                     /* detach_id */ IDType,
                                     IntegerType::getInt32Ty(C)->getPointerTo());
-  CsiTaskEntry = M.getOrInsertFunction("__csi_task", RetType,
+  CsiTaskEntry = M.getOrInsertFunction("__csi_task", RetType, StackFramePtrTy,
                                        /* task_id */ IDType,
-                                       /* detach_id */ IDType,
-                                       TaskPropertyTy);
-  CsiTaskExit = M.getOrInsertFunction("__csi_task_exit", RetType,
-                                      /* task_exit_id */ IDType,
-                                      /* task_id */ IDType,
-                                      /* detach_id */ IDType,
-                                      TaskExitPropertyTy);
-  CsiDetachContinue = M.getOrInsertFunction("__csi_detach_continue", RetType,
-                                            /* detach_continue_id */ IDType,
-                                            /* detach_id */ IDType,
-                                            DetContPropertyTy);
-  CsiBeforeSync = M.getOrInsertFunction(
-      "__csi_before_sync", RetType, IDType,
-      IntegerType::getInt32Ty(C)->getPointerTo());
-  CsiAfterSync = M.getOrInsertFunction(
-      "__csi_after_sync", RetType, IDType,
-      IntegerType::getInt32Ty(C)->getPointerTo());
+                                       /* detach_id */ IDType, TaskPropertyTy);
+  CsiTaskExit =
+      M.getOrInsertFunction("__csi_task_exit", RetType, StackFramePtrTy,
+                            /* task_exit_id */ IDType,
+                            /* task_id */ IDType,
+                            /* detach_id */ IDType, TaskExitPropertyTy);
+  CsiDetachContinue =
+      M.getOrInsertFunction("__csi_detach_continue", RetType, StackFramePtrTy,
+                            /* detach_continue_id */ IDType,
+                            /* detach_id */ IDType, DetContPropertyTy);
+  CsiBeforeSync =
+      M.getOrInsertFunction("__csi_before_sync", RetType, StackFramePtrTy,
+                            IDType, IntegerType::getInt32Ty(C)->getPointerTo());
+  CsiAfterSync =
+      M.getOrInsertFunction("__csi_after_sync", RetType, StackFramePtrTy,
+                            IDType, IntegerType::getInt32Ty(C)->getPointerTo());
 }
 
 // Prepare any calls in the CFG for instrumentation, e.g., by making sure any
@@ -910,6 +923,26 @@ int CSIImpl::getNumBytesAccessed(Value *Addr, Type *OrigTy,
   return TypeSize / 8;
 }
 
+Value *CSIImpl::getCsiStackFrameForBlock(BasicBlock *BB) {
+  // If no __csi_stack_frame_t type is defined, return nullptr.
+  if (CsiStackFrameTy->isOpaque())
+    return NullCsiStackFramePtr;
+
+  // If a __csi_stack_frame_t has alaready been allocated for this block, return
+  // that allocation.
+  if (StackFrameAllocas.count(BB))
+    return StackFrameAllocas[BB];
+
+  // Alloca a __csi_stack_frame_t
+  IRBuilder<> IRB(&*BB->getFirstInsertionPt());
+  AllocaInst *Alloc =
+      IRB.CreateAlloca(CsiStackFrameTy, DL.getAllocaAddrSpace(),
+                       /*ArraySize*/ nullptr, /*Name*/ "__csi_sf");
+  Alloc->setAlignment(Align(16));
+  StackFrameAllocas.insert(std::make_pair(BB, Alloc));
+  return Alloc;
+}
+
 void CSIImpl::addLoadStoreInstrumentation(Instruction *I,
                                           FunctionCallee BeforeFn,
                                           FunctionCallee AfterFn, Value *CsiId,
@@ -999,7 +1032,7 @@ bool CSIImpl::instrumentMemIntrinsic(Instruction *I) {
   return false;
 }
 
-void CSIImpl::instrumentBasicBlock(BasicBlock &BB) {
+void CSIImpl::instrumentBasicBlock(BasicBlock &BB, TaskInfo &TaskI) {
   IRBuilder<> IRB(&*BB.getFirstInsertionPt());
   uint64_t LocalId = BasicBlockFED.add(BB);
   uint64_t BBSizeId = BBSize.add(BB, GetTTI ?
@@ -1007,14 +1040,19 @@ void CSIImpl::instrumentBasicBlock(BasicBlock &BB) {
   assert(LocalId == BBSizeId &&
          "BB recieved different ID's in FED and sizeinfo tables.");
   Value *CsiId = BasicBlockFED.localToGlobalId(LocalId, IRB);
+
+  // Get the __csi_stack_frame_t for this basic block.
+  BasicBlock *EntryBlock = TaskI.getTaskFor(&BB)->getEntry();
+  Value *SF = getCsiStackFrameForBlock(EntryBlock);
+
   CsiBBProperty Prop;
   Prop.setIsLandingPad(BB.isLandingPad());
   Prop.setIsEHPad(BB.isEHPad());
   Instruction *TI = BB.getTerminator();
   Value *PropVal = Prop.getValue(IRB);
-  insertHookCall(&*IRB.GetInsertPoint(), CsiBBEntry, {CsiId, PropVal});
+  insertHookCall(&*IRB.GetInsertPoint(), CsiBBEntry, {SF, CsiId, PropVal});
   IRB.SetInsertPoint(TI);
-  insertHookCall(TI, CsiBBExit, {CsiId, PropVal});
+  insertHookCall(TI, CsiBBExit, {SF, CsiId, PropVal});
 }
 
 // Helper function to get a value for the runtime trip count of the given loop.
@@ -1266,6 +1304,7 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
                                const DenseMap<Value *, Value *> &TrackVars) {
   LLVMContext &Ctx = DI->getContext();
   BasicBlock *TaskEntryBlock = TI.getTaskFor(DI->getParent())->getEntry();
+  Value *DetachSF = getCsiStackFrameForBlock(TaskEntryBlock);
   IRBuilder<> IDBuilder(&*TaskEntryBlock->getFirstInsertionPt());
   bool TapirLoopBody = spawnsTapirLoopBody(DI, LI, TI);
   // Instrument the detach instruction itself
@@ -1278,7 +1317,7 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
     IRB.CreateStore(
         Constant::getIntegerValue(IntegerType::getInt32Ty(Ctx), APInt(32, 1)),
         TrackVar);
-    insertHookCall(DI, CsiDetach, {DetachID, TrackVar});
+    insertHookCall(DI, CsiDetach, {DetachSF, DetachID, TrackVar});
   }
 
   // Find the detached block, continuation, and associated reattaches.
@@ -1293,12 +1332,15 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
   {
     // Instrument the entry point of the detached task.
     IRBuilder<> IRB(&*DetachedBlock->getFirstInsertionPt());
+    Value *TaskSF = getCsiStackFrameForBlock(DetachedBlock);
+    if (Instruction *TaskSFAlloca = dyn_cast<Instruction>(TaskSF))
+      IRB.SetInsertPoint(DetachedBlock, ++(TaskSFAlloca->getIterator()));
     uint64_t LocalID = TaskFED.add(*DetachedBlock);
     Value *TaskID = TaskFED.localToGlobalId(LocalID, IDBuilder);
     CsiTaskProperty Prop;
     Prop.setIsTapirLoopBody(TapirLoopBody);
-    Instruction *Call = IRB.CreateCall(CsiTaskEntry, {TaskID, DetachID,
-                                                      Prop.getValue(IRB)});
+    Instruction *Call = IRB.CreateCall(
+        CsiTaskEntry, {TaskSF, TaskID, DetachID, Prop.getValue(IRB)});
     setInstrumentationDebugLoc(*DetachedBlock, Call);
 
     // Instrument the exit points of the detached tasks.
@@ -1308,8 +1350,9 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
       Value *ExitID = TaskExitFED.localToGlobalId(LocalID, IDBuilder);
       CsiTaskExitProperty ExitProp;
       ExitProp.setIsTapirLoopBody(TapirLoopBody);
-      insertHookCall(Exit->getTerminator(), CsiTaskExit,
-                     {ExitID, TaskID, DetachID, ExitProp.getValue(IRB)});
+      insertHookCall(
+          Exit->getTerminator(), CsiTaskExit,
+          {TaskSF, ExitID, TaskID, DetachID, ExitProp.getValue(IRB)});
     }
     // Instrument the EH exits of the detached task.
     for (BasicBlock *Exit : TaskResumes) {
@@ -1318,8 +1361,9 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
       Value *ExitID = TaskExitFED.localToGlobalId(LocalID, IDBuilder);
       CsiTaskExitProperty ExitProp;
       ExitProp.setIsTapirLoopBody(TapirLoopBody);
-      insertHookCall(Exit->getTerminator(), CsiTaskExit,
-                     {ExitID, TaskID, DetachID, ExitProp.getValue(IRB)});
+      insertHookCall(
+          Exit->getTerminator(), CsiTaskExit,
+          {TaskSF, ExitID, TaskID, DetachID, ExitProp.getValue(IRB)});
     }
 
     Value *DefaultID = getDefaultID(IDBuilder);
@@ -1332,8 +1376,8 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
       ExitProp.setIsTapirLoopBody(TapirLoopBody);
       insertHookCallAtSharedEHSpindleExits(
           SharedEH, T, CsiTaskExit, TaskExitFED,
-          {TaskID, DetachID, ExitProp.getValueImpl(Ctx)},
-          {DefaultID, DefaultID,
+          {TaskSF, TaskID, DetachID, ExitProp.getValueImpl(Ctx)},
+          {NullCsiStackFramePtr, DefaultID, DefaultID,
            CsiTaskExitProperty::getDefaultValueImpl(Ctx)});
     }
   }
@@ -1349,8 +1393,9 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
     uint64_t LocalID = DetachContinueFED.add(*ContinueBlock);
     Value *ContinueID = DetachContinueFED.localToGlobalId(LocalID, IDBuilder);
     CsiDetachContinueProperty ContProp;
-    Instruction *Call = IRB.CreateCall(
-        CsiDetachContinue, {ContinueID, DetachID, ContProp.getValue(IRB)});
+    Instruction *Call =
+        IRB.CreateCall(CsiDetachContinue, {DetachSF, ContinueID, DetachID,
+                                           ContProp.getValue(IRB)});
     setInstrumentationDebugLoc(*ContinueBlock, Call);
   }
   // Instrument the unwind of the detach, if it exists.
@@ -1372,22 +1417,25 @@ void CSIImpl::instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
     CsiDetachContinueProperty ContProp;
     Value *DefaultPropVal = ContProp.getValueImpl(Ctx);
     ContProp.setIsUnwind();
-    insertHookCallInSuccessorBB(UnwindBlock, PredBlock, CsiDetachContinue,
-                                {ContinueID, DetachID, ContProp.getValue(Ctx)},
-                                {DefaultID, DefaultID, DefaultPropVal});
+    insertHookCallInSuccessorBB(
+        UnwindBlock, PredBlock, CsiDetachContinue,
+        {DetachSF, ContinueID, DetachID, ContProp.getValue(Ctx)},
+        {NullCsiStackFramePtr, DefaultID, DefaultID, DefaultPropVal});
     for (BasicBlock *DRPred : predecessors(UnwindBlock))
       if (isDetachedRethrow(DRPred->getTerminator(), DI->getSyncRegion()))
         insertHookCallInSuccessorBB(
             UnwindBlock, DRPred, CsiDetachContinue,
-            {ContinueID, DetachID, ContProp.getValue(Ctx)},
-            {DefaultID, DefaultID, DefaultPropVal});
+            {DetachSF, ContinueID, DetachID, ContProp.getValue(Ctx)},
+            {NullCsiStackFramePtr, DefaultID, DefaultID, DefaultPropVal});
   }
 }
 
-void CSIImpl::instrumentSync(SyncInst *SI,
+void CSIImpl::instrumentSync(SyncInst *SI, TaskInfo &TI,
                              const DenseMap<Value *, Value *> &TrackVars) {
   IRBuilder<> IRB(SI);
   Value *DefaultID = getDefaultID(IRB);
+  Value *SF =
+      getCsiStackFrameForBlock(TI.getTaskFor(SI->getParent())->getEntry());
   // Get the ID of this sync.
   uint64_t LocalID = SyncFED.add(*SI);
   Value *SyncID = SyncFED.localToGlobalId(LocalID, IRB);
@@ -1395,7 +1443,7 @@ void CSIImpl::instrumentSync(SyncInst *SI,
   Value *TrackVar = TrackVars.lookup(SI->getSyncRegion());
 
   // Insert instrumentation before the sync.
-  insertHookCall(SI, CsiBeforeSync, {SyncID, TrackVar});
+  insertHookCall(SI, CsiBeforeSync, {SF, SyncID, TrackVar});
   BasicBlock *SyncBB = SI->getParent();
   BasicBlock *SyncCont = SI->getSuccessor(0);
   BasicBlock *SyncUnwind = nullptr;
@@ -1406,18 +1454,18 @@ void CSIImpl::instrumentSync(SyncInst *SI,
     SyncCont = II->getNormalDest();
   }
 
+  LLVMContext &C = SI->getContext();
+  Constant *NullTrackVarPtr =
+      ConstantPointerNull::get(IntegerType::getInt32Ty(C)->getPointerTo());
   CallInst *Call = insertHookCallInSuccessorBB(
-      SyncCont, SyncBB, CsiAfterSync, {SyncID, TrackVar},
-      {DefaultID,
-       ConstantPointerNull::get(
-           IntegerType::getInt32Ty(SI->getContext())->getPointerTo())});
+      SyncCont, SyncBB, CsiAfterSync, {SF, SyncID, TrackVar},
+      {NullCsiStackFramePtr, DefaultID, NullTrackVarPtr});
   // Reset the tracking variable to 0.
   if (Call != nullptr) {
     callsAfterSync.insert({SyncCont, Call});
     IRB.SetInsertPoint(Call->getNextNode());
     IRB.CreateStore(
-        Constant::getIntegerValue(IntegerType::getInt32Ty(SI->getContext()),
-                                  APInt(32, 0)),
+        Constant::getIntegerValue(IntegerType::getInt32Ty(C), APInt(32, 0)),
         TrackVar);
   } else {
     assert(callsAfterSync.find(SyncCont) != callsAfterSync.end());
@@ -1428,17 +1476,14 @@ void CSIImpl::instrumentSync(SyncInst *SI,
     return;
 
   Call = insertHookCallInSuccessorBB(
-      SyncUnwind, SyncBB, CsiAfterSync, {SyncID, TrackVar},
-      {DefaultID,
-       ConstantPointerNull::get(
-           IntegerType::getInt32Ty(SI->getContext())->getPointerTo())});
+      SyncUnwind, SyncBB, CsiAfterSync, {SF, SyncID, TrackVar},
+      {NullCsiStackFramePtr, DefaultID, NullTrackVarPtr});
   // Reset the tracking variable to 0.
   if (Call != nullptr) {
     callsAfterSync.insert({SyncUnwind, Call});
     IRB.SetInsertPoint(Call->getNextNode());
     IRB.CreateStore(
-        Constant::getIntegerValue(IntegerType::getInt32Ty(SI->getContext()),
-                                  APInt(32, 0)),
+        Constant::getIntegerValue(IntegerType::getInt32Ty(C), APInt(32, 0)),
         TrackVar);
   } else {
     assert(callsAfterSync.find(SyncUnwind) != callsAfterSync.end());
@@ -1841,6 +1886,7 @@ void CSIImpl::initializeCsi() {
 
   initializeFEDTables();
   initializeSizeTables();
+  initializeStackFrameTy();
   if (Options.InstrumentFuncEntryExit)
     initializeFuncHooks();
   if (Options.InstrumentMemoryAccesses)
@@ -2512,7 +2558,7 @@ void CSIImpl::instrumentFunction(Function &F) {
   // function entry call goes before the call to basic block entry.
   if (Options.InstrumentBasicBlocks)
     for (BasicBlock *BB : BasicBlocks)
-      instrumentBasicBlock(*BB);
+      instrumentBasicBlock(*BB, TI);
 
   // Instrument Tapir constructs.
   if (Options.InstrumentTapir) {
@@ -2529,7 +2575,7 @@ void CSIImpl::instrumentFunction(Function &F) {
     if (Config->DoesFunctionRequireInstrumentationForPoint(
             F.getName(), InstrumentationPoint::INSTR_TAPIR_SYNC)) {
       for (SyncInst *SI : Syncs)
-        instrumentSync(SI, TrackVars);
+        instrumentSync(SI, TI, TrackVars);
     }
   }
 
@@ -2577,14 +2623,20 @@ void CSIImpl::instrumentFunction(Function &F) {
 
   // Instrument function entry/exit points.
   if (Options.InstrumentFuncEntryExit) {
-    IRBuilder<> IRB(&*F.getEntryBlock().getFirstInsertionPt());
+    BasicBlock *EntryBlock = &F.getEntryBlock();
+    IRBuilder<> IRB(&*EntryBlock->getFirstInsertionPt());
+    // Get __csi_stack_frame_t for function entry block.
+    Value *SF = getCsiStackFrameForBlock(EntryBlock);
+    if (Instruction *SFAlloca = dyn_cast<Instruction>(SF))
+      IRB.SetInsertPoint(EntryBlock, ++(SFAlloca->getIterator()));
     Value *FuncId = FunctionFED.localToGlobalId(LocalId, IRB);
     if (Config->DoesFunctionRequireInstrumentationForPoint(
             F.getName(), InstrumentationPoint::INSTR_FUNCTION_ENTRY)) {
       CsiFuncProperty FuncEntryProp;
       FuncEntryProp.setMaySpawn(MaySpawn);
       Value *PropVal = FuncEntryProp.getValue(IRB);
-      insertHookCall(&*IRB.GetInsertPoint(), CsiFuncEntry, {FuncId, PropVal});
+      insertHookCall(&*IRB.GetInsertPoint(), CsiFuncEntry,
+                     {SF, FuncId, PropVal});
     }
     if (Config->DoesFunctionRequireInstrumentationForPoint(
             F.getName(), InstrumentationPoint::INSTR_FUNCTION_EXIT)) {
@@ -2599,7 +2651,7 @@ void CSIImpl::instrumentFunction(Function &F) {
         FuncExitProp.setEHReturn(isa<ResumeInst>(AtExit->GetInsertPoint()));
         Value *PropVal = FuncExitProp.getValue(*AtExit);
         insertHookCall(&*AtExit->GetInsertPoint(), CsiFuncExit,
-                       {ExitCsiId, FuncId, PropVal});
+                       {SF, ExitCsiId, FuncId, PropVal});
       }
     }
   }

@@ -1121,6 +1121,9 @@ protected:
   void initializeAllocFnHooks();
   /// @}
 
+  /// Initialize the CSI stack frame type.
+  void initializeStackFrameTy();
+
   static StructType *getUnitFedTableType(LLVMContext &C,
                                          PointerType *EntryPointerType);
   static Constant *fedTableToUnitFedTable(Module &M,
@@ -1148,6 +1151,8 @@ protected:
   /// of externally-visible global variables.
   void generateInitCallsiteToFunction();
 
+  Value *getCsiStackFrameForBlock(BasicBlock *BB);
+
   /// Compute CSI properties on the given ordered list of loads and stores.
   void computeLoadAndStoreProperties(
       SmallVectorImpl<std::pair<Instruction *, CsiLoadStoreProperty>>
@@ -1164,13 +1169,13 @@ protected:
   void instrumentAtomic(Instruction *I);
   bool instrumentMemIntrinsic(Instruction *I);
   void instrumentCallsite(Instruction *I, DominatorTree *DT);
-  void instrumentBasicBlock(BasicBlock &BB);
+  void instrumentBasicBlock(BasicBlock &BB, TaskInfo &TI);
   void instrumentLoop(Loop &L, TaskInfo &TI, ScalarEvolution *SE);
 
   void instrumentDetach(DetachInst *DI, DominatorTree *DT, TaskInfo &TI,
                         LoopInfo &LI,
                         const DenseMap<Value *, Value *> &TrackVars);
-  void instrumentSync(SyncInst *SI,
+  void instrumentSync(SyncInst *SI, TaskInfo &TI,
                       const DenseMap<Value *, Value *> &TrackVars);
   void instrumentAlloca(Instruction *I);
   void instrumentAllocFn(Instruction *I, DominatorTree *DT,
@@ -1487,6 +1492,12 @@ protected:
 
   SizeTable BBSize;
   SmallVector<Constant *, 1> UnitSizeTables;
+
+  // __csi_stack_frame_t information: type, null-pointer constant, and map of
+  // basic blocks to inserted allocas.
+  StructType *CsiStackFrameTy = nullptr;
+  Constant *NullCsiStackFramePtr = nullptr;
+  DenseMap<BasicBlock *, Value *> StackFrameAllocas;
 
   // Instrumentation hooks
   FunctionCallee CsiFuncEntry = nullptr, CsiFuncExit = nullptr;

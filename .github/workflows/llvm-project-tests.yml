@@ -32,8 +32,8 @@ concurrency:
 env:
   # Workaround for https://github.com/actions/virtual-environments/issues/5900.
   # This should be a no-op for non-mac OSes
-  CPLUS_INCLUDE_PATH: /usr/local/Cellar/llvm/14.0.6_1/include/c++/v1:/Library/Developer/CommandLineTools/SDKs/MacOSX12.1.sdk/usr/include
-  PKG_CONFIG_PATH: /usr/local/Homebrew/Library/Homebrew/os/mac/pkgconfig//12
+  CPLUS_INCLUDE_PATH: /usr/local/Cellar/llvm/14.0.6_1/include/c++/v1:/Library/Developer/CommandLineTools/SDKs/MacOSX12.sdk/usr/include
+  PKG_CONFIG_PATH: /usr/local/Homebrew/Library/Homebrew/os/mac/pkgconfig//11
 
 jobs:
   lit-tests:
@@ -59,6 +59,7 @@ jobs:
       - name: Check macOS (for debugging)
         if: startsWith(matrix.os, 'macos')
         run: |
+          ls /Library/Developer/CommandLineTools/SDKs
           find /usr/local -name "cmath*"
       # On Windows, starting with win19/20220814.1, cmake choose the 32-bit
       # python3.10.6 libraries instead of the 64-bit libraries when building

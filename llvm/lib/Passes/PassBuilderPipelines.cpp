@@ -1105,9 +1105,6 @@ void PassBuilder::addVectorPasses(OptimizationLevel Level,
                                   .hoistCommonInsts(true)
                                   .sinkCommonInsts(true)));
 
-  // Rerun EarlyCSE for further cleanup after the sinking transformation.
-  FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
-
   if (IsFullLTO) {
     FPM.addPass(SCCPPass());
     FPM.addPass(InstCombinePass());
@@ -1123,6 +1120,9 @@ void PassBuilder::addVectorPasses(OptimizationLevel Level,
   }
   // Enhance/cleanup vector code.
   FPM.addPass(VectorCombinePass());
+
+  // Rerun EarlyCSE for further cleanup.
+  FPM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
 
   if (!IsFullLTO) {
     FPM.addPass(InstCombinePass());
@@ -1259,7 +1259,6 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
                                         /*UseBlockFrequencyInfo=*/true));
     // Don't run IndVarSimplify at this point, as it can actually inhibit
     // vectorization in some cases.
-    OptimizePM.addPass(EarlyCSEPass(true /* Enable mem-ssa. */));
     OptimizePM.addPass(JumpThreadingPass());
     OptimizePM.addPass(CorrelatedValuePropagationPass());
     OptimizePM.addPass(InstCombinePass());

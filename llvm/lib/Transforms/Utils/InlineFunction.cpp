@@ -1988,10 +1988,11 @@ static Value *HandleByValArgument(Type *ByValType, Value *Arg,
   if (ByValAlignment)
     Alignment = std::max(Alignment, *ByValAlignment);
 
+  BasicBlock *NewCtx = GetDetachedCtx(TheCall->getParent());
   AllocaInst *NewAlloca =
       new AllocaInst(ByValType, Arg->getType()->getPointerAddressSpace(),
                      nullptr, Alignment, Arg->getName());
-  NewAlloca->insertBefore(Caller->begin()->begin());
+  NewAlloca->insertBefore(NewCtx->begin());
   IFI.StaticAllocas.push_back(NewAlloca);
 
   // Uses of the argument in the function should use our new alloca

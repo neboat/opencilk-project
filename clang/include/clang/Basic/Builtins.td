@@ -5018,5 +5018,5 @@ def CountedByRef : Builtin {
 def HyperLookup : Builtin {
   let Spellings = ["__hyper_lookup"];
   let Attributes = [NoThrow, Pure];
-  let Prototype = "void*(void const*)";
+  let Prototype = "void*(void const*, size_t, ...)";
 }

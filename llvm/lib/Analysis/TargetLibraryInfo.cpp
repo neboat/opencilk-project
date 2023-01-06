@@ -47,7 +47,11 @@ static cl::opt<TapirTargetID> ClTapirTarget(
                clEnumValN(TapirTargetID::Cheetah,
                           "cheetah", "Cheetah"),
                clEnumValN(TapirTargetID::OpenCilk,
-                          "opencilk", "OpenCilk")));
+                          "opencilk", "OpenCilk"),
+               clEnumValN(TapirTargetID::Lambda,
+                          "lambda", "Lambda"),
+               clEnumValN(TapirTargetID::OMPTask,
+                          "omptask", "OMPTask")));
 
 StringLiteral const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] =
     {
@@ -1944,6 +1948,8 @@ void TargetLibraryInfoImpl::addTapirTargetLibraryFunctions(
   case TapirTargetID::Serial:
   case TapirTargetID::Cheetah:
   case TapirTargetID::Cuda:
+  case TapirTargetID::Lambda:
+  case TapirTargetID::OMPTask:
   case TapirTargetID::OpenMP:
   case TapirTargetID::Qthreads:
   case TapirTargetID::Last_TapirTargetID:

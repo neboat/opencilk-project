@@ -3,10 +3,12 @@ add_llvm_component_library(LLVMTapirOpts
   CilkRTSCilkFor.cpp
   CudaABI.cpp
   DRFScopedNoAliasAA.cpp
+  LambdaABI.cpp
   LoopSpawningTI.cpp
   LoopStripMine.cpp
   LoopStripMinePass.cpp
   LoweringUtils.cpp
+  OMPTaskABI.cpp
   OpenCilkABI.cpp
   OpenMPABI.cpp
   Outline.cpp

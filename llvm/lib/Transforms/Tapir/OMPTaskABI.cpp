@@ -193,7 +193,7 @@ void OMPTaskABI::prepareModule() {
   Type *VoidTy = Type::getVoidTy(C);
   Type *VoidPtrTy = Type::getInt8PtrTy(C);
 
-  // Define the types of the CilkRTS functions.
+  // Define the types of the RTS functions.
   FunctionType *RTSFnTy = FunctionType::get(VoidTy, {StackFramePtrTy}, false);
   SpawnBodyFnArgTy = VoidPtrTy;
   Type *IntPtrTy = DL.getIntPtrType(C);
@@ -257,7 +257,7 @@ void OMPTaskABI::prepareModule() {
   // set DebugABICalls.
 
   if (StackFrameTy->isOpaque()) {
-    // Create a dummy stack-frame structure
+    // Create a dummy __rts_stack_frame structure
     StackFrameTy->setBody(Int64Ty);
   }
   // Create declarations of all RTS functions, and add basic attributes to those
@@ -294,7 +294,7 @@ void OMPTaskABI::addHelperAttributes(Function &Helper) {
   Helper.setLinkage(GlobalValue::InternalLinkage);
 }
 
-// Check whether the allocation of a __cilkrts_stack_frame can be inserted after
+// Check whether the allocation of a __rts_stack_frame can be inserted after
 // instruction \p I.
 static bool skipInstruction(const Instruction &I) {
   if (isa<AllocaInst>(I))
@@ -429,7 +429,7 @@ Value *OMPTaskABI::lowerGrainsizeCall(CallInst *GrainsizeCall) {
   else if (GrainsizeCall->getType()->isIntegerTy(64))
     RTSGrainsizeCall = RTSLoopGrainsize64;
   else
-    llvm_unreachable("No CilkRTSGrainsize call matches type for Tapir loop.");
+    llvm_unreachable("No RTSGrainsize call matches type for Tapir loop.");
 
   Value *Grainsize = Builder.CreateCall(RTSGrainsizeCall, Limit);
 

@@ -2248,9 +2248,9 @@ void MemorySSA::ensureOptimizedUses() {
     return;
 
   BatchAAResults BatchAA(*AA);
-  ClobberWalkerBase WalkerBase(this, DT);
+  ClobberWalkerBase WalkerBase(this, DT, TI);
   CachingWalker WalkerLocal(this, &WalkerBase);
-  OptimizeUses(this, &WalkerLocal, &BatchAA, DT).optimizeUses();
+  OptimizeUses(this, &WalkerLocal, &BatchAA, DT, TI).optimizeUses();
   IsOptimized = true;
 }
 

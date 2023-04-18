@@ -272,7 +272,7 @@ UseCaptureInfo llvm::DetermineUseCaptureKind(const Use &U, const Value *Base) {
   if (!I)
     return CaptureComponents::All;
 
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(U->getUser())) {
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(I)) {
     switch (CE->getOpcode()) {
     case Instruction::BitCast:
     case Instruction::GetElementPtr:

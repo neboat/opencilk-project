@@ -35,6 +35,7 @@
 ; CHECK-NEXT:       Falkor HW Prefetch Fix
 ; CHECK-NEXT:       Split GEPs to a variadic base and a constant offset for better CSE
 ; CHECK-NEXT:       Early CSE
+; CHECK-NEXT:       Tapir Task Information
 ; CHECK-NEXT:       Basic Alias Analysis (stateless AA impl)
 ; CHECK-NEXT:       Function Alias Analysis Results
 ; CHECK-NEXT:       Memory SSA

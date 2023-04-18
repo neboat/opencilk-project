@@ -663,8 +663,7 @@ void PassManagerBuilder::populateModulePassManager(
 
   do {
     RerunAfterTapirLowering =
-      !TapirHasBeenLowered && (TapirTargetID::None != TapirTarget) &&
-      !PrepareForThinLTO;
+      !TapirHasBeenLowered && (TapirTargetID::None != TapirTarget);
 
   // Infer attributes about declarations if possible.
   MPM.add(createInferFunctionAttrsLegacyPass());
@@ -803,13 +802,7 @@ void PassManagerBuilder::populateModulePassManager(
 
   // Stripmine Tapir loops.
   if (LoopStripmine) {
-    if (VerifyTapir)
-      // Verify the IR before loop stripmining
-      MPM.add(createVerifierPass());
     MPM.add(createLoopStripMinePass());
-    if (VerifyTapir)
-      // Verify the IR after loop stripmining
-      MPM.add(createVerifierPass());
     // Cleanup the IR after stripminning.
     MPM.add(createTaskSimplifyPass());
     MPM.add(createLoopSimplifyCFGPass());
@@ -891,16 +884,11 @@ void PassManagerBuilder::populateModulePassManager(
                            /*AllowSpeculation=*/true));
     // Outline Tapir loops as needed.
     MPM.add(createLoopSpawningTIPass());
-    if (VerifyTapir)
-      // Verify the IR produced by loop spawning
-      MPM.add(createVerifierPass());
 
     // The LoopSpawning pass may leave cruft around.  Clean it up.
     MPM.add(createCFGSimplificationPass(
         SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
     MPM.add(createPostOrderFunctionAttrsLegacyPass());
-    if (OptLevel > 2)
-      MPM.add(createArgumentPromotionPass()); // Scalarize uninlined fn args
     addFunctionSimplificationPasses(MPM);
     MPM.add(createReversePostOrderFunctionAttrsPass());
     if (MergeFunctions)
@@ -912,16 +900,11 @@ void PassManagerBuilder::populateModulePassManager(
     // Now lower Tapir to Target runtime calls.
     MPM.add(createTaskCanonicalizePass());
     MPM.add(createLowerTapirToTargetPass());
-    if (VerifyTapir)
-      // Verify the IR produced by Tapir lowering
-      MPM.add(createVerifierPass());
     // The lowering pass introduces new functions and may leave cruft around.
     // Clean it up.
     MPM.add(createCFGSimplificationPass(
         SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
     MPM.add(createPostOrderFunctionAttrsLegacyPass());
-    if (OptLevel > 2)
-      MPM.add(createArgumentPromotionPass()); // Scalarize uninlined fn args
     addFunctionSimplificationPasses(MPM);
     MPM.add(createReversePostOrderFunctionAttrsPass());
 
@@ -950,8 +933,6 @@ void PassManagerBuilder::populateModulePassManager(
     MPM.add(createAlwaysInlinerLegacyPass());
 
     MPM.add(createPostOrderFunctionAttrsLegacyPass());
-    if (OptLevel > 2)
-      MPM.add(createArgumentPromotionPass()); // Scalarize uninlined fn args
 
     addFunctionSimplificationPasses(MPM);
 

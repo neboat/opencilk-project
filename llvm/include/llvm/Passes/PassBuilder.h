@@ -688,6 +688,10 @@ public:
   void invokePipelineEarlySimplificationEPCallbacks(ModulePassManager &MPM,
                                                     OptimizationLevel Level,
                                                     ThinOrFullLTOPhase Phase);
+  void invokeTapirLateEPCallbacks(ModulePassManager &MPM,
+                                  OptimizationLevel Level);
+  void invokeTapirLoopEndEPCallbacks(ModulePassManager &MPM,
+                                     OptimizationLevel Level);
 
   static bool checkParametrizedPassName(StringRef Name, StringRef PassName) {
     if (!Name.consume_front(PassName))

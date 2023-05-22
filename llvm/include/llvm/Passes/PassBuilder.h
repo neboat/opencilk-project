@@ -715,6 +715,10 @@ public:
   invokePipelineEarlySimplificationEPCallbacks(ModulePassManager &MPM,
                                                OptimizationLevel Level,
                                                ThinOrFullLTOPhase Phase);
+  LLVM_ABI void invokeTapirLateEPCallbacks(ModulePassManager &MPM,
+                                           OptimizationLevel Level);
+  LLVM_ABI void invokeTapirLoopEndEPCallbacks(ModulePassManager &MPM,
+                                              OptimizationLevel Level);
 
   static bool checkParametrizedPassName(StringRef Name, StringRef PassName) {
     if (!Name.consume_front(PassName))

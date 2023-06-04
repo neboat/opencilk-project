@@ -295,6 +295,18 @@ MODULE_PASS_WITH_PARAMS(
                                         Opts.EmitSummary);
     },
     parseFatLTOOptions, "O0;O1;O2;O3;Os;Oz;thinlto;emit-summary")
+MODULE_PASS_WITH_PARAMS(
+    "tapir-lowering", "", [&](OptimizationLevel L) {
+      setupOptionsForPipelineAlias(PTO, L);
+      return buildTapirLoweringPipeline(L, ThinOrFullLTOPhase::None);
+    },
+    parseOptLevelParam, "O0;O1;O2;O3;Os;Oz")
+MODULE_PASS_WITH_PARAMS(
+    "tapir-lowering-loops", "", [&](OptimizationLevel L) {
+      setupOptionsForPipelineAlias(PTO, L);
+      return buildTapirLoopLoweringPipeline(L, ThinOrFullLTOPhase::None);
+    },
+    parseOptLevelParam, "O0;O1;O2;O3;Os;Oz")
 
 #undef MODULE_PASS_WITH_PARAMS
 

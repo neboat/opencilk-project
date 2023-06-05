@@ -942,7 +942,10 @@ public:
 
     /// Initialize an aggreagate with parenthesized list of values.
     /// This is a C++20 feature.
-    SK_ParenthesizedListInit
+    SK_ParenthesizedListInit,
+
+    /// OpenCilk
+    SK_ViewLookup
   };
 
   /// A single step in the initialization sequence.
@@ -1344,6 +1347,8 @@ public:
 
   /// Add a zero-initialization step.
   void AddZeroInitializationStep(QualType T);
+
+  void AddViewLookup(QualType T);
 
   /// Add a C assignment step.
   //

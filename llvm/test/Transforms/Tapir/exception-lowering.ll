@@ -673,7 +673,7 @@ unreachable:                                      ; preds = %lpad, %lpad5
 ; Function Attrs: nounwind
 declare void @llvm.assume(i1) #10
 
-; CHECK-LABEL: define private fastcc void @_Z14spawn_tryblocki.outline_entry.tf.otd1(i32
+; CHECK-LABEL: define internal fastcc void @_Z14spawn_tryblocki.outline_entry.tf.otd1(i32
 ; CHECK: %[[ARG:[a-zA-Z0-9._]+]])
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 
@@ -686,7 +686,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: br label %{{.+}}
 
 
-; CHECK-LABEL: define private fastcc void @_Z14spawn_tryblocki.outline_det.cont.tf.otd1()
+; CHECK-LABEL: define internal fastcc void @_Z14spawn_tryblocki.outline_det.cont.tf.otd1()
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 
 ; CHECK: call void @__cilkrts_enter_frame_fast_1(%struct.__cilkrts_stack_frame* %[[CILKSF]])
@@ -723,7 +723,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: resume { i8*, i32 } %[[LPADVAL]]
 
 
-; CHECK-LABEL: define private fastcc void @_Z14spawn_tryblocki.outline_det.cont11.tf.otd1(i32
+; CHECK-LABEL: define internal fastcc void @_Z14spawn_tryblocki.outline_det.cont11.tf.otd1(i32
 ; CHECK: %[[ARG:[a-zA-Z0-9._]+]])
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 
@@ -736,7 +736,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: br label %{{.+}}
 
 
-; CHECK-LABEL: define private fastcc void @_Z18spawn_throw_inlinei.outline_entry.tf.otd1()
+; CHECK-LABEL: define internal fastcc void @_Z18spawn_throw_inlinei.outline_entry.tf.otd1()
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 
 ; CHECK: call void @__cilkrts_enter_frame_fast_1(%struct.__cilkrts_stack_frame* %[[CILKSF]])
@@ -764,7 +764,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: unreachable
 
 
-; CHECK-LABEL: define private fastcc void @_Z22spawn_block_destructori.outline_entry.tf.otd1(
+; CHECK-LABEL: define internal fastcc void @_Z22spawn_block_destructori.outline_entry.tf.otd1(
 ; CHECK: %[[ARG:[a-zA-Z0-9._]+]])
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 
@@ -790,7 +790,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: resume { i8*, i32 } %[[LPADVAL]]
 
 
-; CHECK-LABEL: define private fastcc void @_Z21spawn_decl_destructori.outline_entry.tf.otd1()
+; CHECK-LABEL: define internal fastcc void @_Z21spawn_decl_destructori.outline_entry.tf.otd1()
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 ; CHECK: %[[REFTMP:.+]] = alloca %class.Foo
 
@@ -813,7 +813,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: unreachable
 
 
-; CHECK-LABEL: define private fastcc void @_Z21spawn_stmt_destructori.outline_entry.tf.otd1()
+; CHECK-LABEL: define internal fastcc void @_Z21spawn_stmt_destructori.outline_entry.tf.otd1()
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 ; CHECK: %[[REFTMP:.+]] = alloca %class.Foo
 
@@ -836,7 +836,7 @@ declare void @llvm.assume(i1) #10
 ; CHECK-NEXT: unreachable
 
 
-; CHECK-LABEL: define private fastcc void @_Z16spawn_tf_nocatchi.outline_entry.tf.otd1()
+; CHECK-LABEL: define internal fastcc void @_Z16spawn_tf_nocatchi.outline_entry.tf.otd1()
 ; CHECK: %[[CILKSF:.+]] = alloca %struct.__cilkrts_stack_frame
 
 ; CHECK: call void @__cilkrts_enter_frame_fast_1(%struct.__cilkrts_stack_frame* %[[CILKSF]])

@@ -271,7 +271,7 @@ ModRefInfo AAResults::getModRefInfo(const Instruction *I, const CallBase *Call2,
             isa<AtomicCmpXchgInst>(DI) || isa<AtomicRMWInst>(DI) ||
             isa<CatchPadInst>(DI) || isa<CatchReturnInst>(DI) ||
             DI.isFenceLike() || isa<CallBase>(DI))
-          Result = unionModRef(Result, getModRefInfo(&DI, Call2, AAQI));
+          Result |= getModRefInfo(&DI, Call2, AAQI);
       }
 
       // Add successors
@@ -470,6 +470,10 @@ MemoryEffects AAResults::getMemoryEffects(const CallBase *Call,
     if (Result.doesNotAccessMemory())
       return Result;
   }
+
+  if (effectivelyArgMemOnly(Call, AAQI))
+    return MemoryEffects(MemoryEffects::Location::ArgMem,
+                         Result.getModRef(MemoryEffects::Location::ArgMem));
 
   return Result;
 }
@@ -828,7 +832,7 @@ ModRefInfo AAResults::getModRefInfo(const DetachInst *D,
       if (isa<SyncInst>(I) || isa<DetachInst>(I))
         continue;
 
-      Result = unionModRef(Result, getModRefInfo(&I, Loc, AAQI));
+      Result |= getModRefInfo(&I, Loc, AAQI);
 
       // Early-exit the moment we reach the top of the lattice.
       if (isModAndRefSet(Result))
@@ -863,7 +867,7 @@ ModRefInfo AAResults::getModRefInfo(const SyncInst *S,
       continue;
 
     if (const DetachInst *D = dyn_cast<DetachInst>(BB->getTerminator())) {
-      Result = unionModRef(Result, getModRefInfo(D, Loc, AAQI));
+      Result |= getModRefInfo(D, Loc, AAQI);
 
       // Early-exit the moment we reach the top of the lattice.
       if (isModAndRefSet(Result))

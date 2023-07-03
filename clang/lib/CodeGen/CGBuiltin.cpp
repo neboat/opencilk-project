@@ -3661,11 +3661,12 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     MaybeDetach(this, SpawnedScp);
     return RValue::get(Builder.CreateCall(F, {Begin, End}));
   }
-  case Builtin::BI__builtin_trap:
+  case Builtin::BI__builtin_trap: {
     IsSpawnedScope SpawnedScp(this);
     MaybeDetach(this, SpawnedScp);
     EmitTrapCall(Intrinsic::trap);
     return RValue::get(nullptr);
+  }
   case Builtin::BI__builtin_verbose_trap: {
     llvm::DILocation *TrapLocation = Builder.getCurrentDebugLocation();
     if (getDebugInfo()) {
@@ -3674,15 +3675,18 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
           *E->getArg(1)->tryEvaluateString(getContext()));
     }
     ApplyDebugLocation ApplyTrapDI(*this, TrapLocation);
+    IsSpawnedScope SpawnedScp(this);
+    MaybeDetach(this, SpawnedScp);
     // Currently no attempt is made to prevent traps from being merged.
     EmitTrapCall(Intrinsic::trap);
     return RValue::get(nullptr);
   }
-  case Builtin::BI__debugbreak:
+  case Builtin::BI__debugbreak: {
     IsSpawnedScope SpawnedScp(this);
     MaybeDetach(this, SpawnedScp);
     EmitTrapCall(Intrinsic::debugtrap);
     return RValue::get(nullptr);
+  }
   case Builtin::BI__builtin_unreachable: {
     IsSpawnedScope SpawnedScp(this);
     MaybeDetach(this, SpawnedScp);

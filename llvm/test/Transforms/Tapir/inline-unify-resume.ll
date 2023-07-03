@@ -1,7 +1,6 @@
 ; Check that resumes are properly unified when inlining a function that spawns.
 ;
-; RUN: opt < %s -enable-new-pm=0 -inline -S -o - | FileCheck %s
-; RUN: opt < %s -passes='cgscc(repeat<2>(inline))' -S -o - | FileCheck %s
+; RUN: opt < %s -passes='cgscc(repeat<2>(inline))' -S | FileCheck %s
 ; REQUIRES: x86-registered-target
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
@@ -1309,14 +1308,14 @@ lpad3:                                            ; preds = %invoke.cont
 ; CHECK-NEXT: br label %[[UNIFIED_RESUME]]
 
 ; CHECK: [[UNIFIED_RESUME]]:
-; CHECK-NEXT: %[[RESUME_VAL:.+]] = phi { i8*, i32 }
-; CHECK-NEXT: invoke void @llvm.taskframe.resume.sl_p0i8i32s(token %[[TASKFRAME]], { i8*, i32 } %[[RESUME_VAL]])
+; CHECK-NEXT: %[[RESUME_VAL:.+]] = phi { ptr, i32 }
+; CHECK-NEXT: invoke void @llvm.taskframe.resume.sl_p0i32s(token %[[TASKFRAME]], { ptr, i32 } %[[RESUME_VAL]])
 ; CHECK-NEXT: to label %{{.+}} unwind label %[[UNIFIED_RESUME_SPLIT:.+]]
 
 ; CHECK: [[UNIFIED_RESUME_SPLIT]]:
-; CHECK-NEXT: %[[SPLIT_RESUME_VAL:.+]] = landingpad { i8*, i32 }
+; CHECK-NEXT: %[[SPLIT_RESUME_VAL:.+]] = landingpad { ptr, i32 }
 ; CHECK-NEXT: cleanup
-; CHECK-NEXT: resume { i8*, i32 } %[[SPLIT_RESUME_VAL]]
+; CHECK-NEXT: resume { ptr, i32 } %[[SPLIT_RESUME_VAL]]
 
 declare hidden void @_ZN4gbbs15symmetric_graphINS_16symmetric_vertexEfE3delEv(%"struct.gbbs::symmetric_graph.66.995.1919.3766.5613.13920.18535.26842.28688.36995.43456.49917.54532.59147.65608.68377.76684.77607.78530.79453.80376.81299.82222.84991.85914.86837.87760.90529.91452.92375.93298.96990.97913.98836.99759.100682.101605.108066.110835.112681.113604.117296.118219.119142.120065.120988.129295.139448.147755.159754.160677.161600.162523.163446.164369.166215.168984.169907.172676.173599.174522.179137.180983.182829.183752.186521.189290.192059.192982.195751.196674.200366.201289.203135.204058.204981.205904.207750.212365.213288.214211.216057.218826.227133.240055.252054.252977.253900.255746.259438.266822.269591.283436.286205.293589.312972.316664.344354"*) local_unnamed_addr #0 align 2
 

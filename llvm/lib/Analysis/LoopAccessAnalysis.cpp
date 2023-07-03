@@ -3120,7 +3120,7 @@ const LoopAccessInfo &LoopAccessInfoManager::getInfo(Loop &L) {
 
   if (Inserted)
     It->second =
-        std::make_unique<LoopAccessInfo>(&L, &SE, TTI, TLI, &AA, &DT, &LI);
+        std::make_unique<LoopAccessInfo>(&L, &SE, TTI, TLI, &AA, &DT, &LI, &TI);
 
   return *It->second;
 }

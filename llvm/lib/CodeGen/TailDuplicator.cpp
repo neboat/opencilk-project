@@ -596,7 +596,7 @@ bool TailDuplicator::shouldTailDuplicate(const BlockDesc &Desc,
   else
     MaxDuplicateCount = TailDupSize;
   if (Desc.BRNZ)
-    MaxDuplicateCount += (TailDupCBZ > 1) + Desc.BRNZ.getValue().IsKill;
+    MaxDuplicateCount += (TailDupCBZ > 1) + Desc.BRNZ.value().IsKill;
   if (llvm::shouldOptimizeForSize(&TailBB, PSI, MBFI))
     MaxDuplicateCount = 1;
 
@@ -936,7 +936,7 @@ bool TailDuplicator::tailDuplicate(const BlockDesc &Desc,
     // If Live is true, the value produced by RegSet is used other
     // than by a conditional branch.
     bool Live = false; // liveness of RegSet
-    const BlockBRNZ *BRNZ = Desc.BRNZ ? Desc.BRNZ.getPointer() : nullptr;
+    const BlockBRNZ *BRNZ = Desc.BRNZ ? &Desc.BRNZ.value() : nullptr;
     if (BRNZ) {
       Live = !BRNZ->IsKill;
       const TargetRegisterInfo *TRI = MF->getRegInfo().getTargetRegisterInfo();

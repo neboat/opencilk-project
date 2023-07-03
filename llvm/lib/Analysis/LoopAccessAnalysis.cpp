@@ -3119,7 +3119,7 @@ const LoopAccessInfo &LoopAccessInfoManager::getInfo(Loop &L,
   // or if it was created with a different value of AllowPartial.
   if (Inserted || It->second->hasAllowPartial() != AllowPartial)
     It->second = std::make_unique<LoopAccessInfo>(&L, &SE, TTI, TLI, &AA, &DT,
-                                                  &LI, AllowPartial);
+                                                  &LI, AllowPartial, &TI);
 
   return *It->second;
 }

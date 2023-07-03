@@ -10030,7 +10030,8 @@ AArch64InstrInfo::analyzeLoopForPipelining(MachineBasicBlock *LoopBB) const {
       Init, IsUpdatePriorComp, Cond);
 }
 
-Optional<BlockBRNZ> AArch64InstrInfo::isZeroTest(MachineBasicBlock &MBB) const {
+std::optional<BlockBRNZ>
+AArch64InstrInfo::isZeroTest(MachineBasicBlock &MBB) const {
   const AArch64RegisterInfo *TRI = &getRegisterInfo();
   MachineBasicBlock *U = nullptr, *Zero = nullptr, *Nonzero = nullptr;
 
@@ -10041,7 +10042,7 @@ Optional<BlockBRNZ> AArch64InstrInfo::isZeroTest(MachineBasicBlock &MBB) const {
   }
 
   if (MI == MBB.instr_rend())
-    return Optional<BlockBRNZ>();
+    return std::optional<BlockBRNZ>();
 
   switch (MI->getOpcode()) {
   case AArch64::CBNZW:
@@ -10055,7 +10056,7 @@ Optional<BlockBRNZ> AArch64InstrInfo::isZeroTest(MachineBasicBlock &MBB) const {
     Zero = MI->getOperand(1).getMBB();
     break;
   default:
-    return Optional<BlockBRNZ>();
+    return std::optional<BlockBRNZ>();
   }
 
   BlockBRNZ Desc;
@@ -10078,7 +10079,7 @@ Optional<BlockBRNZ> AArch64InstrInfo::isZeroTest(MachineBasicBlock &MBB) const {
       return Desc;
     }
     if (MI->modifiesRegister(Reg0, TRI))
-      return Optional<BlockBRNZ>();
+      return std::optional<BlockBRNZ>();
     if (MI->readsRegister(Reg0, TRI))
       Desc.IsKill = false;
   }

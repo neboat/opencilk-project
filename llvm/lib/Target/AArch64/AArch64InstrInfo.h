@@ -428,7 +428,7 @@ public:
 
   CombinerObjective getCombinerObjective(unsigned Pattern) const override;
 
-  Optional<BlockBRNZ> isZeroTest(MachineBasicBlock &MBB) const override;
+  std::optional<BlockBRNZ> isZeroTest(MachineBasicBlock &MBB) const override;
   bool isSetConstant(const MachineInstr &MI, Register &Reg,
                      int64_t &Value) const override;
 

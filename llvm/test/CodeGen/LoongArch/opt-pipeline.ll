@@ -55,6 +55,13 @@
 ; LAXX-NEXT:       Shadow Stack GC Lowering
 ; LAXX-NEXT:       Lower constant intrinsics
 ; LAXX-NEXT:       Remove unreachable blocks from the CFG
+; LAXX-NEXT:       Tapir Task Information
+; LAXX-NEXT:       Natural Loop Information
+; LAXX-NEXT:       Lazy Branch Probability Analysis
+; LAXX-NEXT:       Lazy Block Frequency Analysis
+; LAXX-NEXT:       Optimization Remark Emitter
+; LAXX-NEXT:       Tapir last-minute cleanup for CodeGen
+; LAXX-NEXT:       Dominator Tree Construction
 ; LAXX-NEXT:       Natural Loop Information
 ; LAXX-NEXT:       Post-Dominator Tree Construction
 ; LAXX-NEXT:       Branch Probability Analysis

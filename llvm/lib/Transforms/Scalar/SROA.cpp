@@ -5882,6 +5882,13 @@ std::pair<bool /*Changed*/, bool /*CFGChanged*/> SROA::runSROA(Function &F) {
         PromotableAllocas.set_subtract(DeletedAllocas);
         DeletedAllocas.clear();
       }
+
+      // Preserve TaskInfo by manually updating it based on the updated DT.
+      if (IterationCFGChanged && TI) {
+        // FIXME: Recalculating TaskInfo for the whole function is wasteful.
+        // Optimize this routine in the future.
+        TI->recalculate(F, DTU->getDomTree());
+      }
     }
 
     Changed |= promoteAllocas();
@@ -5916,6 +5923,7 @@ PreservedAnalyses SROAPass::run(Function &F, FunctionAnalysisManager &AM) {
   if (!CFGChanged)
     PA.preserveSet<CFGAnalyses>();
   PA.preserve<DominatorTreeAnalysis>();
+  PA.preserve<TaskAnalysis>();
   return PA;
 }
 
@@ -5963,6 +5971,7 @@ public:
     AU.addRequired<TaskInfoWrapperPass>();
     AU.addPreserved<GlobalsAAWrapperPass>();
     AU.addPreserved<DominatorTreeWrapperPass>();
+    AU.addPreserved<TaskInfoWrapperPass>();
   }
 
   StringRef getPassName() const override { return "SROA"; }

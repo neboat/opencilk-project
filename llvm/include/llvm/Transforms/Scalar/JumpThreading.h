@@ -94,6 +94,7 @@ class JumpThreadingPass : public PassInfoMixin<JumpThreadingPass> {
 #else
   SmallPtrSet<const BasicBlock *, 16> LoopHeaders;
 #endif
+  DenseMap<const BasicBlock *, SmallPtrSet<const BasicBlock *, 16>> TapirTasks;
 
   // JumpThreading must not processes blocks unreachable from entry. It's a
   // waste of compute time and can potentially lead to hangs.
@@ -116,6 +117,7 @@ public:
 
   DomTreeUpdater *getDomTreeUpdater() const { return DTU.get(); }
   LLVM_ABI void findLoopHeaders(Function &F);
+  LLVM_ABI void findTapirTasks(Function &F, DominatorTree &DT);
   LLVM_ABI bool processBlock(BasicBlock *BB);
   LLVM_ABI bool maybeMergeBasicBlockIntoOnlyPred(BasicBlock *BB);
   LLVM_ABI void updateSSA(BasicBlock *BB, BasicBlock *NewBB,

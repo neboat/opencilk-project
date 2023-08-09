@@ -2007,7 +2007,8 @@ def int_ptrmask: DefaultAttrsIntrinsic<[llvm_any_ty], [LLVMMatchType<0>, llvm_an
 // Intrinsic to wrap a thread local variable.
 def int_threadlocal_address : DefaultAttrsIntrinsic<[llvm_anyptr_ty], [LLVMMatchType<0>],
                                                     [NonNull<RetIndex>, NonNull<ArgIndex<0>>,
-                                                     IntrNoMem, IntrSpeculatable]>;
+                                                     IntrInaccessibleMemOnly, IntrReadMem,
+                                                     IntrSpeculatable]>;
 
 def int_stepvector : DefaultAttrsIntrinsic<[llvm_anyvector_ty],
                                             [], [IntrNoMem]>;

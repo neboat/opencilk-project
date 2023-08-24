@@ -112,6 +112,7 @@ RValue CodeGenFunction::EmitCXXDestructorCall(
   const CXXMethodDecl *DtorDecl = cast<CXXMethodDecl>(Dtor.getDecl());
 
   assert(!ThisTy.isNull());
+  ThisTy = ThisTy.stripHyperobject();
   assert(ThisTy->getAsCXXRecordDecl() == DtorDecl->getParent() &&
          "Pointer/Object mixup");
 
@@ -187,7 +188,7 @@ static CXXRecordDecl *getCXXRecord(const Expr *E) {
   QualType T = E->getType();
   if (const PointerType *PTy = T->getAs<PointerType>())
     T = PTy->getPointeeType();
-  const RecordType *Ty = T->castAs<RecordType>();
+  const RecordType *Ty = T.stripHyperobject()->castAs<RecordType>();
   return cast<CXXRecordDecl>(Ty->getDecl());
 }
 
@@ -2159,7 +2160,7 @@ void CodeGenFunction::EmitCXXDeleteExpr(const CXXDeleteExpr *E) {
   EmitBlock(DeleteNotNull);
   Ptr.setKnownNonNull();
 
-  QualType DeleteTy = E->getDestroyedType();
+  QualType DeleteTy = E->getDestroyedType().stripHyperobject();
 
   // A destroying operator delete overrides the entire operation of the
   // delete expression.

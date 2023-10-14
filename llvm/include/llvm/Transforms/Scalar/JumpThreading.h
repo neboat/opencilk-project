@@ -94,7 +94,8 @@ class JumpThreadingPass : public PassInfoMixin<JumpThreadingPass> {
 #else
   SmallPtrSet<const BasicBlock *, 16> LoopHeaders;
 #endif
-  DenseMap<const BasicBlock *, SmallPtrSet<const BasicBlock *, 16>> TapirTasks;
+  DenseMap<AssertingVH<const BasicBlock>, SmallPtrSet<const BasicBlock *, 16>>
+      TapirTasks;
 
   // JumpThreading must not processes blocks unreachable from entry. It's a
   // waste of compute time and can potentially lead to hangs.

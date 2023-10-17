@@ -2444,8 +2444,10 @@ void llvm::TapirLoopHints::clearHintsMetadata() {
 /// Returns true if Tapir-loop hints require loop outlining during lowering.
 bool llvm::hintsDemandOutlining(const TapirLoopHints &Hints) {
   switch (Hints.getStrategy()) {
-  case TapirLoopHints::ST_DAC: return true;
-  default: return false;
+  case TapirLoopHints::ST_SEQ:
+    return false;
+  default:
+    return true;
   }
 }
 

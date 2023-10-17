@@ -62,14 +62,17 @@ StringLiteral const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] =
 };
 
 TapirTargetOptions *TapirTargetOptions::clone() const {
-  TapirTargetOptions *New = nullptr;
   switch (getKind()) {
-  default:
-    llvm_unreachable("Unhandled TapirTargetOption.");
+  case Last_TTO:
+    llvm_unreachable("Invalid TapirTargetOption.");
+  case TTO_Chi:
+    return cast<ChiABIOptions>(this)->cloneImpl();
+  case TTO_Lambda:
+    return cast<LambdaABIOptions>(this)->cloneImpl();
   case TTO_OpenCilk:
-    New = cast<OpenCilkABIOptions>(this)->cloneImpl();
+    return cast<OpenCilkABIOptions>(this)->cloneImpl();
   }
-  return New;
+  llvm_unreachable("Unhandled TapirTargetOption.");
 }
 
 static bool hasSinCosPiStret(const Triple &T) {

@@ -300,10 +300,6 @@ void ChiABI::prepareModule(bool ProcessingTapirLoops) {
   if ("" != ClHostBCPath)
     HostBCPath = ClHostBCPath;
 
-  // if ("" == HostBCPath) {
-  //   C.emitError("ChiABI: No bitcode ABI file given.");
-  //   return;
-  // }
   if ("" != HostBCPath)
     linkExternalBitcode(M, HostBCPath);
 
@@ -745,6 +741,8 @@ ChiABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) {
   // Outliner->LoopLaunchCallback = nullLoopLaunchCallback;
   if (InputsCallback)
     Outliner->setInputsCallback(InputsCallback);
+  if (LoopLaunchCallback)
+    Outliner->setLoopLaunchCallback(LoopLaunchCallback);
 
   return Outliner;
 }
@@ -768,14 +766,6 @@ ChiLoop::ChiLoop(Module &M, Module &KernelModule, // const std::string &KN,
   LLVM_DEBUG(dbgs() << "chiabi: creating loop outliner:\n"
                     // << "\tkernel name: " << KernelName << "\n"
                     << "\tmodule     : " << KernelModule.getName() << "\n\n");
-
-  // LLVMContext &Ctx = KernelModule.getContext();
-  // Type *Int32Ty = Type::getInt32Ty(Ctx);
-  // Type *Int64Ty = Type::getInt64Ty(Ctx);
-  // Type *VoidTy = Type::getVoidTy(Ctx);
-  // PointerType *VoidPtrTy = Type::getInt8PtrTy(Ctx);
-  // PointerType *VoidPtrPtrTy = VoidPtrTy->getPointerTo();
-  // PointerType *CharPtrTy = Type::getInt8PtrTy(Ctx);
 }
 
 ChiLoop::~ChiLoop() {}
@@ -1085,7 +1075,6 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
   ICmpInst *ClonedCond = cast<ICmpInst>(VMap[TLI.getCondition()]);
   if (ClonedCond->getOperand(0) != End)
     ++TripCountIdx;
-  // dbgs() << "End " << *End << ", ClonedCond " << *ClonedCond << ", TripCountIdx " << TripCountIdx << "\n";
   assert(ClonedCond->getOperand(TripCountIdx) == End &&
          "End argument not used in condition!");
   ClonedCond->setOperand(TripCountIdx, RTSEnd);
@@ -1146,120 +1135,28 @@ void ChiLoop::processOutlinedLoopCall(TapirLoopInfo &TL, TaskOutlineInfo &TOI,
   PointerType *VoidPtrTy = Type::getInt8PtrTy(Ctx);
 
   CallBase *CB = cast<CallBase>(TOI.ReplCall);
-  // Function &F = *KernelModule.getFunction(KernelName.c_str());
-  // Function *Parent = CB->getFunction();
-  // unsigned IVArgIndex = getIVArgIndex(*Parent, TOI.InputSet);
-  // Type *PrimaryIVTy = CB->getArgOperand(IVArgIndex)->getType();
-  // Value *TripCount = CB->getArgOperand(getLimitArgIndex(*Parent, TOI.InputSet));
-  // Value *GrainsizeVal = CB->getArgOperand(IVArgIndex + 2);
   BasicBlock *Exit = TL.getExitBlock();
   SyncInst *LoopSync = nullptr;
   // TODO: Perform a more elaborate analysis to find a sync for this loop.
   if (SyncInst *SI = dyn_cast<SyncInst>(Exit->getTerminator()))
     if (SI->getSyncRegion() == TL.getTask()->getDetach()->getSyncRegion())
       LoopSync = SI;
-  
-  // BasicBlock *RCBB = CB->getParent();
-  // BasicBlock *NBB = RCBB->splitBasicBlock(CB);
 
   // Swap our the call with a call to a locally declared function with the same
   // name and type as the function in the destination module.  This ensures that
   // this module is valid LLVM IR.
   FunctionCallee PlaceholderF = M.getOrInsertFunction(
       CB->getCalledFunction()->getName(), CB->getFunctionType());
-  // TOI.ReplCall->eraseFromParent();
   CB->setCalledFunction(cast<Function>(PlaceholderF.getCallee()));
 
   // Call the loop-launch callback, if it exists.
-  if (TTarget->LoopLaunchCallback) {
-    TTarget->LoopLaunchCallback(*CB, LoopSync);
+  if (LoopLaunchCallback) {
+    LoopLaunchCallback(*CB, LoopSync);
     return;
   }
 
   // TODO: It's not clear what should be done about the callsite if no callback
   // is available.
-
-  // IRBuilder<> B(&NBB->front());
-  // transformForPTX(F);
-
-  // BasicBlock &EBB = Parent->getEntryBlock();
-  // IRBuilder<> EB(&EBB.front());
-
-  // ArrayType *ArrayTy = ArrayType::get(VoidPtrTy, OrderedInputs.size());
-  // Value *ArgArray = EB.CreateAlloca(ArrayTy);
-  // unsigned int i = 0;
-  // Value *prefetchStream = nullptr;
-  // if (not CodeGenStreams) {
-  //   // If we are going to use the default stream we set the main prefetch stream
-  //   // to null and it will propagate through all prefetch and the final launch
-  //   // call.
-  //   prefetchStream = ConstantPointerNull::get(VoidPtrTy);
-  // }
-
-  // for (Value *V : OrderedInputs) {
-  //   Value *VP = EB.CreateAlloca(V->getType());
-  //   B.CreateStore(V, VP);
-  //   Value *VoidVPtr = B.CreateBitCast(VP, VoidPtrTy);
-  //   Value *ArgPtr = B.CreateConstInBoundsGEP2_32(ArrayTy, ArgArray, 0, i);
-  //   B.CreateStore(VoidVPtr, ArgPtr);
-  //   i++;
-
-  //   if (CodeGenPrefetch) {
-  //     Type *VT = V->getType();
-  //     if (VT->isPointerTy()) {
-  //       Value *VoidPP = B.CreateBitCast(V, VoidPtrTy);
-  //       if (prefetchStream == nullptr) { // stream codegen enabled...
-  //         LLVM_DEBUG(dbgs() << "creating initial prefetch stream.\n");
-  //         prefetchStream = B.CreateCall(KitCudaMemPrefetchFn, {VoidPP},
-  //                                       "_cuabi.prefetch_stream");
-  //       } else {
-  //         LLVM_DEBUG(dbgs() << "code gen prefetch.\n");
-  //         B.CreateCall(KitCudaMemPrefetchOnStreamFn, {VoidPP, prefetchStream});
-  //       }
-  //     }
-  //   }
-  // }
-
-  // const DataLayout &DL = M.getDataLayout();
-  // Value *argsPtr = B.CreateConstInBoundsGEP2_32(ArrayTy, ArgArray, 0, 0);
-  // // Generate a call to launch the kernel.
-  // Constant *KNameCS = ConstantDataArray::getString(Ctx, KernelName);
-  // GlobalVariable *KNameGV =
-  //     new GlobalVariable(M, KNameCS->getType(), true,
-  //                        GlobalValue::PrivateLinkage, KNameCS, ".str");
-  // KNameGV->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
-  // Type *StrTy = KNameGV->getType();
-  // Constant *Zeros[] = {ConstantInt::get(DL.getIndexType(StrTy), 0),
-  //                      ConstantInt::get(DL.getIndexType(StrTy), 0)};
-  // Constant *KNameParam =
-  //     ConstantExpr::getGetElementPtr(KNameGV->getValueType(), KNameGV, Zeros);
-
-  // // We can't get to the complete fat binary data until all loops in the input
-  // // module have been processed (i.e., the complete kernel module is poplated,
-  // // converted to PTX, turned into an assembled binary, etc.).  Because of this
-  // // we create a "stand in" (dummy) here and will replace it later in the ABI's
-  // // transformaiton pipeline.
-  // Constant *DummyFBGV =
-  //     tapir::getOrInsertFBGlobal(M, "_cuabi.dummy_fatbin", VoidPtrTy);
-  // Value *DummyFBPtr = B.CreateLoad(VoidPtrTy, DummyFBGV);
-  // Type *Int64Ty = Type::getInt64Ty(Ctx);
-  // Value *TCCI = nullptr;
-  // if (TripCount->getType() != Int64Ty) {
-  //   TCCI = CastInst::CreateIntegerCast(TripCount, Int64Ty, false);
-  //   B.Insert(TCCI, "tcci");
-  // } else
-  //   TCCI = TripCount; // Simplify cases in launch code gen below...
-
-  // if (not TTarget->hasGlobalVariables()) {
-  //   LLVM_DEBUG(dbgs() << "\tcreating kernel launch (no globals).\n");
-  //   B.CreateCall(KitCudaLaunchFn,
-  //                {DummyFBPtr, KNameParam, argsPtr, TCCI, prefetchStream});
-  // } else {
-  //   LLVM_DEBUG(dbgs() << "\tcreating kernel launch (w/ globals).\n");
-  //   Value *CuModule = B.CreateCall(KitCudaCreateFBModuleFn, {DummyFBPtr});
-  //   B.CreateCall(KitCudaModuleLaunchFn,
-  //                {CuModule, KNameParam, argsPtr, TCCI, prefetchStream});
-  // }
 }
 
 /// @brief Wite the given module to a file as readable IR.
@@ -1316,50 +1213,4 @@ void ChiABI::postProcessModule() {
                       << "\n");
     linkExternalBitcode(M, HostBCPath, Linker::LinkOnlyNeeded);
   }
-
-  // CudaABIOutputFile PTXFile = generatePTX();
-  // CudaABIOutputFile AsmFile = assemblePTXFile(PTXFile);
-  // CudaABIOutputFile FatbinFile = createFatbinaryFile(AsmFile);
-  // GlobalVariable *Fatbinary = embedFatbinary(FatbinFile);
-
-  // finalizeLaunchCalls(M, Fatbinary);
-  // registerFatbinary(Fatbinary);
-  // if (OptLevel > 0 && RunHostPostOpt) {
-  //   LLVM_DEBUG(dbgs() << "cuabi: Running experimental post-transform "
-  //                     << "host-side (re)optimization pass.\n");
-
-  //   if (OptLevel > 3)
-  //     OptLevel = 3;
-
-  //   PipelineTuningOptions pto;
-  //   pto.LoopVectorization = OptLevel > 2;
-  //   pto.SLPVectorization = OptLevel > 2;
-  //   pto.LoopUnrolling = true;
-  //   pto.LoopInterleaving = true;
-  //   pto.LoopStripmine = false;
-
-  //   LoopAnalysisManager lam;
-  //   FunctionAnalysisManager fam;
-  //   CGSCCAnalysisManager cgam;
-  //   ModuleAnalysisManager mam;
-
-  //   PassBuilder pb(PTXTargetMachine, pto);
-  //   pb.registerModuleAnalyses(mam);
-  //   pb.registerCGSCCAnalyses(cgam);
-  //   pb.registerFunctionAnalyses(fam);
-  //   pb.registerLoopAnalyses(lam);
-  //   PTXTargetMachine->registerPassBuilderCallbacks(pb);
-  //   pb.crossRegisterProxies(lam, fam, cgam, mam);
-
-  //   ModulePassManager mpm = pb.buildPerModuleDefaultPipeline(*optLevels[OptLevel]);
-  //   mpm.addPass(VerifierPass());
-  //   mpm.run(M, mam);
-  //   LLVM_DEBUG(dbgs() << "\tpasses complete.\n");
-  // }
-
-  // if (not KeepIntermediateFiles) {
-  //   sys::fs::remove(PTXFile->getFilename());
-  //   sys::fs::remove(AsmFile->getFilename());
-  //   sys::fs::remove(FatbinFile->getFilename());
-  // }
 }

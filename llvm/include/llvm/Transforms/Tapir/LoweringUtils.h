@@ -464,6 +464,10 @@ public:
   void setInputsCallback(InputsCallbackTy Callback) {
     InputsCallback = Callback;
   }
+  LoopLaunchCallbackTy getLoopLaunchCallback() { return LoopLaunchCallback; }
+  void setLoopLaunchCallback(LoopLaunchCallbackTy Callback) {
+    LoopLaunchCallback = Callback;
+  }
 };
 
 /// Generate a TapirTarget object for the specified TapirTargetID.

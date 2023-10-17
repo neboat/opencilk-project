@@ -98,17 +98,17 @@ struct RTSFnDesc {
 };
 } // namespace
 
-// void LambdaABI::setOptions(const TapirTargetOptions &Options) {
-//   if (!isa<LambdaABIOptions>(Options))
-//     return;
+void LambdaABI::setOptions(const TapirTargetOptions &Options) {
+  if (!isa<LambdaABIOptions>(Options))
+    return;
 
-//   const LambdaABIOptions &OptionsCast = cast<LambdaABIOptions>(Options);
+  const LambdaABIOptions &OptionsCast = cast<LambdaABIOptions>(Options);
 
-//   // Get the path to the runtime bitcode file.
-//   RuntimeBCPath = OptionsCast.getRuntimeBCPath();
-// }
+  // Get the path to the runtime bitcode file.
+  RuntimeBCPath = OptionsCast.getRuntimeBCPath();
+}
 
-void LambdaABI::prepareModule() {
+void LambdaABI::prepareModule(bool ProcessingTapirLoops) {
   LLVMContext &C = M.getContext();
   const DataLayout &DL = DestM.getDataLayout();
   Type *Int8Ty = Type::getInt8Ty(C);

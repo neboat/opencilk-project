@@ -16,6 +16,7 @@
 #include "llvm/InitializePasses.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 using namespace llvm;
 
 static cl::opt<TargetLibraryInfoImpl::VectorLibrary> ClVectorLibrary(
@@ -41,6 +42,8 @@ static cl::opt<TapirTargetID> ClTapirTarget(
                           "none", "None"),
                clEnumValN(TapirTargetID::Serial,
                           "serial", "Serial code"),
+               clEnumValN(TapirTargetID::Chi,
+                          "chi", "Chi"),
                clEnumValN(TapirTargetID::Cilk,
                           "cilk", "Cilk Plus"),
                clEnumValN(TapirTargetID::Cheetah,
@@ -1948,6 +1951,7 @@ void TargetLibraryInfoImpl::addTapirTargetLibraryFunctions(
   case TapirTargetID::None:
   case TapirTargetID::Serial:
   case TapirTargetID::Cheetah:
+  case TapirTargetID::Chi:
   case TapirTargetID::Lambda:
   case TapirTargetID::OMPTask:
   case TapirTargetID::Qthreads:

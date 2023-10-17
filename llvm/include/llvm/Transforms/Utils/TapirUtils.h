@@ -247,6 +247,7 @@ public:
   enum SpawningStrategy {
     ST_SEQ,
     ST_DAC,
+    ST_TGT,
     ST_END,
   };
 
@@ -288,6 +289,8 @@ public:
       return "Spawn iterations sequentially";
     case TapirLoopHints::ST_DAC:
       return "Use divide-and-conquer";
+    case TapirLoopHints::ST_TGT:
+      return "Use target-specific loop processing";
     case TapirLoopHints::ST_END:
       return "Unknown";
     }

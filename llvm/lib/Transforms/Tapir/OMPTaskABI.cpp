@@ -113,7 +113,7 @@ struct RTSFnDesc {
 //   RuntimeBCPath = OptionsCast.getRuntimeBCPath();
 // }
 
-void OMPTaskABI::prepareModule() {
+void OMPTaskABI::prepareModule(bool ProcessingTapirLoops) {
   LLVMContext &C = M.getContext();
   const DataLayout &DL = DestM.getDataLayout();
   Type *Int8Ty = Type::getInt8Ty(C);

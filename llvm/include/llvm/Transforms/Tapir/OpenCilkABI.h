@@ -17,6 +17,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Transforms/Tapir/LoweringUtils.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 
 namespace llvm {
 class Value;
@@ -158,7 +159,7 @@ public:
 
   void setOptions(const TapirTargetOptions &Options) override final;
 
-  void prepareModule() override final;
+  void prepareModule(bool ProcessingTapirLoops) override final;
   Value *lowerGrainsizeCall(CallInst *GrainsizeCall) override final;
   void lowerSync(SyncInst &SI) override final;
   void lowerReducerOperation(CallBase *CI) override;
@@ -190,7 +191,7 @@ public:
   bool processOrdinaryFunction(Function &F, BasicBlock *TFEntry) override final;
 
   LoopOutlineProcessor *
-  getLoopOutlineProcessor(const TapirLoopInfo *TL) const override final;
+  getLoopOutlineProcessor(const TapirLoopInfo *TL) override final;
 };
 } // namespace llvm
 

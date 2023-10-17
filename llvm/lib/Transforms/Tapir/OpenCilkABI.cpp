@@ -133,7 +133,7 @@ void OpenCilkABI::setOptions(const TapirTargetOptions &Options) {
   RuntimeBCPath = OptionsCast.getRuntimeBCPath();
 }
 
-void OpenCilkABI::prepareModule() {
+void OpenCilkABI::prepareModule(bool ProcessingTapirLoops) {
   LLVMContext &C = M.getContext();
   Type *Int8Ty = Type::getInt8Ty(C);
   Type *Int16Ty = Type::getInt16Ty(C);
@@ -1110,7 +1110,7 @@ bool OpenCilkABI::processOrdinaryFunction(Function &F, BasicBlock *TFEntry) {
 void OpenCilkABI::postProcessHelper(Function &F) {}
 
 LoopOutlineProcessor *OpenCilkABI::getLoopOutlineProcessor(
-    const TapirLoopInfo *TL) const {
+    const TapirLoopInfo *TL) {
   if (UseRuntimeCilkFor)
     return new RuntimeCilkFor(M);
   return nullptr;

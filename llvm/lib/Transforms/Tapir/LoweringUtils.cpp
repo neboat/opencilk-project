@@ -17,8 +17,10 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/Support/Timer.h"
+#include "llvm/Transforms/Tapir/ChiABI.h"
 #include "llvm/Transforms/Tapir/CilkABI.h"
 #include "llvm/Transforms/Tapir/LambdaABI.h"
+#include "llvm/Transforms/Tapir/LoweringUtils.h"
 #include "llvm/Transforms/Tapir/OMPTaskABI.h"
 #include "llvm/Transforms/Tapir/OpenCilkABI.h"
 #include "llvm/Transforms/Tapir/Outline.h"
@@ -42,6 +44,8 @@ TapirTarget *llvm::getTapirTargetFromID(Module &M, TapirTargetID ID) {
     return nullptr;
   case TapirTargetID::Serial:
     return new SerialABI(M);
+  case TapirTargetID::Chi:
+    return new ChiABI(M);
   case TapirTargetID::Cilk:
     return new CilkABI(M);
   case TapirTargetID::Cheetah:
@@ -306,18 +310,18 @@ void llvm::getTaskFrameInputsOutputs(TFValueSetMap &TFInputs,
           // an input.
           if (definedOutsideTaskFrame(*OI, &TF, TI))
             TFInputs[&TF].insert(*OI);
-      }
-      // Examine all users of this instruction.
-      for (User *U : I.users()) {
-        // If we find a live use outside of the task, it's an output.
-        if (Instruction *UI = dyn_cast<Instruction>(U)) {
-          if (definedOutsideTaskFrame(UI, &TF, TI) &&
-              DT.isReachableFromEntry(UI->getParent()))
-            TFOutputs[&TF].insert(&I);
+        }
+        // Examine all users of this instruction.
+        for (User *U : I.users()) {
+          // If we find a live use outside of the task, it's an output.
+          if (Instruction *UI = dyn_cast<Instruction>(U)) {
+            if (definedOutsideTaskFrame(UI, &TF, TI) &&
+                DT.isReachableFromEntry(UI->getParent()))
+              TFOutputs[&TF].insert(&I);
+          }
         }
       }
     }
-  }
   }
 }
 
@@ -421,7 +425,7 @@ llvm::createTaskArgsStruct(const ValueSet &Inputs, Task *T,
         ParentTF ? ParentTF->getEntry() : T->getParentTask()->getEntry();
     Value *TFCreate = ParentTF ? ParentTF->getTaskFrameCreate() : nullptr;
     IRBuilder<> Builder(TFCreate
-                            ? &*++cast<Instruction>(TFCreate)->getIterator()
+                            ? cast<Instruction>(TFCreate)->getNextNode()
                             : &*AllocaInsertBlk->getFirstInsertionPt());
     Closure = Builder.CreateAlloca(ST);
     // Store arguments into the structure
@@ -491,7 +495,7 @@ void llvm::fixupInputSet(Function &F, const ValueSet &Inputs, ValueSet &Fixed) {
   }
 
   // Sort the inputs to the task with largest arguments first, in order to
-  // improve packing or arguments in memory.
+  // improve packing of arguments in memory.
   SmallVector<Value *, 8> InputsToSort;
   for (Value *V : Inputs)
     if (V != SRetInput)
@@ -514,24 +518,103 @@ void llvm::fixupInputSet(Function &F, const ValueSet &Inputs, ValueSet &Fixed) {
       Fixed.insert(V);
 }
 
+Instruction *llvm::runInputsCallback(InputsCallbackTy Callback, Function &F,
+                                     Task *T, const ValueSet &TaskInputs,
+                                     ValueSet &HelperArgs, Instruction *StorePt,
+                                     Instruction *LoadPt,
+                                     ValueToValueMapTy &InputsMap,
+                                     Loop *TapirLoop) {
+  SmallPtrSet<BasicBlock *, 4> TaskFrameBlocks;
+  if (Spindle *TFCreateSpindle = T->getTaskFrameCreateSpindle()) {
+    // Collect taskframe blocks
+    for (Spindle *S : TFCreateSpindle->taskframe_spindles()) {
+      // Skip spindles contained in the task.
+      if (T->contains(S))
+        continue;
+      // Skip placeholder spindles.
+      if (isPlaceholderSuccessor(S->getEntry()))
+        continue;
+
+      for (BasicBlock *B : S->blocks())
+        TaskFrameBlocks.insert(B);
+    }
+  }
+  assert((T->encloses(LoadPt->getParent()) ||
+          TaskFrameBlocks.contains(LoadPt->getParent()) ||
+          (TapirLoop && LoadPt->getParent() == TapirLoop->getHeader())) &&
+         "Argument-load point must be inside task.");
+  assert(!T->encloses(StorePt->getParent()) &&
+         !TaskFrameBlocks.contains(StorePt->getParent()) &&
+         "Argument-store point must be outside task.");
+  assert(T->getParentTask()->encloses(StorePt->getParent()) &&
+         "Argument-store point expected to be in parent task.");
+
+  // Get useful IR builders for the callback.
+  Spindle *ParentTF = T->getEntrySpindle()->getTaskFrameParent();
+  BasicBlock *AllocaInsertBlk =
+      ParentTF ? ParentTF->getEntry() : T->getParentTask()->getEntry();
+  Value *TFCreate = ParentTF ? ParentTF->getTaskFrameCreate() : nullptr;
+  IRBuilder<> StaticAllocaInserter(
+      TFCreate ? cast<Instruction>(TFCreate)->getNextNode()
+               : &*AllocaInsertBlk->getFirstInsertionPt());
+  IRBuilder<> StoreBuilder(StorePt);
+  Instruction *BeforeArgs = StorePt->getPrevNode();
+  IRBuilder<> LoadBuilder(LoadPt);
+
+  // Run the callback.
+  Callback(F, TaskInputs, HelperArgs, InputsMap, StoreBuilder, LoadBuilder,
+           StaticAllocaInserter);
+
+  // If the callback remapped any of the inputs, update the uses of those inputs
+  // in the task.
+  for (Value *Input : TaskInputs) {
+    if (!InputsMap.count(Input))
+      continue;
+
+    Value *NewInput = InputsMap[Input];
+    // Update all uses of the input in the task/loop body.
+    auto UI = Input->use_begin(), E = Input->use_end();
+    for (; UI != E;) {
+      Use &U = *UI;
+      ++UI;
+      auto *Usr = dyn_cast<Instruction>(U.getUser());
+      if (!Usr)
+        continue;
+      if ((!T->encloses(Usr->getParent()) &&
+           !TaskFrameBlocks.contains(Usr->getParent()) &&
+           (!TapirLoop || (Usr->getParent() != TapirLoop->getHeader() &&
+                           Usr->getParent() != TapirLoop->getLoopLatch()))))
+        continue;
+      U.set(NewInput);
+    }
+  }
+
+  return BeforeArgs->getNextNode();
+}
+
 /// Organize the inputs to task \p T, given in \p TaskInputs, to create an
 /// appropriate set of inputs, \p HelperInputs, to pass to the outlined
 /// function for \p T.
 Instruction *llvm::fixupHelperInputs(
-    Function &F, Task *T, ValueSet &TaskInputs, ValueSet &HelperArgs,
+    Function &F, Task *T, const ValueSet &TaskInputs, ValueSet &HelperArgs,
     Instruction *StorePt, Instruction *LoadPt,
-    TapirTarget::ArgStructMode useArgStruct,
-    ValueToValueMapTy &InputsMap, Loop *TapirL) {
+    TapirTarget::ArgStructMode useArgStruct, ValueToValueMapTy &InputsMap,
+    InputsCallbackTy Callback, Loop *TapirLoop) {
   if (TapirTarget::ArgStructMode::None != useArgStruct) {
     std::pair<AllocaInst *, Instruction *> ArgsStructInfo =
-      createTaskArgsStruct(TaskInputs, T, StorePt, LoadPt,
-                           TapirTarget::ArgStructMode::Static == useArgStruct,
-                           InputsMap, TapirL);
+        createTaskArgsStruct(TaskInputs, T, StorePt, LoadPt,
+                             TapirTarget::ArgStructMode::Static == useArgStruct,
+                             InputsMap, TapirLoop);
     HelperArgs.insert(ArgsStructInfo.first);
     return ArgsStructInfo.second;
   }
 
   fixupInputSet(F, TaskInputs, HelperArgs);
+
+  if (Callback)
+    return runInputsCallback(Callback, F, T, TaskInputs, HelperArgs, StorePt,
+                             LoadPt, InputsMap, TapirLoop);
+
   return StorePt;
 }
 
@@ -960,11 +1043,13 @@ Function *llvm::createHelperForTaskFrame(
 /// Inputs.  The map \p VMap is updated with the mapping of instructions in \p
 /// TF to instructions in the new helper function.  Information about the helper
 /// function is returned as a TaskOutlineInfo structure.
-TaskOutlineInfo llvm::outlineTaskFrame(
-    Spindle *TF, ValueSet &Inputs, SmallVectorImpl<Value *> &HelperInputs,
-    Module *DestM, ValueToValueMapTy &VMap,
-    TapirTarget::ArgStructMode useArgStruct, Type *ReturnType,
-    ValueToValueMapTy &InputMap, AssumptionCache *AC, DominatorTree *DT) {
+TaskOutlineInfo llvm::outlineTaskFrame(Spindle *TF, ValueSet &Inputs,
+                                       SmallVectorImpl<Value *> &HelperInputs,
+                                       Module *DestM, ValueToValueMapTy &VMap,
+                                       TapirTarget::ArgStructMode useArgStruct,
+                                       Type *ReturnType,
+                                       ValueToValueMapTy &InputMap,
+                                       AssumptionCache *AC, DominatorTree *DT) {
   if (Task *T = TF->getTaskFromTaskFrame())
     return outlineTask(T, Inputs, HelperInputs, DestM, VMap, useArgStruct,
                        ReturnType, InputMap, AC, DT);
@@ -1057,11 +1142,13 @@ Instruction *llvm::replaceTaskFrameWithCallToOutline(
 /// Inputs.  The map \p VMap is updated with the mapping of instructions in \p T
 /// to instructions in the new helper function.  Information about the helper
 /// function is returned as a TaskOutlineInfo structure.
-TaskOutlineInfo llvm::outlineTask(
-    Task *T, ValueSet &Inputs, SmallVectorImpl<Value *> &HelperInputs,
-    Module *DestM, ValueToValueMapTy &VMap,
-    TapirTarget::ArgStructMode useArgStruct, Type *ReturnType,
-    ValueToValueMapTy &InputMap, AssumptionCache *AC, DominatorTree *DT) {
+TaskOutlineInfo llvm::outlineTask(Task *T, ValueSet &Inputs,
+                                  SmallVectorImpl<Value *> &HelperInputs,
+                                  Module *DestM, ValueToValueMapTy &VMap,
+                                  TapirTarget::ArgStructMode useArgStruct,
+                                  Type *ReturnType, ValueToValueMapTy &InputMap,
+                                  AssumptionCache *AC, DominatorTree *DT,
+                                  InputsCallbackTy Callback) {
   assert(!T->isRootTask() && "Cannot outline the root task.");
   Function &F = *T->getEntry()->getParent();
   DetachInst *DI = T->getDetach();
@@ -1071,7 +1158,7 @@ TaskOutlineInfo llvm::outlineTask(
   Instruction *StorePt = DI;
   BasicBlock *Unwind = DI->getUnwindDest();
   if (Spindle *TaskFrameCreate = T->getTaskFrameCreateSpindle()) {
-    LoadPt = &*++TaskFrameCreate->getEntry()->begin();
+    LoadPt = TaskFrameCreate->getEntry()->begin()->getNextNode();
     StorePt =
         TaskFrameCreate->getEntry()->getSinglePredecessor()->getTerminator();
     if (Unwind)
@@ -1081,8 +1168,9 @@ TaskOutlineInfo llvm::outlineTask(
 
   // Convert the inputs of the task to inputs to the helper.
   ValueSet HelperArgs;
-  Instruction *ArgsStart = fixupHelperInputs(F, T, Inputs, HelperArgs, StorePt,
-                                             LoadPt, useArgStruct, InputMap);
+  Instruction *ArgsStart =
+      fixupHelperInputs(F, T, Inputs, HelperArgs, StorePt, LoadPt, useArgStruct,
+                        InputMap, Callback);
   for (Value *V : HelperArgs)
     HelperInputs.push_back(V);
 

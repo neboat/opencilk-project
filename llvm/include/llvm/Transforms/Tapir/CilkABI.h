@@ -102,7 +102,7 @@ class CilkABI : public TapirTarget {
 public:
   CilkABI(Module &M);
   ~CilkABI() { DetachCtxToStackFrame.clear(); }
-  void prepareModule() override final;
+  void prepareModule(bool ProcessingTapirLoops) override final;
   Value *lowerGrainsizeCall(CallInst *GrainsizeCall) override final;
   void lowerSync(SyncInst &SI) override final;
 
@@ -127,7 +127,7 @@ public:
                           DominatorTree &DT) override final;
 
   LoopOutlineProcessor *
-  getLoopOutlineProcessor(const TapirLoopInfo *TL) const override final;
+  getLoopOutlineProcessor(const TapirLoopInfo *TL) override final;
 };
 } // namespace llvm
 

@@ -112,7 +112,7 @@ void CilkABI::addHelperAttributes(Function &Helper) {
 
 CilkABI::CilkABI(Module &M) : TapirTarget(M) {}
 
-void CilkABI::prepareModule() {
+void CilkABI::prepareModule(bool ProcessingTapirLoops) {
   LLVMContext &C = M.getContext();
   Type *VoidPtrTy = Type::getInt8PtrTy(C);
   Type *Int64Ty = Type::getInt64Ty(C);
@@ -1788,7 +1788,7 @@ void CilkABI::postProcessFunction(Function &F, bool ProcessingTapirLoops) {
 void CilkABI::postProcessHelper(Function &F) {}
 
 LoopOutlineProcessor *
-CilkABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) const {
+CilkABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) {
   if (UseRuntimeCilkFor)
     return new RuntimeCilkFor(M);
   return nullptr;

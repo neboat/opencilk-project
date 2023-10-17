@@ -60,7 +60,7 @@
 
 using namespace llvm;
 
-#define LS_NAME "loop-spawning-ti"
+#define LS_NAME "loop-spawning"
 #define DEBUG_TYPE LS_NAME
 
 STATISTIC(TapirLoopsFound,
@@ -378,27 +378,36 @@ static void emitMissedWarning(const Loop *L, const TapirLoopHints &LH,
                               OptimizationRemarkEmitter *ORE) {
   switch (LH.getStrategy()) {
   case TapirLoopHints::ST_DAC:
-    ORE->emit(DiagnosticInfoOptimizationFailure(
-                  DEBUG_TYPE, "FailedRequestedSpawning",
-                  L->getStartLoc(), L->getHeader())
-              << "Tapir loop not transformed: "
-              << "failed to use divide-and-conquer loop spawning."
-              << "  Compile with -Rpass-analysis=" << LS_NAME
-              << " for more details.");
+    ORE->emit(
+        DiagnosticInfoOptimizationFailure(DEBUG_TYPE, "FailedRequestedSpawning",
+                                          L->getStartLoc(), L->getHeader())
+        << "Tapir loop not transformed: "
+        << "failed to use divide-and-conquer loop spawning."
+        << "  Compile with -Rpass-analysis=" << LS_NAME
+        << " for more details.");
+    break;
+  case TapirLoopHints::ST_TGT:
+    ORE->emit(
+        DiagnosticInfoOptimizationFailure(DEBUG_TYPE, "FailedRequestedSpawning",
+                                          L->getStartLoc(), L->getHeader())
+        << "Tapir loop not transformed: "
+        << "failed to use target-specific loop spawning."
+        << "  Compile with -Rpass-analysis=" << LS_NAME
+        << " for more details.");
     break;
   case TapirLoopHints::ST_SEQ:
-    ORE->emit(DiagnosticInfoOptimizationFailure(
-                  DEBUG_TYPE, "SpawningDisabled",
-                  L->getStartLoc(), L->getHeader())
+    ORE->emit(DiagnosticInfoOptimizationFailure(DEBUG_TYPE, "SpawningDisabled",
+                                                L->getStartLoc(),
+                                                L->getHeader())
               << "Tapir loop not transformed: "
               << "loop-spawning transformation disabled");
     break;
   case TapirLoopHints::ST_END:
-    ORE->emit(DiagnosticInfoOptimizationFailure(
-                  DEBUG_TYPE, "FailedRequestedSpawning",
-                  L->getStartLoc(), L->getHeader())
-              << "Tapir loop not transformed: "
-              << "unknown loop-spawning strategy");
+    ORE->emit(
+        DiagnosticInfoOptimizationFailure(DEBUG_TYPE, "FailedRequestedSpawning",
+                                          L->getStartLoc(), L->getHeader())
+        << "Tapir loop not transformed: "
+        << "unknown loop-spawning strategy");
     break;
   }
 }
@@ -467,8 +476,8 @@ private:
   // Get the LoopOutlineProcessor for handling Tapir loop \p TL.
   LoopOutlineProcessor *getOutlineProcessor(TapirLoopInfo *TL);
 
-  using LOPMapTy = DenseMap<TapirLoopInfo *,
-                            std::unique_ptr<LoopOutlineProcessor>>;
+  using LOPMapTy =
+      DenseMap<TapirLoopInfo *, std::unique_ptr<LoopOutlineProcessor>>;
 
   // For all recorded Tapir loops, determine the function arguments and inputs
   // for the outlined helper functions for those loops.
@@ -496,12 +505,13 @@ private:
   //
   // This method relies on being executed on the Tapir loops in a function in
   // post order.
-  void getTapirLoopTaskBlocks(
-      TapirLoopInfo *TL, std::vector<BasicBlock *> &TaskBlocks,
-      SmallPtrSetImpl<BasicBlock *> &ReattachBlocks,
-      SmallPtrSetImpl<BasicBlock *> &DetachedRethrowBlocks,
-      SmallPtrSetImpl<BasicBlock *> &SharedEHEntries,
-      SmallPtrSetImpl<BasicBlock *> &UnreachableExits);
+  void
+  getTapirLoopTaskBlocks(TapirLoopInfo *TL,
+                         std::vector<BasicBlock *> &TaskBlocks,
+                         SmallPtrSetImpl<BasicBlock *> &ReattachBlocks,
+                         SmallPtrSetImpl<BasicBlock *> &DetachedRethrowBlocks,
+                         SmallPtrSetImpl<BasicBlock *> &SharedEHEntries,
+                         SmallPtrSetImpl<BasicBlock *> &UnreachableExits);
 
   // Outline Tapir loop \p TL into a helper function.  The \p Args set specified
   // the arguments to that helper function.  The map \p VMap will store the
@@ -1498,7 +1508,7 @@ TaskOutlineMapTy LoopSpawningImpl::outlineAllTapirLoops() {
                           L->getLoopPreheader()->getTerminator(),
                           &*L->getHeader()->getFirstInsertionPt(),
                           OutlineProcessors[TL]->getArgStructMode(), InputMap,
-                          L);
+                          OutlineProcessors[TL]->getInputsCallback(), L);
     } // end timed region
 
     ValueSet HelperArgs;
@@ -1528,6 +1538,10 @@ TaskOutlineMapTy LoopSpawningImpl::outlineAllTapirLoops() {
     LoopArgStarts[L] = ArgStart;
 
     ValueToValueMapTy VMap;
+
+    // Run a pre-processing step before we create the helper function.
+    OutlineProcessors[TL]->preProcessTapirLoop(*TL, VMap);
+
     // Create the helper function.
     Function *Outline = createHelperForTapirLoop(
         TL, LoopArgs[L], OutlineProcessors[TL]->getIVArgIndex(F, LoopArgs[L]),
@@ -1550,7 +1564,7 @@ TaskOutlineMapTy LoopSpawningImpl::outlineAllTapirLoops() {
     } // end timed region
 
     LLVM_DEBUG({
-        dbgs() << "LoopInputs[L]:\n";
+        dbgs() << "LoopInputs for " << *L;
         for (Value *V : LoopInputs[L])
           dbgs() << "\t" << *V << "\n";
       });
@@ -1625,7 +1639,7 @@ bool LoopSpawningImpl::run() {
                          TimerGroupName, TimerGroupDescription,
                          TimePassesIsEnabled);
     if (verifyModule(*F.getParent(), &errs())) {
-      LLVM_DEBUG(dbgs() << "Module after loop spawning:" << *F.getParent());
+      LLVM_DEBUG(dbgs() << "Module after loop spawning:\n" << *F.getParent());
       llvm_unreachable("Loop spawning produced bad IR!");
     }
   });
@@ -1681,14 +1695,33 @@ PreservedAnalyses LoopSpawningPass::run(Module &M, ModuleAnalysisManager &AM) {
       Changed |= formLCSSARecursively(*L, DT, &LI, &SE);
   }
 
+  if (WorkList.empty())
+    return Changed ? PreservedAnalyses::none() : PreservedAnalyses::all();
+
+  // Set up the Tapir target.
+  TargetLibraryInfo &TLI = GetTLI(*WorkList[0]);
+  std::unique_ptr<TapirTarget> Target(
+      getTapirTargetFromID(M, TLI.getTapirTarget()));
+  if (TapirTargetOptions *Options = TLI.getTapirTargetOptions())
+    Target->setOptions(*Options);
+
+  // Prepare the module.
+  Target->prepareModule(/*ProcessingTapirLoops*/ true);
+
   // Now process each loop.
+  bool HasParallelism = false;
   for (Function *F : WorkList) {
-    TapirTargetID TargetID = GetTLI(*F).getTapirTarget();
-    std::unique_ptr<TapirTarget> Target(getTapirTargetFromID(M, TargetID));
-    Changed |= LoopSpawningImpl(*F, GetDT(*F), GetLI(*F), GetTI(*F), GetSE(*F),
-                                GetAC(*F), GetTTI(*F), Target.get(), GetORE(*F))
-                   .run();
+    HasParallelism |=
+        LoopSpawningImpl(*F, GetDT(*F), GetLI(*F), GetTI(*F), GetSE(*F),
+                         GetAC(*F), GetTTI(*F), Target.get(), GetORE(*F))
+            .run();
   }
+
+  // Only post-process if parallelism was discovered during loop spawning.
+  if (HasParallelism)
+    Target->postProcessModule();
+
+  Changed |= HasParallelism;
   if (Changed)
     return PreservedAnalyses::none();
   return PreservedAnalyses::all();

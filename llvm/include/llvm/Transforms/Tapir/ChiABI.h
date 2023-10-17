@@ -1,4 +1,4 @@
-//===- OMPTaskABI.h - Generic interface to runtime systems -------*- C++ -*--=//
+//===- ChiABI.h - Generic interface to runtime systems -------*- C++ -*--=//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,38 +6,50 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This file implements the OMP Task ABI to convert Tapir instructions to calls
-// into kmpc task runtime calls.
+// This file implements the Chi ABI to convert Tapir instructions to calls
+// into a generic runtime system to operates on spawned computations as lambdas.
 //
 //===----------------------------------------------------------------------===//
-#ifndef OMPTASK_ABI_H_
-#define OMPTASK_ABI_H_
+#ifndef CHI_ABI_H_
+#define CHI_ABI_H_
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Transforms/Tapir/LoweringUtils.h"
+#include "llvm/Transforms/Tapir/TapirLoopInfo.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
+#include "llvm/Support/ToolOutputFile.h"
 
 namespace llvm {
 class Value;
 class TapirLoopInfo;
+class ChiLoop;
 
-class OMPTaskABI final : public TapirTarget {
+class ChiABI final : public TapirTarget {
+  friend class ChiLoop;
   ValueToValueMapTy DetachCtxToStackFrame;
 
-  StringRef RuntimeBCPath = "";
+  // User-defined options
+  StringRef HostBCPath = "";
+  StringRef DeviceBCPath = "";
+  LoopLaunchCallbackTy LoopLaunchCallback;
+
+  // Separate kernel module
+  Module KernelModule;
 
   // Runtime stack structure
   StructType *StackFrameTy = nullptr;
-  StructType *TaskTy = nullptr;
   FunctionType *SpawnBodyFnTy = nullptr;
   Type *SpawnBodyFnArgTy = nullptr;
   Type *SpawnBodyFnArgSizeTy = nullptr;
 
   // Runtime functions
   FunctionCallee RTSEnterFrame = nullptr;
-  FunctionCallee RTSGetArgsFromTask = nullptr;
+  FunctionCallee RTSEnterHelperFrame = nullptr;
   FunctionCallee RTSSpawn = nullptr;
+  FunctionCallee RTSLeaveFrame = nullptr;
+  FunctionCallee RTSLeaveHelperFrame = nullptr;
   FunctionCallee RTSSync = nullptr;
   FunctionCallee RTSSyncNoThrow = nullptr;
 
@@ -45,6 +57,11 @@ class OMPTaskABI final : public TapirTarget {
   FunctionCallee RTSLoopGrainsize16 = nullptr;
   FunctionCallee RTSLoopGrainsize32 = nullptr;
   FunctionCallee RTSLoopGrainsize64 = nullptr;
+
+  FunctionCallee RTSGetIteration8 = nullptr;
+  FunctionCallee RTSGetIteration16 = nullptr;
+  FunctionCallee RTSGetIteration32 = nullptr;
+  FunctionCallee RTSGetIteration64 = nullptr;
 
   FunctionCallee RTSGetNumWorkers = nullptr;
   FunctionCallee RTSGetWorkerID = nullptr;
@@ -61,18 +78,20 @@ class OMPTaskABI final : public TapirTarget {
                            bool InsertPauseFrame, bool Helper);
 
 public:
-  OMPTaskABI(Module &M) : TapirTarget(M) {}
-  ~OMPTaskABI() { DetachCtxToStackFrame.clear(); }
+  ChiABI(Module &M);
+  ~ChiABI() { DetachCtxToStackFrame.clear(); }
 
-  // void setOptions(const TapirTargetOptions &Options) override final;
+  void setOptions(const TapirTargetOptions &Options) override final;
 
   void prepareModule(bool ProcessingTapirLoops) override final;
+  void postProcessModule() override final;
+
   Value *lowerGrainsizeCall(CallInst *GrainsizeCall) override final;
   void lowerSync(SyncInst &SI) override final;
   // void lowerReducerOperation(CallBase *CI) override;
 
   ArgStructMode getArgStructMode() const override final {
-    return ArgStructMode::Static;
+    return ArgStructMode::None;
   }
   void addHelperAttributes(Function &F) override final;
 
@@ -93,7 +112,40 @@ public:
   void processSubTaskCall(TaskOutlineInfo &TOI,
                           DominatorTree &DT) override final;
 
+  LoopOutlineProcessor *getLoopOutlineProcessor(const TapirLoopInfo *TL)
+                          override final;
+};
+
+class ChiLoop : public LoopOutlineProcessor {
+  friend class ChiABI;
+
+  ChiABI *TTarget = nullptr;
+  // static unsigned NextKernelID;    // Give the generated kernel a unique ID.
+  // unsigned KernelID;               // Unique ID for this transformed loop.
+  // std::string KernelName;          // A unique name for the kernel.
+  Module &KernelModule;               // External module holds the generated kernels.
+
+  // Runtime functions
+  FunctionCallee RTSGetIteration = nullptr;
+
+public:
+  ChiLoop(Module &M,   // Input module (host side)
+          Module &KM,  // Target module for device code
+          // const std::string &KernelName, // Kernel name
+          ChiABI *TT, // Target
+          bool MakeUniqueName = true);
+  ~ChiLoop();
+
+  // std::string getKernelName() const { return KernelName; }
+  // unsigned getKernelID() const { return KernelID; }
+
+  void preProcessTapirLoop(TapirLoopInfo &TL,
+                           ValueToValueMapTy &VMap) override;
+  void postProcessOutline(TapirLoopInfo &TL, TaskOutlineInfo & Out,
+                          ValueToValueMapTy &VMap) override final;
+  void processOutlinedLoopCall(TapirLoopInfo &TL, TaskOutlineInfo & TOI,
+                               DominatorTree &DT) override final;
 };
 } // namespace llvm
 
-#endif // OMPTASK_ABI_H
+#endif // CHI_ABI_H

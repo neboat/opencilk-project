@@ -17,6 +17,7 @@
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
@@ -31,6 +32,7 @@ class Function;
 class Loop;
 class LoopOutlineProcessor;
 class Spindle;
+class SyncInst;
 class TapirLoopInfo;
 class Task;
 class TaskInfo;
@@ -40,6 +42,13 @@ using ValueSet = SetVector<Value *>;
 using SpindleSet = SetVector<Spindle *>;
 using TaskValueSetMap = DenseMap<const Task *, ValueSet>;
 using TFValueSetMap = DenseMap<const Spindle *, ValueSet>;
+
+using InputsCallbackTy = std::function<void(
+    Function &, const ValueSet &, ValueSet &, ValueToValueMapTy &,
+    IRBuilder<> &, IRBuilder<> &, IRBuilder<> &)>;
+
+using LoopLaunchCallbackTy =
+    std::function<void(CallBase &, SyncInst *)>;
 
 /// Structure that captures relevant information about an outlined task,
 /// including the following:
@@ -207,6 +216,8 @@ protected:
   /// The Module into which the outlined Helper functions will be placed.
   Module &DestM;
 
+  InputsCallbackTy InputsCallback;
+
   TapirTarget(Module &M, Module &DestM) : M(M), DestM(DestM) {}
 
 public:
@@ -223,7 +234,7 @@ public:
   virtual void setOptions(const TapirTargetOptions &Options) {}
 
   // Prepare the module for final Tapir lowering.
-  virtual void prepareModule() {}
+  virtual void prepareModule(bool ProcessingTapirLoops = false) {}
 
   /// Lower a call to the tapir.loop.grainsize intrinsic into a grainsize
   /// (coarsening) value.
@@ -314,12 +325,19 @@ public:
   // the lowering process.
   virtual void postProcessHelper(Function &F) = 0;
 
+  virtual void postProcessModule() {}
+
   virtual bool processOrdinaryFunction(Function &F, BasicBlock *TFEntry);
 
   // Get the LoopOutlineProcessor associated with this Tapir target.
   virtual LoopOutlineProcessor *
-  getLoopOutlineProcessor(const TapirLoopInfo *TL) const {
+  getLoopOutlineProcessor(const TapirLoopInfo *TL) {
     return nullptr;
+  }
+
+  InputsCallbackTy getInputsCallback() { return InputsCallback; }
+  void setInputsCallback(InputsCallbackTy Callback) {
+    InputsCallback = Callback;
   }
 };
 
@@ -372,6 +390,9 @@ protected:
   /// The Module into which the outlined Helper functions will be placed.
   Module &DestM;
 
+  InputsCallbackTy InputsCallback;
+  LoopLaunchCallbackTy LoopLaunchCallback;
+
   LoopOutlineProcessor(Module &M, Module &DestM) : M(M), DestM(DestM) {}
 public:
   using ArgStructMode = TapirTarget::ArgStructMode;
@@ -414,6 +435,9 @@ public:
     return getIVArgIndex(F, Args) + 1;
   }
 
+  virtual void preProcessTapirLoop(TapirLoopInfo &TL, ValueToValueMapTy &VMap) {
+  }
+
   /// Processes an outlined Function Helper for a Tapir loop, just after the
   /// function has been outlined.
   virtual void postProcessOutline(TapirLoopInfo &TL, TaskOutlineInfo &Out,
@@ -435,6 +459,11 @@ public:
   /// Processes a call to an outlined Function Helper for a Tapir loop.
   virtual void processOutlinedLoopCall(TapirLoopInfo &TL, TaskOutlineInfo &TOI,
                                        DominatorTree &DT) {}
+
+  InputsCallbackTy getInputsCallback() { return InputsCallback; }
+  void setInputsCallback(InputsCallbackTy Callback) {
+    InputsCallback = Callback;
+  }
 };
 
 /// Generate a TapirTarget object for the specified TapirTargetID.
@@ -473,12 +502,19 @@ void fixupInputSet(Function &F, const ValueSet &Inputs, ValueSet &Fixed);
 /// appropriate set of inputs, \p HelperInputs, to pass to the outlined function
 /// for \p T.  If a Tapir loop \p TapirL is specified, then its header block is
 /// also used in fixing up inputs.
-Instruction *fixupHelperInputs(Function &F, Task *T, ValueSet &TaskInputs,
+Instruction *fixupHelperInputs(Function &F, Task *T, const ValueSet &TaskInputs,
                                ValueSet &HelperInputs, Instruction *StorePt,
                                Instruction *LoadPt,
                                TapirTarget::ArgStructMode useArgStruct,
                                ValueToValueMapTy &InputsMap,
-                               Loop *TapirL = nullptr);
+                               InputsCallbackTy Callback = nullptr,
+                               Loop *TapirLoop = nullptr);
+
+Instruction *runInputsCallback(InputsCallbackTy Callback, Function &F, Task *T,
+                               const ValueSet &TaskInputs, ValueSet &HelperArgs,
+                               Instruction *StorePt, Instruction *LoadPt,
+                               ValueToValueMapTy &InputsMap,
+                               Loop *TapirLoop = nullptr);
 
 /// Returns true if BasicBlock \p B is the immediate successor of only
 /// detached-rethrow instructions.
@@ -523,11 +559,13 @@ Instruction *replaceTaskFrameWithCallToOutline(
 /// Inputs.  The map \p VMap is updated with the mapping of instructions in \p T
 /// to instructions in the new helper function.  Information about the helper
 /// function is returned as a TaskOutlineInfo structure.
-TaskOutlineInfo outlineTask(
-    Task *T, ValueSet &Inputs, SmallVectorImpl<Value *> &HelperInputs,
-    Module *DestM, ValueToValueMapTy &VMap,
-    TapirTarget::ArgStructMode useArgStruct, Type *ReturnType,
-    ValueToValueMapTy &InputMap, AssumptionCache *AC, DominatorTree *DT);
+TaskOutlineInfo outlineTask(Task *T, ValueSet &Inputs,
+                            SmallVectorImpl<Value *> &HelperInputs,
+                            Module *DestM, ValueToValueMapTy &VMap,
+                            TapirTarget::ArgStructMode useArgStruct,
+                            Type *ReturnType, ValueToValueMapTy &InputMap,
+                            AssumptionCache *AC, DominatorTree *DT,
+                            InputsCallbackTy Callback = nullptr);
 
 /// Outlines a taskframe \p TF into a helper function that accepts the inputs \p
 /// Inputs.  The map \p VMap is updated with the mapping of instructions in \p

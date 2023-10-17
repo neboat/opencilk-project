@@ -146,9 +146,8 @@ TapirToTargetImpl::outlineAllTasks(Function &F,
     // At this point, all subtaskframess of TF must have been processed.
     // Replace the tasks with calls to their outlined helper functions.
     for (Spindle *SubTF : TF->subtaskframes())
-      TFToOutline[SubTF].replaceReplCall(
-          replaceTaskFrameWithCallToOutline(SubTF, TFToOutline[SubTF],
-                                            HelperInputs[SubTF]));
+      TFToOutline[SubTF].replaceReplCall(replaceTaskFrameWithCallToOutline(
+          SubTF, TFToOutline[SubTF], HelperInputs[SubTF]));
 
     // TODO: Add support for outlining taskframes with no associated task.  Such
     // a facility would allow the frontend to create nested sync regions that
@@ -158,11 +157,10 @@ TapirToTargetImpl::outlineAllTasks(Function &F,
     if (!T) {
       ValueToValueMapTy VMap;
       ValueToValueMapTy InputMap;
-      TFToOutline[TF] = outlineTaskFrame(TF, TFInputs[TF], HelperInputs[TF],
-                                         &Target->getDestinationModule(), VMap,
-                                         Target->getArgStructMode(),
-                                         Target->getReturnType(), InputMap, &AC,
-                                         &DT);
+      TFToOutline[TF] = outlineTaskFrame(
+          TF, TFInputs[TF], HelperInputs[TF], &Target->getDestinationModule(),
+          VMap, Target->getArgStructMode(), Target->getReturnType(), InputMap,
+          &AC, &DT);
       // If the taskframe TF does not catch an exception from the taskframe,
       // then the outlined function cannot throw.
       if (F.doesNotThrow() && !getTaskFrameResume(TF->getTaskFrameCreate()))
@@ -188,10 +186,10 @@ TapirToTargetImpl::outlineAllTasks(Function &F,
 
     ValueToValueMapTy VMap;
     ValueToValueMapTy InputMap;
-    TFToOutline[TF] = outlineTask(T, TFInputs[TF], HelperInputs[TF],
-                                  &Target->getDestinationModule(), VMap,
-                                  Target->getArgStructMode(),
-                                  Target->getReturnType(), InputMap, &AC, &DT);
+    TFToOutline[TF] = outlineTask(
+        T, TFInputs[TF], HelperInputs[TF], &Target->getDestinationModule(),
+        VMap, Target->getArgStructMode(), Target->getReturnType(), InputMap,
+        &AC, &DT, Target->getInputsCallback());
     // If the detach for task T does not catch an exception from the task, then
     // the outlined function cannot throw.
     if (F.doesNotThrow() && !T->getDetach()->hasUnwindDest())
@@ -206,9 +204,8 @@ TapirToTargetImpl::outlineAllTasks(Function &F,
 
   // Insert calls to outlined helpers for taskframe roots.
   for (Spindle *TF : TI.getRootTask()->taskframe_roots())
-    TFToOutline[TF].replaceReplCall(
-        replaceTaskFrameWithCallToOutline(TF, TFToOutline[TF],
-                                          HelperInputs[TF]));
+    TFToOutline[TF].replaceReplCall(replaceTaskFrameWithCallToOutline(
+        TF, TFToOutline[TF], HelperInputs[TF]));
 
   return TFToOutline;
 }

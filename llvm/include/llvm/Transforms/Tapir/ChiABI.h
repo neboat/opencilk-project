@@ -20,6 +20,7 @@
 #include "llvm/Transforms/Tapir/TapirLoopInfo.h"
 #include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include <memory>
 
 namespace llvm {
 class Value;
@@ -31,6 +32,7 @@ class ChiABI final : public TapirTarget {
   ValueToValueMapTy DetachCtxToStackFrame;
 
   // User-defined options
+  bool UseSingleKernelModule = true;
   StringRef HostBCPath = "";
   StringRef DeviceBCPath = "";
   LoopLaunchCallbackTy LoopLaunchCallback;
@@ -120,18 +122,30 @@ class ChiLoop : public LoopOutlineProcessor {
   friend class ChiABI;
 
   ChiABI *TTarget = nullptr;
+
+  std::unique_ptr<Module> LocalKernelModule = nullptr;
+
   // static unsigned NextKernelID;    // Give the generated kernel a unique ID.
   // unsigned KernelID;               // Unique ID for this transformed loop.
   // std::string KernelName;          // A unique name for the kernel.
   Module &KernelModule;               // External module holds the generated kernels.
 
   // Runtime functions
-  FunctionCallee RTSGetIteration = nullptr;
+  FunctionCallee RTSGetIteration8 = nullptr;
+  FunctionCallee RTSGetIteration16 = nullptr;
+  FunctionCallee RTSGetIteration32 = nullptr;
+  FunctionCallee RTSGetIteration64 = nullptr;
+
+  // FunctionCallee RTSGetIteration = nullptr;
 
 public:
   ChiLoop(Module &M,   // Input module (host side)
           Module &KM,  // Target module for device code
           // const std::string &KernelName, // Kernel name
+          ChiABI *TT, // Target
+          bool MakeUniqueName = true);
+  ChiLoop(Module &M,  // Input module (host side)
+          std::unique_ptr<Module> LocalModule,
           ChiABI *TT, // Target
           bool MakeUniqueName = true);
   ~ChiLoop();

@@ -32,6 +32,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/MemoryBuffer.h"
@@ -41,7 +42,9 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/EscapeEnumerator.h"
 #include "llvm/Transforms/Utils/Local.h"
+#include "llvm/Transforms/Utils/ModuleUtils.h"
 #include "llvm/Transforms/Utils/TapirUtils.h"
+#include <memory>
 
 using namespace llvm;
 
@@ -70,6 +73,11 @@ static cl::opt<bool> ProcessAllLoops(
              "all loops.  Setting this to false means that the target-specific "
              "loop-outline processor will only process loops with the "
              "appropriate loop-hint metadata."));
+
+/// Place all kernels into a single module.
+static cl::opt<bool> ClUseSingleKernelModule(
+    "chiabi-use-single-kernel-module", cl::init(true), cl::Hidden,
+    cl::desc("Place all kernels into a single kernel module."));
 
 static const StringRef StackFrameName = "__rts_sf";
 
@@ -183,6 +191,7 @@ void ChiABI::setOptions(const TapirTargetOptions &Options) {
   const ChiABIOptions &OptionsCast = cast<ChiABIOptions>(Options);
 
   // Get bitcode file paths and callbacks.
+  UseSingleKernelModule = OptionsCast.useSingleKernelModule();
   HostBCPath = OptionsCast.getHostBCPath();
   DeviceBCPath = OptionsCast.getDeviceBCPath();
   InputsCallback = OptionsCast.getInputsCallback();
@@ -733,9 +742,18 @@ ChiABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) {
   //   // kernel names (this is currently handled via the 'make unique' parameter).
   //   KernelName = CHIABI_PREFIX + KernelName;
   // }
-
-  ChiLoop *Outliner = new ChiLoop(M, KernelModule, // KernelName,
-                                  this);
+  ChiLoop *Outliner;
+  if (ClUseSingleKernelModule && UseSingleKernelModule) {
+    Outliner = new ChiLoop(M, KernelModule, // KernelName,
+                           this);
+  } else {
+    Outliner = new ChiLoop(
+        M,
+        std::make_unique<Module>(
+            Twine(CHIABI_PREFIX + sys::path::filename(M.getName())).str(),
+            M.getContext()),
+        this);
+  }
   // Outliner->setInputsCallback(nullInputsCallback);
   // Outliner->setInputsCallback(marshalInputsCallback);
   // Outliner->LoopLaunchCallback = nullLoopLaunchCallback;
@@ -766,9 +784,69 @@ ChiLoop::ChiLoop(Module &M, Module &KernelModule, // const std::string &KN,
   LLVM_DEBUG(dbgs() << "chiabi: creating loop outliner:\n"
                     // << "\tkernel name: " << KernelName << "\n"
                     << "\tmodule     : " << KernelModule.getName() << "\n\n");
+
+  RTSGetIteration8 = TTarget->RTSGetIteration8;
+  RTSGetIteration16 = TTarget->RTSGetIteration16;
+  RTSGetIteration32 = TTarget->RTSGetIteration32;
+  RTSGetIteration64 = TTarget->RTSGetIteration64;
 }
 
-ChiLoop::~ChiLoop() {}
+ChiLoop::ChiLoop(Module &M, std::unique_ptr<Module> LocalModule, ChiABI *T,
+                 bool MakeUniqueName)
+    : LoopOutlineProcessor(M, *LocalModule), TTarget(T),
+      LocalKernelModule(std::move(LocalModule)),
+      KernelModule(*LocalKernelModule) {
+
+  // if (MakeUniqueName) {
+  //   std::string UN = KN + "_" + Twine(NextKernelID).str();
+  //   NextKernelID++;
+  //   KernelName = UN;
+  // }
+
+  LLVM_DEBUG(
+      dbgs() << "chiabi: creating loop outliner with per-loop kernel module:\n"
+             << "\tmodule     : " << KernelModule.getName() << "\n\n");
+
+  // TODO: Figure out if we want to link in any bitcode file at this point
+  // when processing Tapir loops.
+  LLVMContext &C = KernelModule.getContext();
+  Type *Int8Ty = Type::getInt8Ty(C);
+  Type *Int16Ty = Type::getInt16Ty(C);
+  Type *Int32Ty = Type::getInt32Ty(C);
+  Type *Int64Ty = Type::getInt64Ty(C);
+
+  // Get the set of runtime functions to get the current iteration index.
+  FunctionType *GetIteration8FnTy =
+      FunctionType::get(Int8Ty, {Int8Ty, Int8Ty}, false);
+  FunctionType *GetIteration16FnTy =
+      FunctionType::get(Int16Ty, {Int16Ty, Int16Ty}, false);
+  FunctionType *GetIteration32FnTy =
+      FunctionType::get(Int32Ty, {Int32Ty, Int32Ty}, false);
+  FunctionType *GetIteration64FnTy =
+      FunctionType::get(Int64Ty, {Int64Ty, Int64Ty}, false);
+
+  // Create an array of RTS functions, with their associated types and
+  // FunctionCallee member variables in the ChiABI class.
+  RTSFnDesc RTSFunctions[] = {
+      {"__rts_get_iteration_8", GetIteration8FnTy, RTSGetIteration8},
+      {"__rts_get_iteration_16", GetIteration16FnTy, RTSGetIteration16},
+      {"__rts_get_iteration_32", GetIteration32FnTy, RTSGetIteration32},
+      {"__rts_get_iteration_64", GetIteration64FnTy, RTSGetIteration64},
+  };
+
+  // Add attributes to internalized functions.
+  for (RTSFnDesc FnDesc : RTSFunctions) {
+    assert(!FnDesc.FnCallee && "Redefining RTS function");
+    FnDesc.FnCallee =
+        KernelModule.getOrInsertFunction(FnDesc.FnName, FnDesc.FnType);
+    assert(isa<Function>(FnDesc.FnCallee.getCallee()) &&
+           "Runtime function is not a function");
+    Function *Fn = cast<Function>(FnDesc.FnCallee.getCallee());
+    Fn->setDoesNotThrow();
+  }
+}
+
+ChiLoop::~ChiLoop() = default;
 
 static std::set<GlobalValue *> &collect(Constant &C,
                                         std::set<GlobalValue *> &Seen);
@@ -1051,13 +1129,13 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
 
   FunctionCallee RTSGetIterationCall;
   if (PrimaryIV->getType()->isIntegerTy(8))
-    RTSGetIterationCall = TTarget->RTSGetIteration8;
+    RTSGetIterationCall = RTSGetIteration8;
   else if (PrimaryIV->getType()->isIntegerTy(16))
-    RTSGetIterationCall = TTarget->RTSGetIteration16;
+    RTSGetIterationCall = RTSGetIteration16;
   else if (PrimaryIV->getType()->isIntegerTy(32))
-    RTSGetIterationCall = TTarget->RTSGetIteration32;
+    RTSGetIterationCall = RTSGetIteration32;
   else if (PrimaryIV->getType()->isIntegerTy(64))
-    RTSGetIterationCall = TTarget->RTSGetIteration64;
+    RTSGetIterationCall = RTSGetIteration64;
   else
     llvm_unreachable("No RTSGetIteration call matches type for Tapir loop");
 
@@ -1079,39 +1157,26 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
          "End argument not used in condition!");
   ClonedCond->setOperand(TripCountIdx, RTSEnd);
 
-  // // Get the thread ID for this invocation of Helper.
-  // //
-  // // This is the classic CUDA thread ID calculation:
-  // //      i = blockDim.x * blockIdx.x + threadIdx.x;
-  // // For now we only generate 1-D thread IDs.
-  // Value *ThreadIdx = B.CreateCall(CUThreadIdxX);
-  // Value *BlockIdx = B.CreateCall(CUBlockIdxX);
-  // Value *BlockDim = B.CreateCall(CUBlockDimX);
-  // Value *ThreadIV = B.CreateIntCast(
-  //     B.CreateAdd(ThreadIdx, B.CreateMul(BlockIdx, BlockDim, "blk_offset"),
-  //                 "cuthread_id"),
-  //     PrimaryIV->getType(), false, "thread_iv");
+  if (LocalKernelModule) {
+    if ("" != TTarget->DeviceBCPath) {
+      LLVM_DEBUG(dbgs() << "\t- linking into kernel module device bitcode: "
+                        << TTarget->DeviceBCPath << "\n");
+      linkExternalBitcode(KernelModule, TTarget->DeviceBCPath,
+                          Linker::LinkOnlyNeeded);
+    }
 
-  // // NOTE/TODO: Assuming that the grainsize is fixed at 1 for the
-  // // current codegen...
-  // // ThreadID = B.CreateMul(ThreadID, Grainsize);
-  // Value *ThreadEnd = B.CreateAdd(ThreadIV, Grainsize, "thread_end");
-  // Value *Cond = B.CreateICmpUGE(ThreadIV, End, "cond_thread_end");
-  // ReplaceInstWithInst(Entry->getTerminator(),
-  //                     BranchInst::Create(Exit, Header, Cond));
-
-  // // Use the thread ID as the start iteration number for the primary IV.
-  // PrimaryIVInput->replaceAllUsesWith(ThreadIV);
-  // // TODO: ???? PrimaryIVInput->eraseFromParent();
-
-  // // Update cloned loop condition to use the thread-end value.
-  // unsigned TripCountIdx = 0;
-  // ICmpInst *ClonedCond = cast<ICmpInst>(VMap[TLI.getCondition()]);
-  // if (ClonedCond->getOperand(0) != End)
-  //   ++TripCountIdx;
-  // assert(ClonedCond->getOperand(TripCountIdx) == End &&
-  //        "End argument not used in condition!");
-  // ClonedCond->setOperand(TripCountIdx, ThreadEnd);
+    // If creating a separate kernel module for each loop, write that kernel
+    // module's bitcode to a global variable in the host module now.
+    SmallString<256 * 1024> Buffer;
+    raw_svector_ostream OS(Buffer);
+    WriteBitcodeToFile(KernelModule, OS);
+    Constant *KMArray = ConstantDataArray::getRaw(
+        Buffer, Buffer.size(), Type::getInt8Ty(M.getContext()));
+    GlobalVariable *KMGV = new GlobalVariable(
+        M, KMArray->getType(), true, GlobalValue::InternalLinkage, KMArray,
+        Twine("__chiabi_kernel_module." + KernelF->getName()).str());
+    appendToCompilerUsed(M, KMGV);
+  }
 
   if (KeepIntermediateFiles) {
     std::error_code EC;
@@ -1182,9 +1247,20 @@ static void saveModuleToFile(const Module *M,
 }
 
 void ChiABI::postProcessModule() {
+  if (!ClUseSingleKernelModule || !UseSingleKernelModule) {
+    LLVM_DEBUG(dbgs() << "Local kernel modules used.  Skipping kernel-module "
+                         "post-processing.\n");
+    if ("" != HostBCPath) {
+      LLVM_DEBUG(dbgs() << "\t- linking into host module bitcode: " << HostBCPath
+                 << "\n");
+      linkExternalBitcode(M, HostBCPath, Linker::LinkOnlyNeeded);
+    }
+    return;
+  }
+
   // At this point, all Tapir constructs in the input module (M) have been
   // transformed (i.e., outlined) into the kernel module.
-  // NOTE: postProcessModule() will not be called in cases where parallelism 
+  // NOTE: postProcessModule() will not be called in cases where parallelism
   // was not discovered during loop spawning.
   LLVM_DEBUG(dbgs() << "\n\n"
                     << "chiabi: postprocessing the kernel '"
@@ -1193,20 +1269,26 @@ void ChiABI::postProcessModule() {
   LLVM_DEBUG(saveModuleToFile(&KernelModule, KernelModule.getName().str() +
                                                  ".post.unoptimized"));
 
-  if ("" != DeviceBCPath) {
-    LLVM_DEBUG(dbgs() << "\t- linking into kernel module device bitcode: "
-                      << DeviceBCPath << "\n");
-    linkExternalBitcode(KernelModule, DeviceBCPath, Linker::LinkOnlyNeeded);
-  }
+  if (!KernelModule.functions().empty()) {
+    if ("" != DeviceBCPath) {
+      LLVM_DEBUG(dbgs() << "\t- linking into kernel module device bitcode: "
+                        << DeviceBCPath << "\n");
+      linkExternalBitcode(KernelModule, DeviceBCPath, Linker::LinkOnlyNeeded);
+    }
 
-  SmallString<256 * 1024> Buffer;
-  raw_svector_ostream OS(Buffer);
-  WriteBitcodeToFile(KernelModule, OS);
-  Constant *KMArray = ConstantDataArray::getRaw(
-      Buffer, Buffer.size(), Type::getInt8Ty(M.getContext()));
-  GlobalVariable *KMGV = new GlobalVariable(M, KMArray->getType(), true,
-                                            GlobalValue::ExternalLinkage,
-                                            KMArray, "__chiabi_kernel_module");
+    SmallString<256 * 1024> Buffer;
+    raw_svector_ostream OS(Buffer);
+    WriteBitcodeToFile(KernelModule, OS);
+    Constant *KMArray = ConstantDataArray::getRaw(
+        Buffer, Buffer.size(), Type::getInt8Ty(M.getContext()));
+    GlobalVariable *KMGV = new GlobalVariable(
+        M, KMArray->getType(), true, GlobalValue::InternalLinkage, KMArray,
+        "__chiabi_kernel_module");
+    appendToCompilerUsed(M, KMGV);
+  } else {
+    LLVM_DEBUG(
+        dbgs() << "Skipping embedding of empty unified kernel module.\n");
+  }
 
   if ("" != HostBCPath) {
     LLVM_DEBUG(dbgs() << "\t- linking into host module bitcode: " << HostBCPath

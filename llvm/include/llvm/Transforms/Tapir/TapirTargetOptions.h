@@ -78,17 +78,21 @@ class ChiABIOptions : public TapirTargetOptions {
   std::string DeviceBCPath = "";
   InputsCallbackTy InputsCallback;
   LoopLaunchCallbackTy LoopLaunchCallback;
+  bool SingleKernelModule = true;
 
   ChiABIOptions() = delete;
 
 public:
   ChiABIOptions(StringRef HostBCPath, StringRef DeviceBCPath,
                 InputsCallbackTy InputsCallback,
-                LoopLaunchCallbackTy LoopLaunchCallback)
+                LoopLaunchCallbackTy LoopLaunchCallback,
+                bool SingleKernelModule = true)
       : TapirTargetOptions(TTO_Chi), HostBCPath(HostBCPath),
         DeviceBCPath(DeviceBCPath), InputsCallback(InputsCallback),
-        LoopLaunchCallback(LoopLaunchCallback) {}
+        LoopLaunchCallback(LoopLaunchCallback),
+        SingleKernelModule(SingleKernelModule) {}
 
+  bool useSingleKernelModule() const { return SingleKernelModule; }
   StringRef getHostBCPath() const { return HostBCPath; }
   StringRef getDeviceBCPath() const { return DeviceBCPath; }
   InputsCallbackTy getInputsCallback() const { return InputsCallback; }

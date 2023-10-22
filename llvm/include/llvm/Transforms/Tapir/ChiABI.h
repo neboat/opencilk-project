@@ -121,14 +121,15 @@ public:
 class ChiLoop : public LoopOutlineProcessor {
   friend class ChiABI;
 
+  // Pointer to ChiABI target.
   ChiABI *TTarget = nullptr;
 
+  // Pointer to current kernel module, when generating separate modules for each
+  // kernel.
   std::unique_ptr<Module> LocalKernelModule = nullptr;
 
-  // static unsigned NextKernelID;    // Give the generated kernel a unique ID.
-  // unsigned KernelID;               // Unique ID for this transformed loop.
-  // std::string KernelName;          // A unique name for the kernel.
-  Module &KernelModule;               // External module holds the generated kernels.
+  // External module holds the generated kernels.
+  Module &KernelModule;
 
   // Runtime functions
   FunctionCallee RTSGetIteration8 = nullptr;
@@ -136,22 +137,20 @@ class ChiLoop : public LoopOutlineProcessor {
   FunctionCallee RTSGetIteration32 = nullptr;
   FunctionCallee RTSGetIteration64 = nullptr;
 
-  // FunctionCallee RTSGetIteration = nullptr;
-
 public:
-  ChiLoop(Module &M,   // Input module (host side)
-          Module &KM,  // Target module for device code
-          // const std::string &KernelName, // Kernel name
+  // Constructor for ChiLoop processor that generates a single kernel module for
+  // all loops.
+  ChiLoop(Module &M,  // Input module (host side)
+          Module &KM, // Target module for device code
           ChiABI *TT, // Target
           bool MakeUniqueName = true);
-  ChiLoop(Module &M,  // Input module (host side)
+  // Constructor for ChiLoop processor that generates separate kernel modules
+  // for different loops.
+  ChiLoop(Module &M, // Input module (host side)
           std::unique_ptr<Module> LocalModule,
           ChiABI *TT, // Target
           bool MakeUniqueName = true);
-  ~ChiLoop();
-
-  // std::string getKernelName() const { return KernelName; }
-  // unsigned getKernelID() const { return KernelID; }
+  ~ChiLoop() = default;
 
   void preProcessTapirLoop(TapirLoopInfo &TL,
                            ValueToValueMapTy &VMap) override;

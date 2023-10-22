@@ -26,6 +26,7 @@
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/LLVMContext.h"
@@ -60,14 +61,14 @@ static cl::opt<std::string>
                     cl::Hidden);
 
 /// Keep the intermediate files around after compilation.
-static cl::opt<bool> KeepIntermediateFiles(
+static cl::opt<bool> ClKeepIntermediateFiles(
     "chiabi-keep-files", cl::init(false), cl::Hidden,
     cl::desc("Keep all the intermediate files on disk after"
              "successsful completion of the transforms "
              "various steps."));
 
 /// Use the Target-specific outline processor based on loop hints.
-static cl::opt<bool> ProcessAllLoops(
+static cl::opt<bool> ClProcessAllLoops(
     "chiabi-process-all-loops", cl::init(false), cl::Hidden,
     cl::desc("Use the ChiABI target-specific loop-outline processor to process "
              "all loops.  Setting this to false means that the target-specific "
@@ -714,7 +715,7 @@ void ChiABI::processSubTaskCall(TaskOutlineInfo &TOI, DominatorTree &DT) {
 LoopOutlineProcessor *
 ChiABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) {
   Loop *TheLoop = TL->getLoop();
-  if (!ProcessAllLoops) {
+  if (!ClProcessAllLoops) {
     // Check metadata for whether ChiLoop should handle this Tapir loop.
     TapirLoopHints Hints(TheLoop);
     if (TapirLoopHints::ST_TGT != Hints.getStrategy())
@@ -728,20 +729,6 @@ ChiABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) {
   // (device-side) code.
   LLVM_DEBUG(dbgs() << "chiabi: creating loop outline processor\n");
 
-  // std::string ModuleName = sys::path::filename(M.getName()).str();
-  // Function *Fn = TheLoop->getHeader()->getParent();
-  // std::string KernelName = Fn->getName().str();
-
-  // if (M.getNamedMetadata("llvm.dbg")) {
-  //   // If we have debug info in the module use a line number based naming scheme
-  //   // for kernels.
-  //   unsigned LineNumber = TL->getLoop()->getStartLoc()->getLine();
-  //   KernelName = CHIABI_PREFIX + ModuleName + "_" + Twine(LineNumber).str();
-  // } else {
-  //   // In the non-debug mode we use a consecutive numbering scheme for our
-  //   // kernel names (this is currently handled via the 'make unique' parameter).
-  //   KernelName = CHIABI_PREFIX + KernelName;
-  // }
   ChiLoop *Outliner;
   if (ClUseSingleKernelModule && UseSingleKernelModule) {
     Outliner = new ChiLoop(M, KernelModule, // KernelName,
@@ -770,19 +757,12 @@ ChiABI::getLoopOutlineProcessor(const TapirLoopInfo *TL) {
 /// a not so great naming mechanism and certainly not thread safe...
 // unsigned ChiLoop::NextKernelID = 0;
 
-ChiLoop::ChiLoop(Module &M, Module &KernelModule, // const std::string &KN,
-                 ChiABI *T, bool MakeUniqueName)
-    : LoopOutlineProcessor(M, KernelModule), TTarget(T), // KernelName(KN),
+ChiLoop::ChiLoop(Module &M, Module &KernelModule, ChiABI *TT,
+                 bool MakeUniqueName)
+    : LoopOutlineProcessor(M, KernelModule), TTarget(TT),
       KernelModule(KernelModule) {
 
-  // if (MakeUniqueName) {
-  //   std::string UN = KN + "_" + Twine(NextKernelID).str();
-  //   NextKernelID++;
-  //   KernelName = UN;
-  // }
-
   LLVM_DEBUG(dbgs() << "chiabi: creating loop outliner:\n"
-                    // << "\tkernel name: " << KernelName << "\n"
                     << "\tmodule     : " << KernelModule.getName() << "\n\n");
 
   RTSGetIteration8 = TTarget->RTSGetIteration8;
@@ -791,17 +771,11 @@ ChiLoop::ChiLoop(Module &M, Module &KernelModule, // const std::string &KN,
   RTSGetIteration64 = TTarget->RTSGetIteration64;
 }
 
-ChiLoop::ChiLoop(Module &M, std::unique_ptr<Module> LocalModule, ChiABI *T,
+ChiLoop::ChiLoop(Module &M, std::unique_ptr<Module> LocalModule, ChiABI *TT,
                  bool MakeUniqueName)
-    : LoopOutlineProcessor(M, *LocalModule), TTarget(T),
+    : LoopOutlineProcessor(M, *LocalModule), TTarget(TT),
       LocalKernelModule(std::move(LocalModule)),
       KernelModule(*LocalKernelModule) {
-
-  // if (MakeUniqueName) {
-  //   std::string UN = KN + "_" + Twine(NextKernelID).str();
-  //   NextKernelID++;
-  //   KernelName = UN;
-  // }
 
   LLVM_DEBUG(
       dbgs() << "chiabi: creating loop outliner with per-loop kernel module:\n"
@@ -809,6 +783,9 @@ ChiLoop::ChiLoop(Module &M, std::unique_ptr<Module> LocalModule, ChiABI *T,
 
   // TODO: Figure out if we want to link in any bitcode file at this point
   // when processing Tapir loops.
+
+  // When using separate kernel modules per loop, add the generic rts functions
+  // to each kernel.
   LLVMContext &C = KernelModule.getContext();
   Type *Int8Ty = Type::getInt8Ty(C);
   Type *Int16Ty = Type::getInt16Ty(C);
@@ -845,8 +822,6 @@ ChiLoop::ChiLoop(Module &M, std::unique_ptr<Module> LocalModule, ChiABI *T,
     Fn->setDoesNotThrow();
   }
 }
-
-ChiLoop::~ChiLoop() = default;
 
 static std::set<GlobalValue *> &collect(Constant &C,
                                         std::set<GlobalValue *> &Seen);
@@ -926,11 +901,6 @@ std::set<GlobalValue *> &collect(Constant &C, std::set<GlobalValue *> &Seen) {
 }
 
 void ChiLoop::preProcessTapirLoop(TapirLoopInfo &TL, ValueToValueMapTy &VMap) {
-  // TODO: Process loop prior to outlining to do device-specific things
-  // like capturing global variables, etc.
-  // LLVM_DEBUG(dbgs() << "\tchiabi: preprocessing loop for kernel '"
-  //                   << KernelName << "', in module '" << KernelModule.getName()
-  //                   << "'.\n");
   LLVM_DEBUG(dbgs() << "\tchiabi: preprocessing " << TL.getLoop()
                     << "  in module '" << KernelModule.getName() << "'.\n");
 
@@ -955,34 +925,27 @@ void ChiLoop::preProcessTapirLoop(TapirLoopInfo &TL, ValueToValueMapTy &VMap) {
       // We don't necessarily need a device-side clone of a global variable --
       // instead we need a location where we can copy symbol information over
       // from the host.
-      GlobalValue::LinkageTypes LinkType;
-
-      if (GV->hasInitializer())
-        LinkType = GlobalValue::InternalLinkage;
-      else
-        LinkType = GlobalValue::ExternalLinkage;
       GlobalVariable *NewGV = nullptr;
       // If GV is a constant we can clone the entire variable over, including
       // the initalizer details, and deal with it as an internal variable (i.e.,
       // no need to coordinate with host).
       // TODO: make sure this is sound!
-      if (GV->isConstant())
+      if (GV->isConstant()) {
         NewGV = new GlobalVariable(
             KernelModule, GV->getValueType(), /* isConstant*/ true,
             GlobalValue::InternalLinkage, GV->getInitializer(),
             GV->getName() + "_devvar", (GlobalVariable *)nullptr,
             GlobalValue::NotThreadLocal);
-      else {
+      } else {
         // If GV is non-constant we will need to create a device-side version
         // that will have the host-side value copied over prior to launching the
-        // cooresponding kernel...
+        // cooresponding kernel.
         NewGV = new GlobalVariable(
             KernelModule, GV->getValueType(), /* isConstant*/ false,
             GlobalValue::ExternalWeakLinkage,
             (Constant *)Constant::getNullValue(GV->getValueType()),
             GV->getName() + "_devvar", (GlobalVariable *)nullptr,
             GlobalValue::NotThreadLocal);
-        // TTarget->pushGlobalVariable(GV);
       }
       NewGV->setAlignment(GV->getAlign());
       VMap[GV] = NewGV;
@@ -1040,21 +1003,16 @@ void ChiLoop::preProcessTapirLoop(TapirLoopInfo &TL, ValueToValueMapTy &VMap) {
       if (F->size() && not F->isIntrinsic()) {
         SmallVector<ReturnInst *, 8> Returns;
         Function *DeviceF = cast<Function>(VMap[F]);
-        CloneFunctionInto(DeviceF, F, VMap,
-                          CloneFunctionChangeType::DifferentModule, Returns);
-
         LLVM_DEBUG(dbgs() << "chiabi: cloning device function '"
                           << DeviceF->getName() << "' into kernel module.\n");
-
-        // // GPU calls are slow, try to force inlining...
-        // if (OptLevel > 1 && not DeviceF->hasFnAttribute(Attribute::NoInline))
-        //   DeviceF->addFnAttr(Attribute::AlwaysInline);
+        CloneFunctionInto(DeviceF, F, VMap,
+                          CloneFunctionChangeType::DifferentModule, Returns);
       }
     }
   }
 
   LLVM_DEBUG(dbgs() << "\tfinished preprocessing tapir loop.\n");
-  if (KeepIntermediateFiles) {
+  if (ClKeepIntermediateFiles) {
     std::error_code EC;
     std::unique_ptr<ToolOutputFile> PreLoopIRFile;
     SmallString<255> IRFileName("preprocess-loop.ll");
@@ -1067,7 +1025,6 @@ void ChiLoop::preProcessTapirLoop(TapirLoopInfo &TL, ValueToValueMapTy &VMap) {
 
 void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
                                  ValueToValueMapTy &VMap) {
-  // LLVMContext &Ctx = M.getContext();
   Task *T = TLI.getTask();
   Loop *TL = TLI.getLoop();
 
@@ -1083,7 +1040,6 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
   ClonedSyncReg->eraseFromParent();
 
   Function *KernelF = Out.Outline;
-  // KernelF->setName(KernelName);
   LLVM_DEBUG(dbgs() << "Post-processing outlined function "
                     << KernelF->getName() << "\n"
                     << KernelModule);
@@ -1178,7 +1134,7 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
     appendToCompilerUsed(M, KMGV);
   }
 
-  if (KeepIntermediateFiles) {
+  if (ClKeepIntermediateFiles) {
     std::error_code EC;
     std::unique_ptr<ToolOutputFile> PostLoopIRFile;
     SmallString<255> IRFileName("post-loop.ll");
@@ -1191,13 +1147,8 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
 
 void ChiLoop::processOutlinedLoopCall(TapirLoopInfo &TL, TaskOutlineInfo &TOI,
                                       DominatorTree &DT) {
-  // LLVM_DEBUG(dbgs() << "\tprocessing outlined loop call for '"
-  //                   << KernelName << "\n");
   LLVM_DEBUG(dbgs() << "\tprocessing outlined loop call for '"
                     << TOI.Outline->getName() << "\n");
-
-  LLVMContext &Ctx = M.getContext();
-  PointerType *VoidPtrTy = Type::getInt8PtrTy(Ctx);
 
   CallBase *CB = cast<CallBase>(TOI.ReplCall);
   BasicBlock *Exit = TL.getExitBlock();

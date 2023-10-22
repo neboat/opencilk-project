@@ -109,7 +109,7 @@ protected:
 
   ChiABIOptions *cloneImpl() const {
     return new ChiABIOptions(HostBCPath, DeviceBCPath, InputsCallback,
-                             LoopLaunchCallback);
+                             LoopLaunchCallback, SingleKernelModule);
   }
 };
 

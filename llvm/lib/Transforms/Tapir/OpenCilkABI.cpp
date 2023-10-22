@@ -134,6 +134,9 @@ void OpenCilkABI::setOptions(const TapirTargetOptions &Options) {
 }
 
 void OpenCilkABI::prepareModule(bool ProcessingTapirLoops) {
+  if (ProcessingTapirLoops)
+    return;
+
   LLVMContext &C = M.getContext();
   Type *Int8Ty = Type::getInt8Ty(C);
   Type *Int16Ty = Type::getInt16Ty(C);

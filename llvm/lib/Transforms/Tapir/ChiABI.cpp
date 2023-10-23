@@ -1072,13 +1072,16 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
   {
     // TODO: We really only want a grainsize of 1 for now...
     auto OutlineArgsIter = KernelF->arg_begin();
-    // End argument is the first LC arg.
+    // Get the end argument from the LC args.
     End = &*(OutlineArgsIter +
              getLimitArgIndex(*Entry->getParent(), Out.InputSet));
 
-    // Get the grainsize value, which is either constant or the third LC
-    // arg.
-    Grainsize = ConstantInt::get(PrimaryIV->getType(), 1);
+    // Get the grainsize value, which is either a non-zero constant or the third
+    // LC arg.
+    if (unsigned G = TLI.getGrainsize())
+      Grainsize = ConstantInt::get(PrimaryIV->getType(), G);
+    else
+      Grainsize = &*(OutlineArgsIter + 2);
   }
 
   IRBuilder<> B(Entry->getTerminator());
@@ -1095,8 +1098,14 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
   else
     llvm_unreachable("No RTSGetIteration call matches type for Tapir loop");
 
-  Value *RTSIteration =
-      B.CreateCall(RTSGetIterationCall, {PrimaryIVInput, Grainsize});
+  // Right now, Tapir lowering only processes loops with canonical induction
+  // variables, which start at 0 and increment by 1 each iteration.  Therefore,
+  // ChiABI can just use 0 as the starting iteration.
+  // TODO: Revise this if we generalize LoopSpawning to handle loops with more
+  // general induction variables.
+  Value *StartIter = ConstantInt::get(PrimaryIV->getType(), 0);
+  CallInst *RTSIteration =
+      B.CreateCall(RTSGetIterationCall, {StartIter, Grainsize});
   Value *RTSEnd = B.CreateAdd(RTSIteration, Grainsize, "__rts_end");
   Value *Cond = B.CreateICmpUGE(RTSIteration, RTSEnd, "__rts_end_cond");
   ReplaceInstWithInst(Entry->getTerminator(),
@@ -1120,6 +1129,10 @@ void ChiLoop::postProcessOutline(TapirLoopInfo &TLI, TaskOutlineInfo &Out,
       linkExternalBitcode(KernelModule, TTarget->DeviceBCPath,
                           Linker::LinkOnlyNeeded);
     }
+
+    LLVM_DEBUG(dbgs() << "Final local kernel module:\n" << KernelModule);
+    assert(!verifyModule(KernelModule, &dbgs()) &&
+           "Kernel module contains invalid IR!");
 
     // If creating a separate kernel module for each loop, write that kernel
     // module's bitcode to a global variable in the host module now.
@@ -1226,6 +1239,10 @@ void ChiABI::postProcessModule() {
                         << DeviceBCPath << "\n");
       linkExternalBitcode(KernelModule, DeviceBCPath, Linker::LinkOnlyNeeded);
     }
+
+    LLVM_DEBUG(dbgs() << "Final unified kernel module:\n" << KernelModule);
+    assert(!verifyModule(KernelModule, &dbgs()) &&
+           "Kernel module contains invalid IR!");
 
     SmallString<256 * 1024> Buffer;
     raw_svector_ostream OS(Buffer);

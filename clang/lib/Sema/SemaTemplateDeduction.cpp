@@ -1774,7 +1774,7 @@ static TemplateDeductionResult DeduceTemplateArgumentsByTypeMatch(
 
      case Type::Hyperobject:
        llvm_unreachable("Implement me");
- 
+
     case Type::Auto:
       // C++23 [temp.deduct.funcaddr]/3:
       //   A placeholder type in the return type of a function template is a

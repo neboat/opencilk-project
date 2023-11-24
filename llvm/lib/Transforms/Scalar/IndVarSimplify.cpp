@@ -1044,7 +1044,6 @@ linearFunctionTestReplace(Loop *L, BasicBlock *ExitingBB,
       BO->setHasNoUnsignedWrap(AR->hasNoUnsignedWrap());
     if (BO->hasNoSignedWrap())
       BO->setHasNoSignedWrap(AR->hasNoSignedWrap());
-
   }
 
   Value *ExitCnt = genLoopLimit(

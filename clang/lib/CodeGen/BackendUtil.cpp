@@ -1376,7 +1376,7 @@ void EmitAssemblyHelper::emitAssembly(BackendAction Action,
     ThinLinkOS->keep();
   if (DwoOS)
     DwoOS->keep();
-    }
+}
 
 static void
 runThinLTOBackend(CompilerInstance &CI, ModuleSummaryIndex *CombinedIndex,

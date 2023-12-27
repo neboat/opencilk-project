@@ -4040,8 +4040,8 @@ public:
     Expr *Reduce;
   };
 
-  bool getReducer(const VarDecl *D, ReducerCallbacks &CB);
-  void EmitReducerInit(const VarDecl *D, const ReducerCallbacks &CB,
+  bool getReducer(const DeclaratorDecl *D, ReducerCallbacks &CB);
+  void EmitReducerInit(const DeclaratorDecl *D, const ReducerCallbacks &CB,
                        llvm::Value *Addr);
 
   void MaybeEmitDeferredVarDeclInit(const VarDecl *var);

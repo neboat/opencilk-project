@@ -1932,7 +1932,8 @@ void CodeGenFunction::emitZeroOrPatternForAutoVarInit(QualType type,
   }
 }
 
-bool CodeGenFunction::getReducer(const VarDecl *D, ReducerCallbacks &CB) {
+bool CodeGenFunction::getReducer(const DeclaratorDecl *D,
+                                 ReducerCallbacks &CB) {
   if (const HyperobjectType *H = D->getType()->getAs<HyperobjectType>()) {
     if (H->hasCallbacks()) {
       CB.Identity = H->getIdentity();
@@ -1957,7 +1958,7 @@ void CodeGenFunction::destroyHyperobject(CodeGenFunction &CGF, Address Addr,
   }
 }
 
-void CodeGenFunction::EmitReducerInit(const VarDecl *D,
+void CodeGenFunction::EmitReducerInit(const DeclaratorDecl *D,
                                       const ReducerCallbacks &C,
                                       llvm::Value *Addr) {
   RValue Identity = EmitAnyExpr(C.Identity);

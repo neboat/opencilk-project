@@ -1165,6 +1165,12 @@ void CXXRecordDecl::addedMember(Decl *D) {
         data().DefaultedCopyConstructorIsDeleted = true;
     }
 
+    if (T->isHyperobjectType()) {
+      data().HasIrrelevantDestructor = false;
+      data().HasTrivialSpecialMembers &= ~SMF_Destructor;
+      data().HasTrivialSpecialMembersForCall &= ~SMF_Destructor;
+    }
+
     if (isUnion() && !Field->isMutable()) {
       if (Field->hasInClassInitializer())
         data().HasUninitializedFields = false;

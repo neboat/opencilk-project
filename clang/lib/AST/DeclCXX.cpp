@@ -1126,6 +1126,9 @@ void CXXRecordDecl::addedMember(Decl *D) {
     }
 
     if (T->isHyperobjectType()) {
+      // Do not allow braced list initialization, which would
+      // suppress hyperobject registration.
+      data().Aggregate = false;
       data().HasIrrelevantDestructor = false;
       data().HasTrivialSpecialMembers &= ~SMF_Destructor;
       data().HasTrivialSpecialMembersForCall &= ~SMF_Destructor;

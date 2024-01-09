@@ -3560,6 +3560,8 @@ StmtResult Sema::HandleSimpleCilkForStmt(SourceLocation CilkForLoc,
     StrideIsNegative = StrideWithSign.second;
     Stride = StrideWithSign.first;
   }
+  if (!StrideIsUnit && !Stride)
+    return StmtEmpty();
 
   // Determine the type of comparison.
   //

@@ -440,7 +440,7 @@ class TailRecursionEliminator {
   Instruction *AccumulatorRecursionInstr = nullptr;
 
   // Map from sync region to return blocks to sync for that sync region.
-  DenseMap<Value *, SmallPtrSet<BasicBlock *, 4>> ReturnBlocksToSync;
+  DenseMap<Value *, SmallPtrSet<BasicBlock *, 2>> ReturnBlocksToSync;
 
   TailRecursionEliminator(Function &F, const TargetTransformInfo *TTI,
                           AliasAnalysis *AA, OptimizationRemarkEmitter *ORE,
@@ -465,6 +465,8 @@ class TailRecursionEliminator {
   void insertAccumulator(Instruction *AccRecInstr);
 
   bool eliminateCall(CallInst *CI);
+
+  void RemoveReturnBlockToSync(BasicBlock *RetBlock);
 
   void InsertSyncsIntoReturnBlocks();
 
@@ -904,6 +906,11 @@ getReturnBlocksToSync(BasicBlock *Entry, SyncInst *Sync,
   }
 }
 
+void TailRecursionEliminator::RemoveReturnBlockToSync(BasicBlock *RetBlock) {
+  for (auto &ReturnsToSync : ReturnBlocksToSync)
+    ReturnsToSync.second.erase(RetBlock);
+}
+
 static bool hasPrecedingSync(SyncInst *SI) {
   // TODO: Save the results from previous calls to hasPrecedingSync, in order to
   // speed up multiple calls to this routine for different sync instructions.
@@ -998,8 +1005,10 @@ bool TailRecursionEliminator::processBlock(BasicBlock &BB) {
     // because the ret instruction in there is still using a value which
     // eliminateCall will attempt to remove.  This block can only contain
     // instructions that can't have uses, therefore it is safe to remove.
-    if (pred_empty(Succ))
+    if (pred_empty(Succ)) {
+      RemoveReturnBlockToSync(Succ);
       DTU.deleteBB(Succ);
+    }
 
     eliminateCall(CI);
     return true;
@@ -1122,7 +1131,7 @@ bool TailRecursionEliminator::processBlock(BasicBlock &BB) {
       // We defer the restoration of syncs at relevant return blocks until after
       // all blocks are processed.  This approach simplifies the logic for
       // eliminating multiple tail calls that are only separated from the return
-      // by a sync, since the CFG won't be perturbed unnecessarily.
+      // by a sync, since the CFG won't be changed unnecessarily.
     } else {
       // Restore the sync that was eliminated.
       BasicBlock *RetBlock = Ret->getParent();

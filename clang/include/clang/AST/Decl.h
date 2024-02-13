@@ -1064,6 +1064,11 @@ protected:
 
     LLVM_PREFERRED_TYPE(bool)
     unsigned IsCXXCondDecl : 1;
+
+    /// Whether this variable is the loop-variable declaration in a simple Cilk
+    /// for statement.
+    LLVM_PREFERRED_TYPE(bool)
+    unsigned SimpleCilkForLVDecl : 1;
   };
 
   union {
@@ -1468,6 +1473,17 @@ public:
   void setCXXForRangeDecl(bool FRD) {
     assert(!isa<ParmVarDecl>(this));
     NonParmVarDeclBits.CXXForRangeDecl = FRD;
+  }
+
+  /// Determine whether this variable is the loop-variable declaration in a
+  /// simple Cilk for statement.
+  bool isSimpleCilkForLVDecl() const {
+    return isa<ParmVarDecl>(this) ? false
+                                  : NonParmVarDeclBits.SimpleCilkForLVDecl;
+  }
+  void setSimpleCilkForLVDecl(bool CFID) {
+    assert(!isa<ParmVarDecl>(this));
+    NonParmVarDeclBits.SimpleCilkForLVDecl = CFID;
   }
 
   /// Determine whether this variable is a for-loop declaration for a

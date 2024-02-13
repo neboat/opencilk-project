@@ -16,11 +16,13 @@
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/ExprCilk.h"
 #include "clang/AST/LambdaCapture.h"
 #include "clang/AST/OperationKinds.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtCXX.h"
+#include "clang/AST/StmtCilk.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
@@ -217,7 +219,9 @@ const clang::Stmt *ExtractionContext::computeInsertionPoint() const {
       return isa<AttributedStmt>(Stmt) || isa<CompoundStmt>(Stmt) ||
              isa<CXXForRangeStmt>(Stmt) || isa<DeclStmt>(Stmt) ||
              isa<DoStmt>(Stmt) || isa<ForStmt>(Stmt) || isa<IfStmt>(Stmt) ||
-             isa<ReturnStmt>(Stmt) || isa<WhileStmt>(Stmt);
+             isa<ReturnStmt>(Stmt) || isa<WhileStmt>(Stmt) ||
+             isa<CilkForStmt>(Stmt) || isa<CilkSpawnStmt>(Stmt) ||
+             isa<CilkSpawnExpr>(Stmt) || isa<CilkScopeStmt>(Stmt);
     }
     if (InsertionPoint->ASTNode.get<VarDecl>())
       return true;
@@ -438,6 +442,10 @@ bool childExprIsDisallowedStmt(const Stmt *Outer, const Expr *Inner) {
     return Inner == FS->getBody();
   if (const auto *FS = llvm::dyn_cast<CXXForRangeStmt>(Outer))
     return Inner == FS->getBody();
+  if (const auto *FS = llvm::dyn_cast<CilkForStmt>(Outer))
+    return Inner == FS->getBody();
+  if (const auto *FS = llvm::dyn_cast<CilkSpawnStmt>(Outer))
+    return Inner == FS->getSpawnedStmt();
   if (const auto *IS = llvm::dyn_cast<IfStmt>(Outer))
     return Inner == IS->getThen() || Inner == IS->getElse();
   // Assume all other cases may be actual expressions.

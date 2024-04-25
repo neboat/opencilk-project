@@ -10,7 +10,6 @@
 #define LLVM_TRANSFORMS_TAPIR_LOOPSTRIPMINE_H
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/StringRef.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Support/InstructionCost.h"
 

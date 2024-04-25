@@ -214,7 +214,8 @@ bool llvm::computeStripMineCount(
                      DetachI, TargetTransformInfo::TCK_SizeAndLatency) /
                  LoopCost)
                     .getValue());
-
+  // Make sure the stripmine count is at least 1.
+  SMP.Count |= (SMP.Count == 0);
   return false;
 }
 

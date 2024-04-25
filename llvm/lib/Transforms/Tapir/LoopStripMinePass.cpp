@@ -13,11 +13,14 @@
 #include "llvm/Transforms/Tapir/LoopStripMinePass.h"
 #include "llvm/ADT/PriorityWorklist.h"
 #include "llvm/Analysis/AssumptionCache.h"
+#include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/CodeMetrics.h"
+#include "llvm/Analysis/DemandedBits.h"
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
+#include "llvm/Analysis/ProfileSummaryInfo.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/TapirTaskInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -81,7 +84,7 @@ createMissedAnalysis(StringRef RemarkName, const Loop *TheLoop,
   }
 
   OptimizationRemarkAnalysis R(DEBUG_TYPE, RemarkName, DL, CodeRegion);
-  R << "loop not stripmined: ";
+  R << "Loop not stripmined: ";
   return R;
 }
 
@@ -89,14 +92,14 @@ createMissedAnalysis(StringRef RemarkName, const Loop *TheLoop,
 /// Approximate the work of the body of the loop L.  Returns several relevant
 /// properties of loop L via by-reference arguments.
 static InstructionCost approximateLoopCost(
-    const Loop *L, unsigned &NumCalls, bool &NotDuplicatable,
-    bool &Convergent, bool &IsRecursive, bool &UnknownSize,
-    const TargetTransformInfo &TTI, LoopInfo *LI, ScalarEvolution &SE,
-    const SmallPtrSetImpl<const Value *> &EphValues,
-    TargetLibraryInfo *TLI) {
+    const Loop *L, unsigned &NumCalls, bool &NotDuplicatable, bool &Convergent,
+    bool &IsRecursive, bool &UnknownSize, const TargetTransformInfo &TTI,
+    LoopInfo *LI, ScalarEvolution &SE,
+    const SmallPtrSetImpl<const Value *> &EphValues, TargetLibraryInfo *TLI,
+    BlockFrequencyInfo *BFI, OptimizationRemarkEmitter *ORE) {
 
   WSCost LoopCost;
-  estimateLoopCost(LoopCost, L, LI, &SE, TTI, TLI, EphValues);
+  estimateLoopCost(LoopCost, L, LI, &SE, TTI, TLI, BFI, EphValues, ORE);
 
   // Exclude calls to builtins when counting the calls.  This assumes that all
   // builtin functions are cheap.
@@ -109,11 +112,14 @@ static InstructionCost approximateLoopCost(
   return LoopCost.Work;
 }
 
-static bool tryToStripMineLoop(
-    Loop *L, DominatorTree &DT, LoopInfo *LI, ScalarEvolution &SE,
-    const TargetTransformInfo &TTI, AssumptionCache &AC, TaskInfo *TI,
-    OptimizationRemarkEmitter &ORE, TargetLibraryInfo *TLI, bool PreserveLCSSA,
-    std::optional<unsigned> ProvidedCount) {
+static bool tryToStripMineLoop(Loop *L, DominatorTree &DT, LoopInfo *LI,
+                               ScalarEvolution &SE,
+                               const TargetTransformInfo &TTI,
+                               AssumptionCache &AC, TaskInfo *TI,
+                               OptimizationRemarkEmitter &ORE,
+                               TargetLibraryInfo *TLI, BlockFrequencyInfo *BFI,
+                               /*bool CanVectorize,*/ bool PreserveLCSSA,
+                               std::optional<unsigned> ProvidedCount) {
   Task *T = getTaskIfTapirLoopStructure(L, TI);
   if (!T)
     return false;
@@ -122,14 +128,13 @@ static bool tryToStripMineLoop(
   if (TM_Disable == hasLoopStripmineTransformation(L))
     return false;
 
-  LLVM_DEBUG(dbgs() << "Loop Strip Mine: F["
-                    << L->getHeader()->getParent()->getName() << "] Loop %"
+  Function *F = L->getHeader()->getParent();
+  LLVM_DEBUG(dbgs() << "Loop Strip Mine: F[" << F->getName() << "] Loop %"
                     << L->getHeader()->getName() << "\n");
 
   if (!L->isLoopSimplifyForm()) {
-    LLVM_DEBUG(
-        dbgs() << "  Not stripmining loop which is not in loop-simplify "
-                  "form.\n");
+    LLVM_DEBUG(dbgs() << "  Not stripmining loop that is not in loop-simplify "
+                         "form.\n");
     return false;
   }
   bool StripMiningRequested =
@@ -148,36 +153,35 @@ static bool tryToStripMineLoop(
 
   InstructionCost LoopCost =
       approximateLoopCost(L, NumCalls, NotDuplicatable, Convergent, IsRecursive,
-                          UnknownSize, TTI, LI, SE, EphValues, TLI);
+                          UnknownSize, TTI, LI, SE, EphValues, TLI, BFI, &ORE);
   // Determine the iteration count of the eventual stripmined the loop.
-  bool ExplicitCount = computeStripMineCount(L, TTI, LoopCost, SMP);
+  bool ExplicitCount = computeStripMineCount(L, TTI, LoopCost, /*CanVectorize,*/ SMP);
+  ORE.emit([&]() {
+    return OptimizationRemarkAnalysis(DEBUG_TYPE, "StripmineCount",
+                                      L->getStartLoc(), L->getHeader())
+           << "Found stripmine count " << ore::NV("StripmineCount", SMP.Count)
+           << (ExplicitCount ? " (explicit count)." : ".");
+  });
 
-  // If the loop size is unknown, then we cannot compute a stripmining count for
+  // If the work in the loop body is big, then use a stripmine count of 1 for
   // it.
-  if (!ExplicitCount && UnknownSize) {
-    LLVM_DEBUG(dbgs() << "  Not stripmining loop with unknown size.\n");
-    ORE.emit(createMissedAnalysis("UnknownSize", L)
-             << "Cannot stripmine loop with unknown size.");
-    return false;
-  }
-
-  // If the loop size is enormous, then we might want to use a stripmining count
-  // of 1 for it.
-  LLVM_DEBUG(dbgs() << "  Loop Cost = " << LoopCost << "\n");
-  if (!ExplicitCount && InstructionCost::getMax() == LoopCost) {
-    LLVM_DEBUG(dbgs() << "  Not stripmining loop with very large size.\n");
+  LLVM_DEBUG(dbgs() << "  Loop Cost = " << LoopCost
+                    << ", Stripmine count = " << SMP.Count
+                    << (ExplicitCount ? " (explicit count)\n" : "\n"));
+  if (SMP.Count <= 1) {
+    LLVM_DEBUG(dbgs() << "  Using grainsize 1 for big loop.\n");
     if (Hints.getGrainsize() == 1)
       return false;
     ORE.emit([&]() {
-               return OptimizationRemark(DEBUG_TYPE, "HugeLoop",
+               return OptimizationRemark(DEBUG_TYPE, "BigLoop",
                                          L->getStartLoc(), L->getHeader())
-                 << "using grainsize 1 for huge loop";
+                 << "Using grainsize 1 for big loop.";
              });
     Hints.setAlreadyStripMined();
     return true;
   }
 
-  // If the loop is recursive, set the stripmine factor to be 1.
+  // If the loop is recursive, set the stripmine count to be 1.
   if (!ExplicitCount && IsRecursive) {
     LLVM_DEBUG(dbgs() << "  Not stripmining loop that recursively calls the "
                       << "containing function.\n");
@@ -186,10 +190,19 @@ static bool tryToStripMineLoop(
     ORE.emit([&]() {
                return OptimizationRemark(DEBUG_TYPE, "RecursiveCalls",
                                          L->getStartLoc(), L->getHeader())
-                 << "using grainsize 1 for loop with recursive calls";
+                 << "Using grainsize 1 for loop with recursive calls.";
              });
     Hints.setAlreadyStripMined();
     return true;
+  }
+
+  // If the loop size is unknown, then we cannot compute an accurate stripmine
+  // count for it.
+  if (!ExplicitCount && UnknownSize) {
+    LLVM_DEBUG(dbgs() << "  Not stripmining loop with unknown size.\n");
+    ORE.emit(createMissedAnalysis("UnknownSize", L)
+             << "Cannot stripmine loop with unknown size.");
+    return false;
   }
 
   // TODO: We can stripmine loops if the stripmined version does not require a
@@ -198,7 +211,8 @@ static bool tryToStripMineLoop(
     LLVM_DEBUG(dbgs() << "  Not stripmining loop which contains "
                       << "non-duplicatable instructions.\n");
     ORE.emit(createMissedAnalysis("NotDuplicatable", L)
-             << "Cannot stripmine loop with non-duplicatable instructions.");
+             << "Cannot stripmine loop containing instructions that cannot be "
+                "duplicated.");
     return false;
   }
 
@@ -208,46 +222,57 @@ static bool tryToStripMineLoop(
   if (Convergent) {
     LLVM_DEBUG(dbgs() << "  Skipping loop with convergent operations.\n");
     ORE.emit(createMissedAnalysis("Convergent", L)
-             << "Cannot stripmine loop with convergent instructions.");
+             << "Cannot stripmine loop containing convergent instructions.");
     return false;
   }
 
-  // If the loop contains potentially expensive function calls, then we don't
-  // want to stripmine it.
+  // If the loop contains potentially expensive function calls, then the
+  // stripmine count might be an underestimate.  Avoid stripmining these loops
+  // unless we would use grainsize 1 or stripmining is explicitly requested.
   if (NumCalls > 0 && !ExplicitCount && !StripMiningRequested) {
     LLVM_DEBUG(dbgs() << "  Skipping loop with expensive function calls.\n");
     ORE.emit(createMissedAnalysis("ExpensiveCalls", L)
-             << "Not stripmining loop with potentially expensive calls.");
+             << "Loop contains function calls with unknown cost.");
     return false;
   }
 
   // Make sure the count is a power of 2.
+  // TODO: Support stripmining by not a power of 2.
   if (!isPowerOf2_32(SMP.Count))
     SMP.Count = NextPowerOf2(SMP.Count);
-  if (SMP.Count < 2) {
-    if (Hints.getGrainsize() == 1)
-      return false;
-    ORE.emit([&]() {
-               return OptimizationRemark(DEBUG_TYPE, "LargeLoop",
-                                         L->getStartLoc(), L->getHeader())
-                 << "using grainsize 1 for large loop";
-             });
-    Hints.setAlreadyStripMined();
-    return true;
-  }
 
   // Find a constant trip count if available
   unsigned ConstTripCount = getConstTripCount(L, SE);
 
-  // Stripmining factor (Count) must be less or equal to TripCount.
+  // Stripmining factor (Count) must be less or equal to TripCount, or else it's
+  // better to just execute this loop serially.
   if (ConstTripCount && SMP.Count >= ConstTripCount) {
-    ORE.emit(createMissedAnalysis("FullStripMine", L)
-             << "Stripmining count larger than loop trip count.");
-    ORE.emit(DiagnosticInfoOptimizationFailure(
-                 DEBUG_TYPE, "UnprofitableParallelLoop",
-                 L->getStartLoc(), L->getHeader())
-             << "Parallel loop does not appear profitable to parallelize.");
-    return false;
+    ORE.emit([&]() {
+      return OptimizationRemarkAnalysis(DEBUG_TYPE, "FullStripMine",
+                                        L->getStartLoc(), L->getHeader())
+             << "stripmine count (" << ore::NV("StripmineCount", SMP.Count)
+             << ") exceeds loop trip count ("
+             << ore::NV("ConstTripCount", ConstTripCount) << ").";
+    });
+
+    // Serialize the loop's detach, since it appears to be too small to be worth
+    // parallelizing.
+    ORE.emit([&]() {
+      return OptimizationRemark(DEBUG_TYPE, "SerializingSmallLoop",
+                                L->getStartLoc(), L->getHeader())
+             << "Serializing parallel loop that appears not to be profitable "
+             << "to parallelize.";
+    });
+    SerializeDetach(cast<DetachInst>(L->getHeader()->getTerminator()), T,
+                    /* ReplaceWithTaskFrame = */ taskContainsSync(T), &DT);
+    Hints.clearHintsMetadata();
+    L->setDerivedFromTapirLoop();
+    // Update TaskInfo manually using the updated DT.
+    if (TI)
+      // FIXME: Recalculating TaskInfo for the whole function is wasteful.
+      // Optimize this routine in the future.
+      TI->recalculate(*L->getHeader()->getParent(), DT);
+    return true;
   }
 
   // When is it worthwhile to allow the epilog to run in parallel with the
@@ -296,8 +321,6 @@ static bool tryToStripMineLoop(
 
   // Copy metadata to remainder loop
   if (RemainderLoop && OrigLoopID) {
-    // Optional<MDNode *> RemainderLoopID = makeFollowupLoopID(
-    //     OrigLoopID, {}, "tapir.loop");
     MDNode *NewRemainderLoopID =
         CopyNonTapirLoopMetadata(RemainderLoop->getLoopID(), OrigLoopID);
     RemainderLoop->setLoopID(NewRemainderLoopID);
@@ -343,8 +366,8 @@ public:
     OptimizationRemarkEmitter ORE(&F);
     bool PreserveLCSSA = mustPreserveAnalysisID(LCSSAID);
 
-    return tryToStripMineLoop(L, DT, LI, SE, TTI, AC, TI, ORE, &TLI,
-                              PreserveLCSSA, ProvidedCount);
+    return tryToStripMineLoop(L, DT, LI, SE, TTI, AC, TI, ORE, &TLI, nullptr,
+                              /*false,*/ PreserveLCSSA, ProvidedCount);
   }
 
   /// This transformation requires natural loop information & requires that
@@ -388,28 +411,9 @@ PreservedAnalyses LoopStripMinePass::run(Function &F,
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   auto &TI = AM.getResult<TaskAnalysis>(F);
   auto &ORE = AM.getResult<OptimizationRemarkEmitterAnalysis>(F);
-
-  LoopAnalysisManager *LAM = nullptr;
-  if (auto *LAMProxy = AM.getCachedResult<LoopAnalysisManagerFunctionProxy>(F))
-    LAM = &LAMProxy->getManager();
-
-  // const ModuleAnalysisManager &MAM =
-  //     AM.getResult<ModuleAnalysisManagerFunctionProxy>(F).getManager();
-  // ProfileSummaryInfo *PSI =
-  //     MAM.getCachedResult<ProfileSummaryAnalysis>(*F.getParent());
+  auto &BFI = AM.getResult<BlockFrequencyAnalysis>(F);
 
   bool Changed = false;
-
-  // The stripminer requires loops to be in simplified form, and also needs
-  // LCSSA.  Since simplification may add new inner loops, it has to run before
-  // the legality and profitability checks. This means running the loop
-  // stripminer will simplify all loops, regardless of whether anything end up
-  // being stripmined.
-  for (auto &L : LI) {
-    Changed |= simplifyLoop(L, &DT, &LI, &SE, &AC, nullptr,
-                            /* PreserveLCSSA */ false);
-    Changed |= formLCSSARecursively(*L, DT, &LI, &SE);
-  }
 
   SmallPriorityWorklist<Loop *, 4> Worklist;
   appendLoopsToWorklist(LI, Worklist);
@@ -424,14 +428,9 @@ PreservedAnalyses LoopStripMinePass::run(Function &F,
     Loop *ParentL = L.getParentLoop();
 #endif
 
-    // // Check if the profile summary indicates that the profiled application
-    // // has a huge working set size, in which case we disable peeling to avoid
-    // // bloating it further.
-    // if (PSI && PSI->hasHugeWorkingSetSize())
-    //   AllowPeeling = false;
     std::string LoopName = std::string(L.getName());
     bool LoopChanged =
-        tryToStripMineLoop(&L, DT, &LI, SE, TTI, AC, &TI, ORE, &TLI,
+        tryToStripMineLoop(&L, DT, &LI, SE, TTI, AC, &TI, ORE, &TLI, &BFI, // CanVectorize,
                            /*PreserveLCSSA*/ true, /*Count*/ std::nullopt);
     Changed |= LoopChanged;
 
@@ -440,10 +439,6 @@ PreservedAnalyses LoopStripMinePass::run(Function &F,
     if (LoopChanged && ParentL)
       ParentL->verifyLoop();
 #endif
-
-    // Clear any cached analysis results for L if we removed it completely.
-    if (LAM && LoopChanged)
-      LAM->clear(L, LoopName);
   }
 
   if (!Changed)

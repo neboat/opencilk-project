@@ -3345,6 +3345,7 @@ llvm::InlineResult llvm::InlineFunction(CallBase &CB, InlineFunctionInfo &IFI,
         I.setTailBit(true);
         DetachedCtxEntryBlock->splice(InsertPoint, &*FirstNewBlock,
                                       II->getIterator(), I);
+      }
     }
   }
 

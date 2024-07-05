@@ -1913,7 +1913,7 @@ MemoryDepChecker::getDependenceDistanceStrideAndSize(
   // Under certain assumptions, Tapir can guarantee that there are no
   // loop-carried dependencies.
   if (EnableDRFAA && isLogicallyParallelViaTapir(InnermostLoop, TI))
-    return Dependence::NoDep;
+    return MemoryDepChecker::Dependence::NoDep;
 
   // We cannot check pointers in different address spaces.
   if (APtr->getType()->getPointerAddressSpace() !=

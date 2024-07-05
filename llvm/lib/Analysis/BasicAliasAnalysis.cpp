@@ -1571,7 +1571,7 @@ static bool isArgumentOrArgumentLike(const Value *V) {
 }
 
 // Given that O1 != O2, return NoAlias if they can not alias.
-static AliasResult UnderlyingNoAlias(const Value *O1, const Value *O2,
+static AliasResult underlyingNoAlias(const Value *O1, const Value *O2,
                                      AAQueryInfo &AAQI) {
   assert(O1 != O2 && "identical arguments to UnderlyingNoAlias");
 
@@ -1584,11 +1584,6 @@ static AliasResult UnderlyingNoAlias(const Value *O1, const Value *O2,
     if (isIdentifiedObject(O1) && isIdentifiedObject(O2))
       return AliasResult::NoAlias;
   }
-
-  // Constant pointers can't alias with non-const isIdentifiedObject objects.
-  if ((isa<Constant>(O1) && isIdentifiedObject(O2) && !isa<Constant>(O2)) ||
-      (isa<Constant>(O2) && isIdentifiedObject(O1) && !isa<Constant>(O1)))
-    return AliasResult::NoAlias;
 
   // Function arguments can't alias with things that are known to be
   // unambigously identified at the function level.
@@ -1792,7 +1787,7 @@ BasicAAResult::checkInjectiveArguments(const Value *V1, const Value *O1,
     if (O1 == U2)              // 1
       return AliasResult::MayAlias;
     if (isViewSet(Behavior2))  // 2
-      return UnderlyingNoAlias(O1, U2, AAQI);
+      return underlyingNoAlias(O1, U2, AAQI);
     return AliasResult::MayAlias;
   }
   if (!A2) {
@@ -1801,7 +1796,7 @@ BasicAAResult::checkInjectiveArguments(const Value *V1, const Value *O1,
     if (U1 == O2)              // 1
       return AliasResult::MayAlias;
     if (isViewSet(Behavior1))  // 2
-      return UnderlyingNoAlias(U1, O2, AAQI);
+      return underlyingNoAlias(U1, O2, AAQI);
     return AliasResult::MayAlias;
   }
 
@@ -1818,6 +1813,7 @@ BasicAAResult::checkInjectiveArguments(const Value *V1, const Value *O1,
     // If the caller relied on partial overlap detection a function like
     // void *f(void *p) { return p; }
     // could not be declared injective.
+    DominatorTree *DT = getDT(AAQI);
     BasicAAResult::DecomposedGEP DecompGEP1 =
         DecomposeGEPExpression(A1, DL, &AC, DT);
     BasicAAResult::DecomposedGEP DecompGEP2 =
@@ -1830,7 +1826,7 @@ BasicAAResult::checkInjectiveArguments(const Value *V1, const Value *O1,
     return AliasResult::MayAlias;
   }
 
-  return UnderlyingNoAlias(U1, U2, AAQI);
+  return underlyingNoAlias(U1, U2, AAQI);
 }
 
 /// Provides a bunch of ad-hoc rules to disambiguate in common cases, such as
@@ -1881,10 +1877,10 @@ AliasResult BasicAAResult::aliasCheck(const Value *V1, LocationSize V1Size,
       checkInjectiveArguments(V1, O1, V2, O2, AAQI);
   if (InjectiveResult == AliasResult::NoAlias)
     return AliasResult::NoAlias;
-  else if (InjectiveResult == AliasResult::MustAlias)
+  if (InjectiveResult == AliasResult::MustAlias)
     return AliasResult::MayAlias;
 
-  if (O1 != O2 && UnderlyingNoAlias(O1, O2, AAQI) == AliasResult::NoAlias)
+  if (O1 != O2 && underlyingNoAlias(O1, O2, AAQI) == AliasResult::NoAlias)
     return AliasResult::NoAlias;
 
   // If the size of one access is larger than the entire object on the other

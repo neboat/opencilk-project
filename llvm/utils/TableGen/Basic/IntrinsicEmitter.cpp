@@ -420,7 +420,7 @@ static bool compareFnAttributes(const CodeGenIntrinsic *L,
                     I->isCold, I->isConvergent, I->isSpeculatable,
                     I->hasSideEffects, I->isStrictFP, I->isInjective,
                     I->isStrandPure, I->isReducerRegister,
-                    I->isReducerUnregister, I->isHyperView, I->isHyperToken);
+                    I->isReducerUnregister, I->isHyperView);
   };
 
   auto TieL = TieBoolAttributes(L);
@@ -447,7 +447,7 @@ static bool hasFnAttributes(const CodeGenIntrinsic &Int) {
          Int.isNoMerge || Int.isConvergent || Int.isSpeculatable ||
          Int.isStrictFP || Intrinsic.isInjective || Intrinsic.isStrandPure ||
          Intrinsic.isReducerRegister || Intrinsic.isReducerUnregister ||
-         Intrinsic.isHyperView || Intrinsic.isHyperToken ||
+         Intrinsic.isHyperView ||
          getEffectiveME(Int) != MemoryEffects::unknown();
 }
 
@@ -620,8 +620,6 @@ static AttributeSet getIntrinsicFnAttributeSet(LLVMContext &C, unsigned ID) {
       addAttribute("ReducerUnregister");
     if (Int.isHyperView)
       addAttribute("HyperView");
-    if (Int.isHyperView)
-      addAttribute("HyperToken");
 
     const MemoryEffects ME = getEffectiveME(Int);
     if (ME != MemoryEffects::unknown()) {

@@ -84,7 +84,6 @@
 // CHECK-NEXT: HLSLResourceClass (SubjectMatchRule_record_not_is_union)
 // CHECK-NEXT: Hot (SubjectMatchRule_function)
 // CHECK-NEXT: HybridPatchable (SubjectMatchRule_function)
-// CHECK-NEXT: HyperToken (SubjectMatchRule_hasType_functionType)
 // CHECK-NEXT: HyperView (SubjectMatchRule_hasType_functionType)
 // CHECK-NEXT: IBAction (SubjectMatchRule_objc_method_is_instance)
 // CHECK-NEXT: IFunc (SubjectMatchRule_function)

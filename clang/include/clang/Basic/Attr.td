@@ -4760,12 +4760,6 @@ def HyperView : InheritableAttr {
   let Documentation = [StrandMallocDocs];
 }
 
-def HyperToken : InheritableAttr {
-  let Spellings = [Clang<"hyper_token">];
-  let Subjects = SubjectList<[FunctionLike]>;
-  let Documentation = [StrandMallocDocs];
-}
-
 def ReducerRegister : InheritableAttr {
   let Spellings = [Clang<"reducer_register">];
   let Subjects = SubjectList<[FunctionLike]>;

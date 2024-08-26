@@ -29,6 +29,8 @@
 
 namespace Fortran::frontend {
 
+using TapirTargetID = llvm::TapirTargetID;
+
 /// Bitfields of CodeGenOptions, split out from CodeGenOptions to ensure
 /// that this large collection of bitfields is a trivial class type.
 class CodeGenOptionsBase {
@@ -139,6 +141,9 @@ public:
   /// The code model-specific large data threshold to use
   /// (-mlarge-data-threshold).
   uint64_t LargeDataThreshold;
+
+  /// Path to OpenCilk runtime bitcode file.
+  std::string OpenCilkABIBitcodeFile;
 
   // Define accessors/mutators for code generation options of enumeration type.
 #define CODEGENOPT(Name, Bits, Default)

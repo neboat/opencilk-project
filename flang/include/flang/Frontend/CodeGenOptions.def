@@ -56,5 +56,8 @@ ENUM_CODEGENOPT(ComplexRange, ComplexRangeKind, 3, ComplexRangeKind::CX_Full) //
 
 ENUM_CODEGENOPT(DoConcurrentMapping, DoConcurrentMappingKind, 2, DoConcurrentMappingKind::DCMK_None) ///< Map `do concurrent` to OpenMP
 
+/// Tapir target runtime library to use.
+ENUM_CODEGENOPT(TapirTarget, TapirTargetID, 8, TapirTargetID::Last_TapirTargetID)
+
 #undef CODEGENOPT
 #undef ENUM_CODEGENOPT

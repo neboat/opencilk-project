@@ -30,6 +30,8 @@
 
 namespace Fortran::frontend {
 
+using TapirTargetID = llvm::TapirTargetID;
+
 /// Bitfields of CodeGenOptions, split out from CodeGenOptions to ensure
 /// that this large collection of bitfields is a trivial class type.
 class CodeGenOptionsBase {
@@ -167,6 +169,9 @@ public:
   /// Name of the profile remapping file to apply to the profile data supplied
   /// by -fprofile-sample-use or -fprofile-instr-use.
   std::string ProfileRemappingFile;
+
+  /// Path to OpenCilk runtime bitcode file.
+  std::string OpenCilkABIBitcodeFile;
 
   /// Check if Clang profile instrumenation is on.
   bool hasProfileClangInstr() const {

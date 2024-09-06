@@ -1170,8 +1170,8 @@ void CXXRecordDecl::addedMember(Decl *D) {
       // suppress hyperobject registration.
       data().Aggregate = false;
       data().HasIrrelevantDestructor = false;
-      data().HasTrivialSpecialMembers &= ~SMF_Destructor;
-      data().HasTrivialSpecialMembersForCall &= ~SMF_Destructor;
+      data().HasTrivialSpecialMembers &= ~SMF_All;
+      data().HasTrivialSpecialMembersForCall &= ~SMF_All;
     }
 
     if (isUnion() && !Field->isMutable()) {

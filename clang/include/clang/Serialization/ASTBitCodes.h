@@ -2063,6 +2063,7 @@ enum StmtCode {
   STMT_CILKSYNC,
   STMT_CILKFOR,
   STMT_CILKSCOPE,
+  STMT_CILKFORRANGE,
 };
 
 /// The kinds of designators that can occur in a

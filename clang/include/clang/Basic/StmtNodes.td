@@ -225,6 +225,7 @@ def CilkSpawnStmt : StmtNode<Stmt>;
 def CilkSpawnExpr : StmtNode<Expr>;
 def CilkForStmt : StmtNode<Stmt>;
 def CilkScopeStmt : StmtNode<Stmt>;
+def CilkForRangeStmt: StmtNode<Stmt>;
 
 // OpenMP Directives.
 def OMPCanonicalLoop : StmtNode<Stmt>;

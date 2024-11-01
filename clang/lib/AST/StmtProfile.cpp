@@ -2330,6 +2330,10 @@ void StmtProfiler::VisitCilkScopeStmt(const CilkScopeStmt *S) {
   VisitStmt(S);
 }
 
+void StmtProfiler::VisitCilkForRangeStmt(const CilkForRangeStmt *S) {
+  VisitStmt(S);
+}
+
 void StmtProfiler::VisitOpaqueValueExpr(const OpaqueValueExpr *E) {
   VisitExpr(E);
 }

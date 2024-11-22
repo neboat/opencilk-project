@@ -1740,7 +1740,6 @@ public:
     llvm::BasicBlock *OldEHResumeBlock = nullptr;
     llvm::Value *OldExceptionSlot = nullptr;
     llvm::AllocaInst *OldEHSelectorSlot = nullptr;
-    Address OldNormalCleanupDest = Address::invalid();
 
     // Taskframe created separately from detach.
     llvm::Value *TaskFrame = nullptr;

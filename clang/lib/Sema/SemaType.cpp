@@ -2081,6 +2081,12 @@ QualType Sema::BuildHyperobjectType(QualType Element, Expr *Identity,
       Diag(Loc, *Code) << Element;
   }
 
+  if (Element.isConstQualified() || Element.isVolatileQualified()) {
+    Diag(Loc, diag::qualified_hyperobject) << Element;
+    // Volatile reducers generate confusing diagnostics when used.
+    Element.removeLocalVolatile();
+  }
+
   Identity = ValidateReducerCallback(Identity, 1, Loc);
   Reduce = ValidateReducerCallback(Reduce, 2, Loc);
 

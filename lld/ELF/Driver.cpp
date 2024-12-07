@@ -1266,6 +1266,10 @@ static void readConfigs(opt::InputArgList &args) {
     config->compressDebugSections =
         getCompressionType(arg->getValue(), "--compress-debug-sections");
   }
+  config->cilktool = args.getLastArgValue(OPT_cilktool);
+  config->compressDebugSections = getCompressionType(
+      args.getLastArgValue(OPT_compress_debug_sections, "none"),
+      "--compress-debug-sections");
   config->cref = args.hasArg(OPT_cref);
   config->optimizeBBJumps =
       args.hasFlag(OPT_optimize_bb_jumps, OPT_no_optimize_bb_jumps, false);

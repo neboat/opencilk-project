@@ -1094,7 +1094,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
             });
         break;
       case LangOptions::CilktoolKind::Cilktool_Cilkscale_Benchmark:
-          PB.registerTapirLoopEndEPCallback(
+          PB.registerTapirLateEPCallback(
             [&PB](ModulePassManager &MPM, OptimizationLevel Level) {
               MPM.addPass(CSISetupPass(getCSIOptionsForCilkscaleBenchmark()));
               MPM.addPass(ComprehensiveStaticInstrumentationPass(

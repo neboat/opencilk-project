@@ -8113,8 +8113,9 @@ static bool serializeDetachToImmediateSync(BasicBlock *BB,
 
       // Move static alloca instructions in the detached block to the
       // appropriate entry block.
-      MoveStaticAllocasInBlock(cast<Instruction>(SyncRegion)->getParent(),
-                               Detached, ReattachPreds);
+      if (isa<Instruction>(SyncRegion))
+        MoveStaticAllocasInBlock(cast<Instruction>(SyncRegion)->getParent(),
+                                 Detached, ReattachPreds);
 
       // Erase any instructions marked to be erased.
       for (Instruction *I : ToErase)

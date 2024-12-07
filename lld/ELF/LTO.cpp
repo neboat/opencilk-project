@@ -130,6 +130,7 @@ static lto::Config createConfig(Ctx &ctx) {
   if (args::validTapirTarget(ctx.arg.tapirTarget))
     c.TapirTarget = ctx.arg.tapirTarget;
   c.OpenCilkABIBitcodeFile = std::string(ctx.arg.opencilkABIBitcodeFile);
+  c.Cilktool = std::string(ctx.arg.cilktool);
 
   c.HasWholeProgramVisibility = ctx.arg.ltoWholeProgramVisibility;
   c.ValidateAllVtablesHaveTypeInfos =

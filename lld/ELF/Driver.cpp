@@ -1386,6 +1386,7 @@ static void readConfigs(Ctx &ctx, opt::InputArgList &args) {
     ctx.arg.compressDebugSections =
         getCompressionType(ctx, arg->getValue(), "--compress-debug-sections");
   }
+  ctx.arg.cilktool = args.getLastArgValue(OPT_cilktool);
   ctx.arg.cref = args.hasArg(OPT_cref);
   ctx.arg.optimizeBBJumps =
       args.hasFlag(OPT_optimize_bb_jumps, OPT_no_optimize_bb_jumps, false);

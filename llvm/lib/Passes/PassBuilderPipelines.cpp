@@ -1916,7 +1916,7 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
   // Lower Tapir if necessary
   if (LowerTapir)
     MPM.addPass(buildTapirLoweringPipeline(Level, Phase));
-  else
+  else if (!isLTOPreLink(Phase))
     invokeTapirLoopEndEPCallbacks(MPM, Level);
 
   return MPM;
@@ -2588,7 +2588,7 @@ PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
 
   if (LowerTapir)
     MPM.addPass(buildTapirLoweringPipeline(Level, Phase));
-  else
+  else if (!isLTOPreLink(Phase))
     invokeTapirLoopEndEPCallbacks(MPM, Level);
 
   invokeOptimizerLastEPCallbacks(MPM, Level, Phase);

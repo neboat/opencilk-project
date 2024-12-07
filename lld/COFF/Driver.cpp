@@ -840,6 +840,7 @@ static std::string createResponseFile(const opt::InputArgList &args,
       os << arg->getSpelling() << quote(rewritePath(arg->getValue())) << "\n";
       break;
     case OPT_call_graph_ordering_file:
+    case OPT_cilktool:
     case OPT_deffile:
     case OPT_manifestinput:
     case OPT_natvis:
@@ -2128,6 +2129,7 @@ void LinkerDriver::linkerMain(ArrayRef<const char *> argsArr) {
       args.getLastArgValue(OPT_opencilk_abi_bitcode);
   config->tapirTarget =
       args::parseTapirTarget(args.getLastArgValue(OPT_tapir_target));
+  config->cilktool = args.getLastArgValue(OPT_cilktool);
 
   if (config->incremental && args.hasArg(OPT_profile)) {
     Warn(ctx) << "ignoring '/incremental' due to '/profile' specification";

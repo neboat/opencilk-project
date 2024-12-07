@@ -230,6 +230,7 @@ namespace options {
   // Tapir lowering options.
   static TapirTargetID tapir_target = TapirTargetID::Last_TapirTargetID;
   static std::string opencilk_abi_bitcode_file;
+  static std::string cilktool;
 
   static TapirTargetID parseTapirTarget(StringRef tapirTarget) {
     return llvm::StringSwitch<TapirTargetID>(tapirTarget)
@@ -345,6 +346,8 @@ namespace options {
       tapir_target = parseTapirTarget(std::string(opt));
     } else if (opt.consume_front("opencilk-abi-bitcode=")) {
       opencilk_abi_bitcode_file = std::string(opt);
+    } else if (opt.consume_front("cilktool=")) {
+      cilktool = std::string(opt);
     } else {
       // Save this option to pass to the code generator.
       // ParseCommandLineOptions() expects argv[0] to be program name. Lazily
@@ -998,6 +1001,8 @@ static std::unique_ptr<LTO> createLTO(IndexWriteCallback OnIndexWrite,
     Conf.TapirTarget = options::tapir_target;
     Conf.OpenCilkABIBitcodeFile = options::opencilk_abi_bitcode_file;
   }
+
+  Conf.Cilktool = options::cilktool;
 
   return std::make_unique<LTO>(std::move(Conf), Backend,
                                 options::ParallelCodeGenParallelismLevel);

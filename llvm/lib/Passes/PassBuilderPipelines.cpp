@@ -1851,7 +1851,7 @@ PassBuilder::buildPerModuleDefaultPipeline(OptimizationLevel Level,
     MPM.addPass(buildTapirLoweringPipeline(
         Level, LTOPreLink ? ThinOrFullLTOPhase::FullLTOPreLink
                           : ThinOrFullLTOPhase::None));
-  else
+  else if (!LTOPreLink)
     invokeTapirLoopEndEPCallbacks(MPM, Level);
 
   return MPM;
@@ -2438,7 +2438,7 @@ ModulePassManager PassBuilder::buildO0DefaultPipeline(OptimizationLevel Level,
     MPM.addPass(buildTapirLoweringPipeline(
         Level, LTOPreLink ? ThinOrFullLTOPhase::FullLTOPreLink
                           : ThinOrFullLTOPhase::None));
-  else
+  else if (!LTOPreLink)
     invokeTapirLoopEndEPCallbacks(MPM, Level);
 
   invokeOptimizerLastEPCallbacks(MPM, Level);

@@ -3430,6 +3430,8 @@ void Verifier::verifyTask(const DetachInst *DI) {
 }
 
 void Verifier::visitReattachInst(ReattachInst &RI) {
+  Check(isa<Instruction>(RI.getSyncRegion()),
+        "reattach has an invalid syncregion", RI);
   if (DT.isReachableFromEntry(RI.getParent())) {
     // Check that the continuation of the reattach has a detach predecessor.
     const BasicBlock *Continue = RI.getDetachContinue();
@@ -3448,6 +3450,8 @@ void Verifier::visitReattachInst(ReattachInst &RI) {
 }
 
 void Verifier::visitSyncInst(SyncInst &SI) {
+  Check(isa<Instruction>(SI.getSyncRegion()), "sync has an invalid syncregion",
+        SI);
   visitTerminator(SI);
 }
 
@@ -3515,6 +3519,8 @@ void Verifier::verifyTaskFrame(const CallBase *TF) {
 }
 
 void Verifier::visitDetachInst(DetachInst &DI) {
+  Check(isa<Instruction>(DI.getSyncRegion()),
+        "detach has an invalid syncregion", DI);
   if (DetachesVisited.insert(&DI).second)
     verifyTask(&DI);
 

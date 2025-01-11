@@ -313,7 +313,8 @@ invoke.cont:                                      ; preds = %if.then
 if.then.i.i551:                                   ; preds = %invoke.cont
   %_M_refcount.i.i = getelementptr inbounds i8, i8* %6, i64 -8
   %9 = bitcast i8* %_M_refcount.i.i to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i, label %if.else.i.i.i
+  %cmp.llvm19 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp, label %if.then.i.i.i, label %if.else.i.i.i
 
 if.then.i.i.i:                                    ; preds = %if.then.i.i551
   %10 = atomicrmw volatile add i32* %9, i32 -1 acq_rel
@@ -355,7 +356,8 @@ lpad:                                             ; preds = %if.then
 if.then.i.i557:                                   ; preds = %lpad
   %_M_refcount.i.i556 = getelementptr inbounds i8, i8* %15, i64 -8
   %18 = bitcast i8* %_M_refcount.i.i556 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i558, label %if.else.i.i.i560
+  %cmp.llvm19.1 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.1, label %if.then.i.i.i558, label %if.else.i.i.i560
 
 if.then.i.i.i558:                                 ; preds = %if.then.i.i557
   %19 = atomicrmw volatile add i32* %18, i32 -1 acq_rel
@@ -1151,7 +1153,8 @@ lpad.i1008:                                       ; preds = %.noexc1019
 if.then.i.i.i1010:                                ; preds = %lpad.i1008
   %_M_refcount.i.i.i1009 = getelementptr inbounds i8, i8* %235, i64 -8
   %238 = bitcast i8* %_M_refcount.i.i.i1009 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i.i1011, label %if.else.i.i.i.i1013
+  %cmp.llvm19.2 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.2, label %if.then.i.i.i.i1011, label %if.else.i.i.i.i1013
 
 if.then.i.i.i.i1011:                              ; preds = %if.then.i.i.i1010
   %239 = atomicrmw volatile add i32* %238, i32 -1 acq_rel
@@ -1286,7 +1289,8 @@ _ZN2cv6StringD2Ev.exit:                           ; preds = %_ZNSt6vectorIiSaIiE
 if.then.i.i1064:                                  ; preds = %_ZN2cv6StringD2Ev.exit
   %_M_refcount.i.i1063 = getelementptr inbounds i8, i8* %253, i64 -8
   %260 = bitcast i8* %_M_refcount.i.i1063 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1065, label %if.else.i.i.i1067
+  %cmp.llvm19.3 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.3, label %if.then.i.i.i1065, label %if.else.i.i.i1067
 
 if.then.i.i.i1065:                                ; preds = %if.then.i.i1064
   %261 = atomicrmw volatile add i32* %260, i32 -1 acq_rel
@@ -1319,7 +1323,8 @@ _ZNSsD2Ev.exit1072:                               ; preds = %if.then4.i.i1071, %
 if.then.i.i1078:                                  ; preds = %_ZNSsD2Ev.exit1072
   %_M_refcount.i.i1077 = getelementptr inbounds i8, i8* %263, i64 -8
   %265 = bitcast i8* %_M_refcount.i.i1077 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1079, label %if.else.i.i.i1081
+  %cmp.llvm19.4 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.4, label %if.then.i.i.i1079, label %if.else.i.i.i1081
 
 if.then.i.i.i1079:                                ; preds = %if.then.i.i1078
   %266 = atomicrmw volatile add i32* %265, i32 -1 acq_rel
@@ -1352,7 +1357,8 @@ _ZNSsD2Ev.exit1086:                               ; preds = %if.then4.i.i1085, %
 if.then.i.i1092:                                  ; preds = %_ZNSsD2Ev.exit1086
   %_M_refcount.i.i1091 = getelementptr inbounds i8, i8* %268, i64 -8
   %270 = bitcast i8* %_M_refcount.i.i1091 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1093, label %if.else.i.i.i1095
+  %cmp.llvm19.5 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.5, label %if.then.i.i.i1093, label %if.else.i.i.i1095
 
 if.then.i.i.i1093:                                ; preds = %if.then.i.i1092
   %271 = atomicrmw volatile add i32* %270, i32 -1 acq_rel
@@ -1386,7 +1392,8 @@ _ZNSsD2Ev.exit1100:                               ; preds = %if.then4.i.i1099, %
 if.then.i.i1106:                                  ; preds = %_ZNSsD2Ev.exit1100
   %_M_refcount.i.i1105 = getelementptr inbounds i8, i8* %273, i64 -8
   %275 = bitcast i8* %_M_refcount.i.i1105 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1107, label %if.else.i.i.i1109
+  %cmp.llvm19.6 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.6, label %if.then.i.i.i1107, label %if.else.i.i.i1109
 
 if.then.i.i.i1107:                                ; preds = %if.then.i.i1106
   %276 = atomicrmw volatile add i32* %275, i32 -1 acq_rel
@@ -1793,7 +1800,8 @@ ehcleanup326:                                     ; preds = %ehcleanup324, %lpad
 if.then.i.i1280:                                  ; preds = %ehcleanup326
   %_M_refcount.i.i1279 = getelementptr inbounds i8, i8* %253, i64 -8
   %370 = bitcast i8* %_M_refcount.i.i1279 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1281, label %if.else.i.i.i1283
+  %cmp.llvm19.7 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.7, label %if.then.i.i.i1281, label %if.else.i.i.i1283
 
 if.then.i.i.i1281:                                ; preds = %if.then.i.i1280
   %371 = atomicrmw volatile add i32* %370, i32 -1 acq_rel
@@ -1832,7 +1840,8 @@ ehcleanup327:                                     ; preds = %_ZNSsD2Ev.exit1288,
 if.then.i.i1294:                                  ; preds = %ehcleanup327
   %_M_refcount.i.i1293 = getelementptr inbounds i8, i8* %373, i64 -8
   %376 = bitcast i8* %_M_refcount.i.i1293 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1295, label %if.else.i.i.i1297
+  %cmp.llvm19.8 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.8, label %if.then.i.i.i1295, label %if.else.i.i.i1297
 
 if.then.i.i.i1295:                                ; preds = %if.then.i.i1294
   %377 = atomicrmw volatile add i32* %376, i32 -1 acq_rel
@@ -1871,7 +1880,8 @@ ehcleanup328:                                     ; preds = %_ZNSsD2Ev.exit1302,
 if.then.i.i1308:                                  ; preds = %ehcleanup328
   %_M_refcount.i.i1307 = getelementptr inbounds i8, i8* %379, i64 -8
   %382 = bitcast i8* %_M_refcount.i.i1307 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1309, label %if.else.i.i.i1311
+  %cmp.llvm19.9 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.9, label %if.then.i.i.i1309, label %if.else.i.i.i1311
 
 if.then.i.i.i1309:                                ; preds = %if.then.i.i1308
   %383 = atomicrmw volatile add i32* %382, i32 -1 acq_rel
@@ -1911,7 +1921,8 @@ ehcleanup329:                                     ; preds = %_ZNSsD2Ev.exit1316,
 if.then.i.i1322:                                  ; preds = %ehcleanup329
   %_M_refcount.i.i1321 = getelementptr inbounds i8, i8* %385, i64 -8
   %388 = bitcast i8* %_M_refcount.i.i1321 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i1323, label %if.else.i.i.i1325
+  %cmp.llvm19.10 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.10, label %if.then.i.i.i1323, label %if.else.i.i.i1325
 
 if.then.i.i.i1323:                                ; preds = %if.then.i.i1322
   %389 = atomicrmw volatile add i32* %388, i32 -1 acq_rel
@@ -2457,7 +2468,8 @@ lpad.i:                                           ; preds = %.noexc880
 if.then.i.i.i879:                                 ; preds = %lpad.i
   %_M_refcount.i.i.i = getelementptr inbounds i8, i8* %487, i64 -8
   %490 = bitcast i8* %_M_refcount.i.i.i to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i.i, label %if.else.i.i.i.i
+  %cmp.llvm19.11 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.11, label %if.then.i.i.i.i, label %if.else.i.i.i.i
 
 if.then.i.i.i.i:                                  ; preds = %if.then.i.i.i879
   %491 = atomicrmw volatile add i32* %490, i32 -1 acq_rel
@@ -2550,7 +2562,8 @@ invoke.cont398:                                   ; preds = %invoke.cont396
 if.then.i.i810:                                   ; preds = %invoke.cont398
   %_M_refcount.i.i809 = getelementptr inbounds i8, i8* %506, i64 -8
   %508 = bitcast i8* %_M_refcount.i.i809 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i811, label %if.else.i.i.i813
+  %cmp.llvm19.12 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.12, label %if.then.i.i.i811, label %if.else.i.i.i813
 
 if.then.i.i.i811:                                 ; preds = %if.then.i.i810
   %509 = atomicrmw volatile add i32* %508, i32 -1 acq_rel
@@ -2583,7 +2596,8 @@ _ZNSsD2Ev.exit818:                                ; preds = %if.then4.i.i817, %i
 if.then.i.i789:                                   ; preds = %_ZNSsD2Ev.exit818
   %_M_refcount.i.i788 = getelementptr inbounds i8, i8* %511, i64 -8
   %513 = bitcast i8* %_M_refcount.i.i788 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i790, label %if.else.i.i.i792
+  %cmp.llvm19.13 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.13, label %if.then.i.i.i790, label %if.else.i.i.i792
 
 if.then.i.i.i790:                                 ; preds = %if.then.i.i789
   %514 = atomicrmw volatile add i32* %513, i32 -1 acq_rel
@@ -2616,7 +2630,8 @@ _ZNSsD2Ev.exit797:                                ; preds = %if.then4.i.i796, %i
 if.then.i.i768:                                   ; preds = %_ZNSsD2Ev.exit797
   %_M_refcount.i.i767 = getelementptr inbounds i8, i8* %516, i64 -8
   %518 = bitcast i8* %_M_refcount.i.i767 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i769, label %if.else.i.i.i771
+  %cmp.llvm19.14 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.14, label %if.then.i.i.i769, label %if.else.i.i.i771
 
 if.then.i.i.i769:                                 ; preds = %if.then.i.i768
   %519 = atomicrmw volatile add i32* %518, i32 -1 acq_rel
@@ -2650,7 +2665,8 @@ _ZNSsD2Ev.exit776:                                ; preds = %if.then4.i.i775, %i
 if.then.i.i747:                                   ; preds = %_ZNSsD2Ev.exit776
   %_M_refcount.i.i746 = getelementptr inbounds i8, i8* %521, i64 -8
   %523 = bitcast i8* %_M_refcount.i.i746 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i748, label %if.else.i.i.i750
+  %cmp.llvm19.15 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.15, label %if.then.i.i.i748, label %if.else.i.i.i750
 
 if.then.i.i.i748:                                 ; preds = %if.then.i.i747
   %524 = atomicrmw volatile add i32* %523, i32 -1 acq_rel
@@ -2731,7 +2747,8 @@ lpad397:                                          ; preds = %invoke.cont396
 if.then.i.i726:                                   ; preds = %lpad397
   %_M_refcount.i.i725 = getelementptr inbounds i8, i8* %541, i64 -8
   %546 = bitcast i8* %_M_refcount.i.i725 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i727, label %if.else.i.i.i729
+  %cmp.llvm19.16 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.16, label %if.then.i.i.i727, label %if.else.i.i.i729
 
 if.then.i.i.i727:                                 ; preds = %if.then.i.i726
   %547 = atomicrmw volatile add i32* %546, i32 -1 acq_rel
@@ -2770,7 +2787,8 @@ ehcleanup400:                                     ; preds = %_ZNSsD2Ev.exit734, 
 if.then.i.i705:                                   ; preds = %ehcleanup400
   %_M_refcount.i.i704 = getelementptr inbounds i8, i8* %549, i64 -8
   %552 = bitcast i8* %_M_refcount.i.i704 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i706, label %if.else.i.i.i708
+  %cmp.llvm19.17 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.17, label %if.then.i.i.i706, label %if.else.i.i.i708
 
 if.then.i.i.i706:                                 ; preds = %if.then.i.i705
   %553 = atomicrmw volatile add i32* %552, i32 -1 acq_rel
@@ -2809,7 +2827,8 @@ ehcleanup401:                                     ; preds = %_ZNSsD2Ev.exit713, 
 if.then.i.i664:                                   ; preds = %ehcleanup401
   %_M_refcount.i.i663 = getelementptr inbounds i8, i8* %555, i64 -8
   %558 = bitcast i8* %_M_refcount.i.i663 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i665, label %if.else.i.i.i667
+  %cmp.llvm19.18 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.18, label %if.then.i.i.i665, label %if.else.i.i.i667
 
 if.then.i.i.i665:                                 ; preds = %if.then.i.i664
   %559 = atomicrmw volatile add i32* %558, i32 -1 acq_rel
@@ -2849,7 +2868,8 @@ ehcleanup402:                                     ; preds = %_ZNSsD2Ev.exit672, 
 if.then.i.i644:                                   ; preds = %ehcleanup402
   %_M_refcount.i.i643 = getelementptr inbounds i8, i8* %561, i64 -8
   %564 = bitcast i8* %_M_refcount.i.i643 to i32*
-  br i1 icmp ne (i8* bitcast (i32 (i32*, void (i8*)*)* @__pthread_key_create to i8*), i8* null), label %if.then.i.i.i645, label %if.else.i.i.i647
+  %cmp.llvm19.19 = icmp ne ptr @__pthread_key_create, null
+  br i1 %cmp.llvm19.19, label %if.then.i.i.i645, label %if.else.i.i.i647
 
 if.then.i.i.i645:                                 ; preds = %if.then.i.i644
   %565 = atomicrmw volatile add i32* %564, i32 -1 acq_rel

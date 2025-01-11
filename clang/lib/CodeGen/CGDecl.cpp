@@ -1948,7 +1948,7 @@ void CodeGenFunction::destroyHyperobject(CodeGenFunction &CGF, Address Addr,
                                          QualType Type) {
   llvm::Function *F = CGF.CGM.getIntrinsic(llvm::Intrinsic::reducer_unregister);
   llvm::Value *Arg =
-      CGF.Builder.CreateBitCast(Addr.getPointer(), CGF.CGM.VoidPtrTy);
+      CGF.Builder.CreateBitCast(Addr.emitRawPointer(CGF), CGF.CGM.VoidPtrTy);
   CGF.Builder.CreateCall(F, {Arg});
   QualType Inner = Type.stripHyperobject();
   if (const RecordType *rtype = Inner->getAs<RecordType>()) {
@@ -2071,7 +2071,7 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
     initializeWhatIsTechnicallyUninitialized(Loc);
     if (Reducer)
       EmitReducerInit(&D, RCB,
-                      Builder.CreateBitCast(emission.Addr.getPointer(),
+                      Builder.CreateBitCast(emission.Addr.emitRawPointer(*this),
                                             CGM.VoidPtrTy));
     return;
   }
@@ -2130,7 +2130,7 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
     EmitExprAsInit(Init, &D, lv, capturedByInit);
     if (Reducer)
       EmitReducerInit(&D, RCB,
-                      Builder.CreateBitCast(emission.Addr.getPointer(),
+                      Builder.CreateBitCast(emission.Addr.emitRawPointer(*this),
                                             CGM.VoidPtrTy));
     return;
   }
@@ -2144,7 +2144,7 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
     EmitStoreThroughLValue(RValue::get(constant), lv, true);
     if (Reducer)
       EmitReducerInit(&D, RCB,
-                      Builder.CreateBitCast(emission.Addr.getPointer(),
+                      Builder.CreateBitCast(emission.Addr.emitRawPointer(*this),
                                             CGM.VoidPtrTy));
     return;
   }
@@ -2155,7 +2155,7 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
 
   if (Reducer)
     EmitReducerInit(&D, RCB,
-                    Builder.CreateBitCast(emission.Addr.getPointer(),
+                    Builder.CreateBitCast(emission.Addr.emitRawPointer(*this),
                                           CGM.VoidPtrTy));
 }
 
@@ -2397,9 +2397,6 @@ void CodeGenFunction::pushLifetimeExtendedDestroy(
 void CodeGenFunction::pushDestroy(CleanupKind cleanupKind, Address addr,
                                   QualType type, Destroyer *destroyer,
                                   bool useEHCleanupForArray) {
-  if (SpawnedCleanup)
-    return pushLifetimeExtendedDestroy(cleanupKind, addr, type, destroyer,
-                                       useEHCleanupForArray);
   pushFullExprCleanup<DestroyObject>(cleanupKind, addr, type, destroyer,
                                      useEHCleanupForArray);
 }

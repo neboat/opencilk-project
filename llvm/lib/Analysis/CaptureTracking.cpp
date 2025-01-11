@@ -294,7 +294,7 @@ UseCaptureInfo llvm::DetermineUseCaptureKind(const Use &U, const Value *Base) {
           // Comparing a dereferenceable_or_null pointer against null cannot
           // lead to pointer escapes, because if it is not null it must be a
           // valid (in-bounds) pointer.
-          const DataLayout &DL = I->getModule()->getDataLayout();
+          const DataLayout &DL = I->getDataLayout();
           if (IsDereferenceableOrNull && IsDereferenceableOrNull(O, DL))
             return UseCaptureKind::NO_CAPTURE;
         }

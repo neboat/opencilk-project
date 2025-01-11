@@ -102,7 +102,7 @@ static InstructionCost approximateLoopCost(
   // builtin functions are cheap.
   NumCalls = LoopCost.Metrics.NumCalls - LoopCost.Metrics.NumBuiltinCalls;
   NotDuplicatable = LoopCost.Metrics.notDuplicatable;
-  Convergent = LoopCost.Metrics.convergent;
+  Convergent = LoopCost.Metrics.Convergence != ConvergenceKind::None;
   IsRecursive = LoopCost.Metrics.isRecursive;
   UnknownSize = LoopCost.UnknownCost;
 

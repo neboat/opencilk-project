@@ -94,6 +94,7 @@ if.end:                                           ; preds = %if.then, %entry
 ; CHECK-LABEL: if.end:
 ; CHECK: @__csan_before_call(
 ; CHECK-NEXT: tail call i32 @fib(
+; CHECK-NEXT: #dbg_value(i32 %call1,
 ; CHECK-NEXT: @__csan_after_call(
 }
 

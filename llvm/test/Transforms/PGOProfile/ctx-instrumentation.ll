@@ -377,7 +377,7 @@ entry:
 ;.
 ; LOWERING: attributes #[[ATTR0]] = { noreturn }
 ; LOWERING: attributes #[[ATTR1:[0-9]+]] = { nounwind }
-; LOWERING: attributes #[[ATTR2:[0-9]+]] = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+; LOWERING: attributes #[[ATTR2:[0-9]+]] = { nocallback nofree nosync nounwind speculatable willreturn memory(inaccessiblemem: read) }
 ;.
 ; INSTRUMENT: attributes #[[ATTR0]] = { noreturn }
 ; INSTRUMENT: attributes #[[ATTR1:[0-9]+]] = { nounwind }

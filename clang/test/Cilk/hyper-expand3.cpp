@@ -1,5 +1,5 @@
-// RUN: %clang_cc1 %s -x c++ -O1 -fopencilk -verify -S -fsyntax-only
-// RUN: %clang_cc1 --std=c++17 %s -x c++ -O1 -fopencilk -verify -S -fsyntax-only
+// RUN: %clang_cc1 %s -x c++ -O1 -fopencilk -verify -fsyntax-only
+// RUN: %clang_cc1 --std=c++17 %s -x c++ -O1 -fopencilk -verify -fsyntax-only
 // expected-no-diagnostics
 // See opencilk-project issue 132.  The reference to hyperobject red
 // does not have a dependent type but arises in a dependent context.

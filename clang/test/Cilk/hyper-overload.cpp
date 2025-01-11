@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -fopencilk -verify -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -fopencilk -verify -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 // expected-no-diagnostics
 struct S { int operator&(); };
 extern int operator+(S &, int);

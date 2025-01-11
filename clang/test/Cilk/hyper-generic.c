@@ -1,5 +1,5 @@
 // A comment line.
-// RUN: %clang_cc1 %s -std=c11 -O1 -fopencilk -ftapir=none -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -std=c11 -O1 -fopencilk -ftapir=none -emit-llvm -o - | FileCheck %s
 
 #define ADD(SFX, T) \
   static void add_##SFX(void *l, void *r) { *(T *)l += *(T *)r; }

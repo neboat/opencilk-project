@@ -1,5 +1,5 @@
-// RUN: %clang_cc1 -x c %s -fopencilk -verify -ftapir=none -S -emit-llvm -o - | FileCheck %s
-// RUN: %clang_cc1 -x c++ %s -fopencilk -verify -ftapir=none -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 -x c %s -fopencilk -verify -ftapir=none -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 -x c++ %s -fopencilk -verify -ftapir=none -emit-llvm -o - | FileCheck %s
 
 extern void reduce(void *, void *), identity(void *);
 

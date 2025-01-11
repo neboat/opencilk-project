@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -fopencilk -verify -disable-llvm-passes -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -fopencilk -verify -disable-llvm-passes -emit-llvm -o - | FileCheck %s
 // expected-no-diagnostics
 template <typename T> class Bag;
 

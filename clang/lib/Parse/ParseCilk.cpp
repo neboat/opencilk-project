@@ -209,7 +209,8 @@ StmtResult Parser::ParseCilkForStatement(SourceLocation *TrailingElseLoc) {
 
   if (Tok.is(tok::code_completion)) {
     cutOffParsing();
-    Actions.CodeCompleteOrdinaryName(getCurScope(), Sema::PCC_ForInit);
+    Actions.CodeCompletion().CodeCompleteOrdinaryName(
+        getCurScope(), SemaCodeCompletion::PCC_ForInit);
     return StmtError();
   }
 
@@ -281,7 +282,8 @@ StmtResult Parser::ParseCilkForStatement(SourceLocation *TrailingElseLoc) {
 
         if (Tok.is(tok::code_completion)) {
           cutOffParsing();
-          Actions.CodeCompleteObjCForCollection(getCurScope(), DG);
+          Actions.CodeCompletion().CodeCompleteObjCForCollection(getCurScope(),
+                                                                 DG);
           return StmtError();
         }
         Collection = ParseExpression();
@@ -318,7 +320,8 @@ StmtResult Parser::ParseCilkForStatement(SourceLocation *TrailingElseLoc) {
 
       if (Tok.is(tok::code_completion)) {
         cutOffParsing();
-        Actions.CodeCompleteObjCForCollection(getCurScope(), nullptr);
+        Actions.CodeCompletion().CodeCompleteObjCForCollection(getCurScope(),
+                                                               nullptr);
         return StmtError();
       }
       Collection = ParseExpression();

@@ -370,7 +370,7 @@ eh.resume:                                        ; preds = %lpad
 ; CHECK-NEXT: %[[LPADIVAL:.+]] = landingpad [[LPADTYPE]]
 ; CHECK-NEXT: catch ptr @_ZTIc
 ; CHECK-NEXT: catch ptr @_ZTIi
-; CHECK: call i32 @llvm.eh.typeid.for(ptr @_ZTIc)
+; CHECK: call i32 @llvm.eh.typeid.for.p0(ptr @_ZTIc)
 ; CHECK: br i1 %{{.+}}, label %[[CATCHI:.+]], label %[[RESUMEI:.+]]
 
 ; CHECK: [[CATCHI]]:
@@ -389,7 +389,7 @@ eh.resume:                                        ; preds = %lpad
 ; CHECK: [[LPADBODY]]:
 ; CHECK-NEXT: %[[EH_LPADBODY:.+]] = phi [[LPADTYPE]]
 ; CHECK: [ %[[LPADIVAL]], %[[RESUMEI]] ]
-; CHECK: call i32 @llvm.eh.typeid.for(ptr @_ZTIi)
+; CHECK: call i32 @llvm.eh.typeid.for.p0(ptr @_ZTIi)
 ; CHECK: br i1 %{{.+}}, label %[[CATCH:.+]], label %[[RESUME:.+]]
 
 ; CHECK: [[CATCH]]:

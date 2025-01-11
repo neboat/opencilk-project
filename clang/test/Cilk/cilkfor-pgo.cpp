@@ -3,7 +3,7 @@
 //
 // Credit to Brian Wheatman for the original source of this test.
 //
-// RUN: %clang_cc1 -triple x86_64-unknown-linux-gnu -fprofile-instrument=clang -fprofile-update=atomic %s -S -emit-llvm -fopencilk -ftapir=none -o - 2>&1 | FileCheck %s
+// RUN: %clang_cc1 -triple x86_64-unknown-linux-gnu -fprofile-instrument=clang -fprofile-update=atomic %s -emit-llvm -fopencilk -ftapir=none -o - 2>&1 | FileCheck %s
 // expected-no-diagnostics
 
 int main() {

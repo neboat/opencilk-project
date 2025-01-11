@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c -fopencilk -verify -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c -fopencilk -verify -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 // This does not pass in C++ because hyperobject expression statements
 // without side effects are not emitted.  Unclear if this is a bug or a feature.
 // expected-no-diagnostics

@@ -51,7 +51,8 @@ pfor.body.entry66:                                ; preds = %pfor.cond63
 ; CHECK: pfor.body.entry66:
 ; CHECK-NOT: %t.i = alloca
 ; CHECK-NOT: store ptr null, ptr %t.i,
-; CHECK: call void @llvm.dbg.assign(
+; CHECK: #dbg_assign(ptr null,
+; CHECK-NEXT: br label %for.body12.i
 
 for.body12.i:                                     ; preds = %for.body12.i, %pfor.body.entry66
   br label %for.body12.i

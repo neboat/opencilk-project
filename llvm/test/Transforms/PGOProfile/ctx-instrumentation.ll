@@ -272,7 +272,7 @@ define void @inlineasm() {
 }
 ;.
 ; LOWERING: attributes #[[ATTR0:[0-9]+]] = { nounwind }
-; LOWERING: attributes #[[ATTR1:[0-9]+]] = { nocallback nofree nosync nounwind speculatable willreturn memory(none) }
+; LOWERING: attributes #[[ATTR1:[0-9]+]] = { nocallback nofree nosync nounwind speculatable willreturn memory(inaccessiblemem: read) }
 ;.
 ; INSTRUMENT: attributes #[[ATTR0:[0-9]+]] = { nounwind }
 ;.

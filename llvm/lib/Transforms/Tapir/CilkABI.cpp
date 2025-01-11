@@ -27,6 +27,7 @@
 #include "llvm/Transforms/Tapir/CilkRTSCilkFor.h"
 #include "llvm/Transforms/Tapir/Outline.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/EscapeEnumerator.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Transforms/Utils/TapirUtils.h"
@@ -1681,7 +1682,7 @@ void CilkABI::processSubTaskCall(TaskOutlineInfo &TOI, DominatorTree &DT) {
   Twine NameSuffix = ".shelper";
   Function *SpawnHelper =
       CreateHelper(SHInputs, Outputs, BlocksToClone, CallBlock, DetBlock,
-                   CallCont, VMap, &M, Parent->getSubprogram() != nullptr,
+                   CallCont, VMap, &M, CloneFunctionChangeType::LocalChangesOnly,
                    Returns, NameSuffix.str(), nullptr, nullptr, nullptr,
                    UnwindDest);
 

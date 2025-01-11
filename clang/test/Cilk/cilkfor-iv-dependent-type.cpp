@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -std=c++20 -fopencilk -disable-llvm-passes -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -std=c++20 -fopencilk -disable-llvm-passes -emit-llvm -o - | FileCheck %s
 
 template <class index_t> void foo() {
   _Cilk_for(index_t row = 0; row < 1024; row++) { void; }

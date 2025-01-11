@@ -1,8 +1,8 @@
 // Verify that a sync is added implicitly at the end of appropriate scopes and
 // before destructors.
 //
-// RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -fopencilk -fcxx-exceptions -fexceptions -ftapir=none -S -emit-llvm -o - | FileCheck %s --check-prefixes=CHECK,CHECK-O0
-// RUN: %clang_cc1 %s -O1 -mllvm -simplify-taskframes=false -triple x86_64-unknown-linux-gnu -fopencilk -fcxx-exceptions -fexceptions -ftapir=none -S -emit-llvm -o - | FileCheck %s --check-prefixes=CHECK,CHECK-O1
+// RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -fopencilk -fcxx-exceptions -fexceptions -ftapir=none -emit-llvm -o - | FileCheck %s --check-prefixes=CHECK,CHECK-O0
+// RUN: %clang_cc1 %s -O1 -mllvm -simplify-taskframes=false -triple x86_64-unknown-linux-gnu -fopencilk -fcxx-exceptions -fexceptions -ftapir=none -emit-llvm -o - | FileCheck %s --check-prefixes=CHECK,CHECK-O1
 // expected-no-diagnostics
 
 class Bar {

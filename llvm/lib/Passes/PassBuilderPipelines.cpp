@@ -1507,10 +1507,11 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
   // function passes.
 
   // Stripmine Tapir loops, if pass is enabled.
-  if (PTO.LoopStripmine && Level != OptimizationLevel::O1 &&
+  if (PTO.LoopStripmine && Level.getSpeedupLevel() > 1 &&
       !Level.isOptimizingForSize()) {
     LoopPassManager LPM1, LPM2;
-    LPM1.addPass(TapirIndVarSimplifyPass());
+    LPM1.addPass(
+        IndVarSimplifyPass(/*WidenIndVars=*/true, /*TapirLoopsOnly=*/true));
     OptimizePM.addPass(
         createFunctionToLoopPassAdaptor(std::move(LPM1),
                                         /*UseMemorySSA=*/true,

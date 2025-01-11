@@ -3194,6 +3194,19 @@ static void encodeTypeForFunctionPointerAuth(const ASTContext &Ctx,
     OS << "P";
     return;
 
+  case Type::Hyperobject: {
+  const auto *HT = cast<HyperobjectType>(T);
+    OS << "<hyperobject>";
+    encodeTypeForFunctionPointerAuth(Ctx, OS, HT->getElementType());
+    if (HT->hasCallbacks()) {
+      OS << "<identity>";
+      encodeTypeForFunctionPointerAuth(Ctx, OS, HT->getIdentity()->getType());
+      OS << "<reduce>";
+      encodeTypeForFunctionPointerAuth(Ctx, OS, HT->getReduce()->getType());
+    }
+    return;
+  }
+
   case Type::ObjCObjectPointer:
   case Type::BlockPointer:
     OS << "P";

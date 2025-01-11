@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -triple aarch64-freebsd -fopencilk -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -triple aarch64-freebsd -fopencilk -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 struct ctor_dtor { ctor_dtor(); ~ctor_dtor(); long data; };
 struct ctor_only { ctor_only(); long data; };
 struct dtor_only { ~dtor_only(); long data; };

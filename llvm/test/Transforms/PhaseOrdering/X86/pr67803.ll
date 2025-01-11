@@ -18,10 +18,8 @@ define <4 x i64> @PR67803(<4 x i64> %x, <4 x i64> %y, <4 x i64> %a, <4 x i64> %b
 ; CHECK-NEXT:    [[TMP9:%.*]] = bitcast <16 x i8> [[TMP6]] to <4 x i32>
 ; CHECK-NEXT:    [[TMP10:%.*]] = select <4 x i1> [[TMP7]], <4 x i32> [[TMP9]], <4 x i32> [[TMP8]]
 ; CHECK-NEXT:    [[TMP11:%.*]] = bitcast <4 x i32> [[TMP10]] to <16 x i8>
-; CHECK-NEXT:    [[TMP12:%.*]] = bitcast <4 x i64> [[A]] to <32 x i8>
-; CHECK-NEXT:    [[TMP13:%.*]] = shufflevector <32 x i8> [[TMP12]], <32 x i8> poison, <16 x i32> <i32 16, i32 17, i32 18, i32 19, i32 20, i32 21, i32 22, i32 23, i32 24, i32 25, i32 26, i32 27, i32 28, i32 29, i32 30, i32 31>
-; CHECK-NEXT:    [[TMP14:%.*]] = bitcast <4 x i64> [[B]] to <32 x i8>
-; CHECK-NEXT:    [[TMP15:%.*]] = shufflevector <32 x i8> [[TMP14]], <32 x i8> poison, <16 x i32> <i32 16, i32 17, i32 18, i32 19, i32 20, i32 21, i32 22, i32 23, i32 24, i32 25, i32 26, i32 27, i32 28, i32 29, i32 30, i32 31>
+; CHECK-NEXT:    [[TMP13:%.*]] = shufflevector <32 x i8> [[TMP3]], <32 x i8> poison, <16 x i32> <i32 16, i32 17, i32 18, i32 19, i32 20, i32 21, i32 22, i32 23, i32 24, i32 25, i32 26, i32 27, i32 28, i32 29, i32 30, i32 31>
+; CHECK-NEXT:    [[TMP15:%.*]] = shufflevector <32 x i8> [[TMP5]], <32 x i8> poison, <16 x i32> <i32 16, i32 17, i32 18, i32 19, i32 20, i32 21, i32 22, i32 23, i32 24, i32 25, i32 26, i32 27, i32 28, i32 29, i32 30, i32 31>
 ; CHECK-NEXT:    [[TMP16:%.*]] = shufflevector <8 x i1> [[TMP2]], <8 x i1> poison, <4 x i32> <i32 4, i32 5, i32 6, i32 7>
 ; CHECK-NEXT:    [[TMP17:%.*]] = bitcast <16 x i8> [[TMP13]] to <4 x i32>
 ; CHECK-NEXT:    [[TMP18:%.*]] = bitcast <16 x i8> [[TMP15]] to <4 x i32>

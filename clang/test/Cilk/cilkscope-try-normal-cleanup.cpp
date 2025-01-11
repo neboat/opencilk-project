@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -O1 -fcxx-exceptions -fexceptions -fopencilk -mllvm -use-opencilk-runtime-bc=false -mllvm -debug-abi-calls=true -verify -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -O1 -fcxx-exceptions -fexceptions -fopencilk -mllvm -use-opencilk-runtime-bc=false -mllvm -debug-abi-calls=true -verify -emit-llvm -o - | FileCheck %s
 // expected-no-diagnostics
 extern int maybe_throws(int);
 

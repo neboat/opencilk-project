@@ -11054,11 +11054,11 @@ def err_cilk_for_increment_inconsistent : Error<
 def err_cilk_for_increment_zero : Error<
   "loop increment must be non-zero in 'cilk_for'">;
 def err_cilk_for_loop_modifies_control_var : Error<
-  "Modifying the loop control variable inside a 'cilk_for' has undefined behavior">;
+  "modifying the loop control variable inside a 'cilk_for' has undefined behavior">;
 def warn_cilk_for_loop_control_var_func : Warning<
-  "Modifying the loop control variable inside a 'cilk_for' using a function call has undefined behavior">, InGroup<CilkPlusLoopControlVarModification>, DefaultIgnore;
+  "modifying the loop control variable inside a 'cilk_for' using a function call has undefined behavior">, InGroup<CilkPlusLoopControlVarModification>, DefaultIgnore;
 def warn_cilk_for_loop_control_var_aliased: Warning<
-  "Modifying the loop control variable '%0' through an alias in 'cilk_for' has undefined behavior">, InGroup<CilkPlusLoopControlVarModification>, DefaultIgnore;
+  "modifying the loop control variable '%0' through an alias in 'cilk_for' has undefined behavior">, InGroup<CilkPlusLoopControlVarModification>, DefaultIgnore;
 def note_cilk_for_loop_control_var_declared_here: Note<
   "'cilk_for' loop control variable declared here">;
 def warn_empty_cilk_for_body : Warning<
@@ -11140,7 +11140,7 @@ def no_reducer_array : Warning<
 
 // cilk for_range
 def err_cilk_for_range_end_minus_begin : Error<
-  "Cannot determine length with '__end - __begin'. Please use a random access iterator.">;
+  "cannot determine length with '__end - __begin'; please use a random access iterator">;
 } 
 // end of Cilk category
 

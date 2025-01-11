@@ -275,6 +275,8 @@ if.end:                                           ; preds = %if.else, %if.then
 ; CHECK-LABEL: @main
 ; CHECK: @__cilksan_disable_checking
 ; CHECK-NEXT: call i32 @nqueens
+; CHECK-NEXT: #dbg_value(
+; CHECK-NEXT: #dbg_value(
 ; CHECK-NEXT: @__cilksan_enable_checking
 
 if.then16:                                        ; preds = %if.end

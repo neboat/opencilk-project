@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 -triple x86_64-apple-macosx14.0.0 -emit-llvm -S -fopencilk -disable-llvm-passes -fcxx-exceptions -fexceptions -x c++ %s -o /dev/null
+// RUN: %clang_cc1 -triple x86_64-apple-macosx14.0.0 -emit-llvm -fopencilk -disable-llvm-passes -fcxx-exceptions -fexceptions -x c++ %s -o /dev/null
 // expected-no-diagnostics
 // Bug 266: unnecessary sync in catch block crashes compiler
 

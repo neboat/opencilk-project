@@ -1016,6 +1016,11 @@ csi.cleanup389391393:                             ; preds = %for.body185.us
 ; CHECK: define internal fastcc void @_Z28ggml_compute_forward_mul_matPK19ggml_compute_paramsP11ggml_tensor.outline_pfor.cond.us.ls1(
 ; CHECK: pfor.cond.us.preheader.split.split.ls1:
 ; CHECK-NEXT: %[[NESTED_SPAWN_SYNCREG:.+]] = {{.*}}call token @llvm.syncregion.start()
+; CHECK-NEXT: #dbg_value(
+; CHECK-NEXT: #dbg_value(
+; CHECK-NEXT: #dbg_value(
+; CHECK-NEXT: #dbg_value(
+; CHECK-NEXT: #dbg_value(
 ; CHECK-NEXT: %[[LOOP_DAC_SYNCREG:.+]] = {{.*}}call token @llvm.syncregion.start()
 ; CHECK: br label %[[LOOP_DAC_HEADER:.+]], !dbg
 

@@ -1210,9 +1210,9 @@ llvm::Function *CodeGenFunction::generateDestroyHelper(
 
   if (IsReducer) {
     llvm::Function *Unregister =
-      CGM.getIntrinsic(llvm::Intrinsic::reducer_unregister);
+        CGM.getIntrinsic(llvm::Intrinsic::reducer_unregister);
     llvm::Value *AddrVoid =
-	Builder.CreateBitCast(addr.getPointer(), CGM.VoidPtrTy);
+        Builder.CreateBitCast(addr.emitRawPointer(*this), CGM.VoidPtrTy);
     Builder.CreateCall(Unregister, {AddrVoid});
   }
 

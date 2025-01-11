@@ -3,7 +3,7 @@
 // files with debug information can be properly linked during Tapir
 // lowering and their functions subsequently inlined.
 //
-// RUN: %clang_cc1 %s -debug-info-kind=standalone -fopencilk -ftapir=none -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -debug-info-kind=standalone -fopencilk -ftapir=none -emit-llvm -o - | FileCheck %s
 
 int fib(int n) {
   if (n < 2) return n;

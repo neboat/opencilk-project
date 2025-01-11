@@ -23,7 +23,9 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Dominators.h"
+#include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/Metadata.h"
+#include "llvm/IR/ProfDataUtils.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
@@ -415,15 +417,14 @@ static void connectEpilog(TapirLoopInfo &TL, Value *EpilStartIter,
 /// If loop structure is cloned InsertTop should be new preheader, InsertBot
 /// new loop exit.
 /// Return the new cloned loop that is created when CreateRemainderLoop is true.
-static Loop *
-cloneLoopBlocks(Loop *L, Value *NewIter, const bool CreateRemainderLoop,
-                const bool UseEpilogRemainder, const bool UnrollRemainder,
-                BasicBlock *InsertTop, BasicBlock *InsertBot,
-                BasicBlock *Preheader, std::vector<BasicBlock *> &NewBlocks,
-                LoopBlocksDFS &LoopBlocks,
-                SmallVectorImpl<BasicBlock *> &ExtraTaskBlocks,
-                SmallVectorImpl<BasicBlock *> &SharedEHTaskBlocks,
-                ValueToValueMapTy &VMap, DominatorTree *DT, LoopInfo *LI) {
+static Loop *cloneLoopBlocks(
+    Loop *L, Value *NewIter, const bool CreateRemainderLoop,
+    const bool UseEpilogRemainder, const bool UnrollRemainder,
+    BasicBlock *InsertTop, BasicBlock *InsertBot, BasicBlock *Preheader,
+    std::vector<BasicBlock *> &NewBlocks, LoopBlocksDFS &LoopBlocks,
+    SmallVectorImpl<BasicBlock *> &ExtraTaskBlocks,
+    SmallVectorImpl<BasicBlock *> &SharedEHTaskBlocks, ValueToValueMapTy &VMap,
+    DominatorTree *DT, LoopInfo *LI, unsigned Count) {
   StringRef Suffix = UseEpilogRemainder ? "epil" : "prol";
   BasicBlock *Header = L->getHeader();
   BasicBlock *Latch = L->getLoopLatch();
@@ -473,15 +474,34 @@ cloneLoopBlocks(Loop *L, Value *NewIter, const bool CreateRemainderLoop,
       if (!CreateRemainderLoop) {
         Builder.CreateBr(InsertBot);
       } else {
-        PHINode *NewIdx = PHINode::Create(NewIter->getType(), 2,
-                                          Suffix + ".iter",
-                                          FirstLoopBB->getFirstNonPHI());
+        PHINode *NewIdx =
+            PHINode::Create(NewIter->getType(), 2, Suffix + ".iter");
+        NewIdx->insertBefore(FirstLoopBB->getFirstNonPHIIt());
         Value *IdxSub =
             Builder.CreateSub(NewIdx, ConstantInt::get(NewIdx->getType(), 1),
                               NewIdx->getName() + ".sub");
         Value *IdxCmp =
             Builder.CreateIsNotNull(IdxSub, NewIdx->getName() + ".cmp");
-        Builder.CreateCondBr(IdxCmp, FirstLoopBB, InsertBot);
+        MDNode *BranchWeights = nullptr;
+        if (hasBranchWeightMD(*LatchBR)) {
+          uint32_t ExitWeight;
+          uint32_t BackEdgeWeight;
+          if (Count >= 3) {
+            // Note: We do not enter this loop for zero-remainders. The check
+            // is at the end of the loop. We assume equal distribution between
+            // possible remainders in [1, Count).
+            ExitWeight = 1;
+            BackEdgeWeight = (Count - 2) / 2;
+          } else {
+            // Unnecessary backedge, should never be taken. The conditional
+            // jump should be optimized away later.
+            ExitWeight = 1;
+            BackEdgeWeight = 0;
+          }
+          MDBuilder MDB(Builder.getContext());
+          BranchWeights = MDB.createBranchWeights(BackEdgeWeight, ExitWeight);
+        }
+        Builder.CreateCondBr(IdxCmp, FirstLoopBB, InsertBot, BranchWeights);
         NewIdx->addIncoming(NewIter, InsertTop);
         NewIdx->addIncoming(IdxSub, NewBB);
       }
@@ -1038,7 +1058,7 @@ Loop *llvm::StripMineLoop(Loop *L, unsigned Count, bool AllowExpensiveTripCount,
   *RemainderLoop =
       cloneLoopBlocks(L, ModVal, CreateRemainderLoop, true, UnrollRemainder,
                       InsertTop, InsertBot, NewPreheader, NewBlocks, LoopBlocks,
-                      ExtraTaskBlocks, SharedEHTaskBlocks, VMap, DT, LI);
+                      ExtraTaskBlocks, SharedEHTaskBlocks, VMap, DT, LI, Count);
 
   // Insert the cloned blocks into the function.
   F->splice(InsertBot->getIterator(), &*F, NewBlocks[0]->getIterator(),
@@ -1339,8 +1359,8 @@ Loop *llvm::StripMineLoop(Loop *L, unsigned Count, bool AllowExpensiveTripCount,
   // contrast to counting down from the outer-loop trip count, this new variable
   // ensures that future loop passes, including LoopSpawning, can process this
   // outer loop when we're done.
-  PHINode *NewIdx = PHINode::Create(TestVal->getType(), 2, "niter",
-                                    NewHeader->getFirstNonPHI());
+  PHINode *NewIdx = PHINode::Create(TestVal->getType(), 2, "niter");
+  NewIdx->insertBefore(NewHeader->getFirstNonPHIIt());
   B2.SetInsertPoint(NewLatch->getTerminator());
   // Instruction *IdxSub = cast<Instruction>(
   //     B2.CreateSub(NewIdx, ConstantInt::get(NewIdx->getType(), 1),
@@ -1462,9 +1482,9 @@ Loop *llvm::StripMineLoop(Loop *L, unsigned Count, bool AllowExpensiveTripCount,
   }
 
   // Add new induction variable for inner loop.
-  PHINode *InnerIdx = PHINode::Create(PrimaryInduction->getType(), 2,
-                                      "inneriter",
-                                      Header->getFirstNonPHI());
+  PHINode *InnerIdx =
+      PHINode::Create(PrimaryInduction->getType(), 2, "inneriter");
+  InnerIdx->insertBefore(Header->getFirstNonPHIIt());
   Value *InnerTestVal = ConstantInt::get(PrimaryInduction->getType(), Count);
   B2.SetInsertPoint(LatchBR);
   Instruction *InnerSub = cast<Instruction>(

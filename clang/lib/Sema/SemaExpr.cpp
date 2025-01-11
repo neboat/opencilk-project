@@ -2290,9 +2290,10 @@ Expr *Sema::BuildHyperobjectLookup(Expr *E, bool Pointer) {
       InputType.getLocalFastQualifiers());
   QualType Ptr = Context.getPointerType(ResultType);
 
+  SourceLocation Loc = E->getExprLoc();
   ExprResult SizeExpr;
   if (ResultType.getTypePtr()->isDependentType()) {
-    SizeExpr = CreateUnaryExprOrTypeTraitExpr(E, E->getExprLoc(), UETT_SizeOf);
+    SizeExpr = CreateUnaryExprOrTypeTraitExpr(E, Loc, UETT_SizeOf);
   } else {
     QualType SizeType = Context.getSizeType();
     llvm::APInt Size(Context.getTypeSize(SizeType),
@@ -2305,7 +2306,7 @@ Expr *Sema::BuildHyperobjectLookup(Expr *E, bool Pointer) {
     VarAddr = E;
   } else if (Difficult) {
     ExprResult Address =
-      BuildBuiltinCallExpr(E->getExprLoc(), Builtin::BI__builtin_addressof, E);
+      BuildBuiltinCallExpr(Loc, Builtin::BI__builtin_addressof, E);
     assert(Address.isUsable());
     VarAddr = Address.get();
   } else {
@@ -2316,16 +2317,18 @@ Expr *Sema::BuildHyperobjectLookup(Expr *E, bool Pointer) {
   Expr *CallArgs[] = {VarAddr, SizeExpr.get(), HT->getIdentity(),
                       HT->getReduce()};
   ExprResult Call =
-    BuildBuiltinCallExpr(E->getExprLoc(), Builtin::BI__hyper_lookup, CallArgs);
+      BuildBuiltinCallExpr(Loc, Builtin::BI__hyper_lookup, CallArgs);
 
   // Template expansion normally strips out implicit casts, so make this
   // explicit in C++.
-  CastExpr *Casted = nullptr;
+  Expr *Casted = nullptr;
   if (Difficult)
-    Casted = CXXStaticCastExpr::Create(
-        Context, Ptr, VK_PRValue, CK_BitCast, Call.get(), nullptr,
-        Context.CreateTypeSourceInfo(Ptr), FPOptionsOverride(),
-        SourceLocation(), SourceLocation(), SourceRange());
+    // Based on logic in CoroutineStmtBuilder::makeNewAndDeleteExpr()
+    Casted =
+        BuildCXXNamedCast(Loc, tok::kw_static_cast,
+                          Context.getTrivialTypeSourceInfo(Ptr), Call.get(),
+                          SourceRange(Loc, Loc), SourceRange(Loc, Loc))
+            .get();
   else
     Casted =
         ImplicitCastExpr::Create(Context, Ptr, CK_BitCast, Call.get(), nullptr,

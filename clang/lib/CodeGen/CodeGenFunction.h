@@ -1586,7 +1586,7 @@ public:
 
     // Information about a reference temporary created early in the detached
     // block.
-    Address RefTmp = Address::invalid();
+    RawAddress RefTmp = RawAddress::invalid();
     StorageDuration RefTmpSD;
 
     // Optional taskframe created separately from detach.
@@ -1661,8 +1661,8 @@ public:
 
     // Create a temporary for the spawned task, specifically, before the spawned
     // task has started.
-    Address CreateDetachedMemTemp(QualType Ty, StorageDuration SD,
-                                  const Twine &Name = "det.tmp");
+    RawAddress CreateDetachedMemTemp(QualType Ty, StorageDuration SD,
+                                     const Twine &Name = "det.tmp");
   };
 
   /// The current detach scope.

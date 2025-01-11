@@ -652,8 +652,7 @@ uint64_t ObjectTable::add(Instruction &I, Value *Obj) {
     return ID;
   }
 
-  // Next, if this is an alloca instruction, look for a llvm.dbg.declare
-  // intrinsic.
+  // Next, if this is an alloca instruction, look for a #dbg_declare.
   if (AllocaInst *AI = dyn_cast<AllocaInst>(Obj)) {
     TinyPtrVector<DbgDeclareInst *> DbgDeclares = findDbgDeclares(AI);
     if (!DbgDeclares.empty()) {
@@ -664,11 +663,20 @@ uint64_t ObjectTable::add(Instruction &I, Value *Obj) {
     }
   }
 
-  // Otherwise just examine the llvm.dbg.value intrinsics for this object.
+  // Otherwise look for a #dbg_value.
+  SmallVector<DbgVariableRecord *> DbgVariableRecords;
   SmallVector<DbgValueInst *, 1> DbgValues;
-  findDbgValues(DbgValues, Obj);
+  findDbgValues(DbgValues, Obj, &DbgVariableRecords);
   for (auto *DVI : DbgValues) {
     auto *LV = DVI->getVariable();
+    if (LV->getName() != "") {
+      add(ID, LV->getLine(), LV->getFilename(), LV->getDirectory(),
+          LV->getName());
+      return ID;
+    }
+  }
+  for (auto *DVR : DbgVariableRecords) {
+    auto *LV = DVR->getVariable();
     if (LV->getName() != "") {
       add(ID, LV->getLine(), LV->getFilename(), LV->getDirectory(),
           LV->getName());

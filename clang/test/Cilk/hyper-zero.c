@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c -fopencilk -verify -Wno-error=int-conversion -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c -fopencilk -verify -Wno-error=int-conversion -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 extern int c;
 extern void *d;
 

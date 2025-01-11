@@ -3,7 +3,7 @@
 // Thanks to Dr. I-Ting Angelina Lee for contributing the original source code
 // for this test case.
 //
-// RUN: %clang_cc1 %s -std=c++11 -triple x86_64-unknown-linux-gnu -fopencilk -fcxx-exceptions -fexceptions -ftapir=none -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -std=c++11 -triple x86_64-unknown-linux-gnu -fopencilk -fcxx-exceptions -fexceptions -ftapir=none -emit-llvm -o - | FileCheck %s
 
 template <typename T1, typename T2>
 struct pair {

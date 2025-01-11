@@ -250,7 +250,7 @@
 ; CHECK-MATRIX-NEXT: Running pass: EarlyCSEPass on f
 ; CHECK-O2-NEXT: Running pass: LoopSimplifyPass
 ; CHECK-O2-NEXT: Running pass: LCSSAPass
-; CHECK-O2-NEXT: Running pass: TapirIndVarSimplifyPass
+; CHECK-O2-NEXT: Running pass: IndVarSimplifyPass
 ; CHECK-O2-NEXT: Running pass: LoopStripMinePass
 ; CHECK-O2-NEXT: Running pass: TaskSimplifyPass on foo
 ; CHECK-O2-NEXT: Running pass: LoopSimplifyPass
@@ -265,7 +265,7 @@
 ; CHECK-O3-NEXT: Running pass: ControlHeightReductionPass
 ; CHECK-O3-NEXT: Running pass: LoopSimplifyPass
 ; CHECK-O3-NEXT: Running pass: LCSSAPass
-; CHECK-O3-NEXT: Running pass: TapirIndVarSimplifyPass
+; CHECK-O3-NEXT: Running pass: IndVarSimplifyPass
 ; CHECK-O3-NEXT: Running pass: LoopStripMinePass
 ; CHECK-O3-NEXT: Running pass: TaskSimplifyPass on foo
 ; CHECK-O3-NEXT: Running pass: LoopSimplifyPass

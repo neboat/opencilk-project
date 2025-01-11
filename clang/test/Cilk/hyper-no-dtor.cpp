@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -fopencilk -verify -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -fopencilk -verify -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 // expected-no-diagnostics
 // Check for compiler crash trying to call non-existent destructor.
 struct S { S(); };

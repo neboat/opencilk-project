@@ -106,7 +106,7 @@ void llvm::estimateLoopCost(WSCost &LoopCost, const Loop *L, LoopInfo *LI,
   // Gather code metrics for all basic blocks in the loop.
   for (BasicBlock *BB : L->blocks())
     LoopCost.Metrics.analyzeBasicBlock(BB, TTI, EphValues,
-                                       /*PrepareForLTO*/ false, TLI);
+                                       /*PrepareForLTO*/ false, L, TLI);
 
   estimateLoopCostHelper(L, LoopCost.Metrics, LoopCost, LI, SE);
 }

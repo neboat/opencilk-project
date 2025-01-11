@@ -19,15 +19,15 @@
 #include "clang/AST/DeclObjC.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
-#include "clang/AST/ExprCilk.h"
 #include "clang/AST/ExprCXX.h"
+#include "clang/AST/ExprCilk.h"
 #include "clang/AST/ExprConcepts.h"
 #include "clang/AST/ExprObjC.h"
 #include "clang/AST/ExprOpenMP.h"
 #include "clang/AST/OpenMPClause.h"
 #include "clang/AST/Stmt.h"
-#include "clang/AST/StmtCilk.h"
 #include "clang/AST/StmtCXX.h"
+#include "clang/AST/StmtCilk.h"
 #include "clang/AST/StmtObjC.h"
 #include "clang/AST/StmtOpenACC.h"
 #include "clang/AST/StmtOpenMP.h"
@@ -5319,11 +5319,11 @@ QualType TreeTransform<Derived>::TransformComplexType(TypeLocBuilder &TLB,
   return TransformTypeSpecType(TLB, T);
 }
 
-template<typename Derived>
-QualType TreeTransform<Derived>::TransformHyperobjectType
-  (TypeLocBuilder &TLB, HyperobjectTypeLoc TL) {
-  ExprResult NewR, NewI, NewD;
-
+template <typename Derived>
+QualType
+TreeTransform<Derived>::TransformHyperobjectType(TypeLocBuilder &TLB,
+                                                 HyperobjectTypeLoc TL) {
+  ExprResult NewR, NewI;
   {
     const HyperobjectType *H = TL.getTypePtr();
     EnterExpressionEvaluationContext Context(
@@ -5341,6 +5341,8 @@ QualType TreeTransform<Derived>::TransformHyperobjectType
   QualType Result =
     getDerived().RebuildHyperobjectType(ElementType, NewI.get(),
                                         NewR.get(), TL.getHyperLoc());
+  if (Result.isNull())
+    return QualType();
 
   HyperobjectTypeLoc NewT = TLB.push<HyperobjectTypeLoc>(Result);
   NewT.setHyperLoc(TL.getHyperLoc());

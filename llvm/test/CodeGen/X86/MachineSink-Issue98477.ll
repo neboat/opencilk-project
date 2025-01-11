@@ -34,13 +34,14 @@ define i32 @main(i1 %tobool.not, i32 %0) {
 ; CHECK-NEXT:    testl %r9d, %r9d
 ; CHECK-NEXT:    js .LBB0_5
 ; CHECK-NEXT:  # %bb.4:
-; CHECK-NEXT:    movl %r9d, %edx
-; CHECK-NEXT:  .LBB0_6: # %if.end9
-; CHECK-NEXT:    testl %edx, %edx
+; CHECK-NEXT:    testl %r9d, %r9d
 ; CHECK-NEXT:    jne .LBB0_7
 ; CHECK-NEXT:  .LBB0_8: # %if.end13
 ; CHECK-NEXT:    xorl %r8d, %r8d
 ; CHECK-NEXT:    jmp .LBB0_1
+; CHECK-NEXT:  .LBB0_6: # %if.end9
+; CHECK-NEXT:    testl %edx, %edx
+; CHECK-NEXT:    je .LBB0_8
 ; CHECK-NEXT:  .LBB0_7: # %while.body.lr.ph
 ; CHECK-NEXT:    movl %ecx, %eax
 ; CHECK-NEXT:    retq

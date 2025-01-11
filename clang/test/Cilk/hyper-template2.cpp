@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -fopencilk -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -fopencilk -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 template<typename VIEW>
 struct reducer
 {

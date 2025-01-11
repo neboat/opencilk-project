@@ -144,7 +144,7 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
                  .Default(LoopHintAttr::TapirGrainsize);
     if (Option == LoopHintAttr::TapirGrainsize) {
       assert(ValueExpr && "Attribute must have a valid value expression.");
-      if (S.CheckLoopHintExpr(ValueExpr, St->getBeginLoc()))
+      if (S.CheckLoopHintExpr(ValueExpr, St->getBeginLoc(), /*AllowZero=*/true))
         return nullptr;
       State = LoopHintAttr::Numeric;
     } else

@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -fopencilk -ftapir=none -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -fopencilk -ftapir=none -emit-llvm -o - | FileCheck %s
 // expected-no-diagnostics
 
 void parfor_novec(double *restrict y, double *restrict x, double a, int n) {

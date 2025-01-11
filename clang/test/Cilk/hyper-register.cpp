@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -fopencilk -S -emit-llvm -disable-llvm-passes -triple aarch64-freebsd14.1 -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -fopencilk -emit-llvm -disable-llvm-passes -triple aarch64-freebsd14.1 -o - | FileCheck %s
 
 struct S {
   static void identity(void *);

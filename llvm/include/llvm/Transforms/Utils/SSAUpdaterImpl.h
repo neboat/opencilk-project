@@ -442,8 +442,8 @@ public:
           }
           if (!FoundMatchingDetach) {
             DetachedValBlocks.push_back(Info);
-            Traits::AddPHIOperand(PHI, Traits::GetUndefVal(RPInfo->BB, Updater),
-                                  RPInfo->BB);
+            Traits::AddPHIOperand(
+                PHI, Traits::GetPoisonVal(RPInfo->BB, Updater), RPInfo->BB);
           }
         }
       }

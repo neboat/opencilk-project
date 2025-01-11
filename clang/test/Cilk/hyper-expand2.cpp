@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -x c++ -O1 -fopencilk -verify -S -emit-llvm -disable-llvm-passes -o - | FileCheck %s
+// RUN: %clang_cc1 %s -x c++ -O1 -fopencilk -verify -emit-llvm -disable-llvm-passes -o - | FileCheck %s
 // expected-no-diagnostics
 
 extern double X[], Y[];

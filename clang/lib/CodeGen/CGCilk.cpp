@@ -323,7 +323,7 @@ void CodeGenFunction::DetachScope::FinishDetach() {
   }
 }
 
-Address CodeGenFunction::DetachScope::CreateDetachedMemTemp(
+RawAddress CodeGenFunction::DetachScope::CreateDetachedMemTemp(
     QualType Ty, StorageDuration SD, const Twine &Name) {
   // There shouldn't be multiple reference temporaries needed.
   assert(!RefTmp.isValid() &&
@@ -425,7 +425,7 @@ llvm::Instruction *CodeGenFunction::EmitSyncRegionStart() {
   auto NL = ApplyDebugLocation::CreateArtificial(*this);
   llvm::Instruction *SRStart = llvm::CallInst::Create(
       CGM.getIntrinsic(llvm::Intrinsic::syncregion_start),
-      "syncreg", AllocaInsertPt);
+      "syncreg", &*AllocaInsertPt);
   SRStart->setDebugLoc(Builder.getCurrentDebugLocation());
   return SRStart;
 }
@@ -858,6 +858,30 @@ LValue CodeGenFunction::EmitCilkSpawnExprLValue(const CilkSpawnExpr *E) {
   return LV;
 }
 
+// Copied from CGStmt.cpp
+// [C++26][stmt.iter.general] (DR)
+// A trivially empty iteration statement is an iteration statement matching one
+// of the following forms:
+//  - while ( expression ) ;
+//  - while ( expression ) { }
+//  - do ; while ( expression ) ;
+//  - do { } while ( expression ) ;
+//  - for ( init-statement expression(opt); ) ;
+//  - for ( init-statement expression(opt); ) { }
+template <typename LoopStmt> static bool hasEmptyLoopBody(const LoopStmt &S) {
+  if constexpr (std::is_same_v<LoopStmt, ForStmt> ||
+                std::is_same_v<LoopStmt, CilkForStmt>) {
+    if (S.getInc())
+      return false;
+  }
+  const Stmt *Body = S.getBody();
+  if (!Body || isa<NullStmt>(Body))
+    return true;
+  if (const CompoundStmt *Compound = dyn_cast<CompoundStmt>(Body))
+    return Compound->body_empty();
+  return false;
+}
+
 void CodeGenFunction::EmitCilkForStmt(const CilkForStmt &S,
                                       ArrayRef<const Attr *> ForAttrs) {
   JumpDest LoopExit = getJumpDestInCurrentScope("pfor.end");
@@ -918,14 +942,12 @@ void CodeGenFunction::EmitCilkForStmt(const CilkForStmt &S,
   EmitBlock(CondBlock);
 
   Expr::EvalResult Result;
-  bool CondIsConstInt = S.getCond()->EvaluateAsInt(Result, getContext());
-
   LoopStack.setSpawnStrategy(LoopAttributes::DAC);
   const SourceRange &R = S.getSourceRange();
   LoopStack.push(CondBlock, CGM.getContext(), CGM.getCodeGenOpts(), ForAttrs,
                  SourceLocToDebugLoc(R.getBegin()),
                  SourceLocToDebugLoc(R.getEnd()),
-                 checkIfLoopMustProgress(CondIsConstInt));
+                 checkIfLoopMustProgress(S.getCond(), hasEmptyLoopBody(S)));
 
   const Expr *Inc = S.getInc();
   assert(Inc && "_Cilk_for loop has no increment");

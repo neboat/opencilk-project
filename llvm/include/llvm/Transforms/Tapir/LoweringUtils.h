@@ -19,6 +19,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
 namespace llvm {
@@ -214,8 +215,11 @@ protected:
   Module &M;
   /// The Module into which the outlined Helper functions will be placed.
   Module &DestM;
+  /// The type of clone-function change that outlining will make.
+  CloneFunctionChangeType Changes = CloneFunctionChangeType::LocalChangesOnly;
 
-  TapirTarget(Module &M, Module &DestM) : M(M), DestM(DestM) {}
+  TapirTarget(Module &M, Module &DestM, CloneFunctionChangeType Changes)
+      : M(M), DestM(DestM), Changes(Changes) {}
 
 public:
   // Enumeration of ways arguments can be passed to outlined functions.
@@ -225,7 +229,8 @@ public:
     Dynamic // Dynamically allocate a structure to store arguments.
   };
 
-  TapirTarget(Module &M) : M(M), DestM(M) {}
+  TapirTarget(Module &M)
+      : M(M), DestM(M), Changes(CloneFunctionChangeType::LocalChangesOnly) {}
   virtual ~TapirTarget() {}
 
   virtual void setOptions(const TapirTargetOptions &Options) {}
@@ -293,6 +298,8 @@ public:
 
   /// Get the Module where outlined Helper will be placed.
   Module &getDestinationModule() const { return DestM; }
+  /// Get the type of clone-function change that outlining will make.
+  CloneFunctionChangeType getCloneFunctionChangeType() const { return Changes; }
 
   /// Add attributes to the Function \p Helper produced from outlining a task.
   virtual void addHelperAttributes(Function &Helper) {}
@@ -391,12 +398,18 @@ protected:
   Module &M;
   /// The Module into which the outlined Helper functions will be placed.
   Module &DestM;
+  /// The type of clone-function change that outlining will make.
+  CloneFunctionChangeType Changes = CloneFunctionChangeType::LocalChangesOnly;
 
-  LoopOutlineProcessor(Module &M, Module &DestM) : M(M), DestM(DestM) {}
+  LoopOutlineProcessor(Module &M, Module &DestM,
+                       CloneFunctionChangeType Changes)
+      : M(M), DestM(DestM), Changes(Changes) {}
+
 public:
   using ArgStructMode = TapirTarget::ArgStructMode;
 
-  LoopOutlineProcessor(Module &M) : M(M), DestM(M) {}
+  LoopOutlineProcessor(Module &M)
+      : M(M), DestM(M), Changes(CloneFunctionChangeType::LocalChangesOnly) {}
   virtual ~LoopOutlineProcessor() = default;
 
   /// Returns an ArgStructMode enum value describing how inputs to the
@@ -420,6 +433,8 @@ public:
 
   /// Get the Module where outlined Helper will be placed.
   Module &getDestinationModule() const { return DestM; }
+  /// Get the type of clone-function change that outlining will make.
+  CloneFunctionChangeType getCloneFunctionChangeType() const { return Changes; }
 
   /// Returns an integer identifying the index of the helper-function argument
   /// in Args that specifies the starting iteration number.  This return value
@@ -524,17 +539,20 @@ void getTaskBlocks(Task *T, std::vector<BasicBlock *> &TaskBlocks,
 /// function.  The parameter \p Inputs specified the inputs to the helper
 /// function.  The map \p VMap is updated with the mapping of instructions in
 /// \p T to instructions in the new helper function.
-Function *createHelperForTask(
-    Function &F, Task *T, ValueSet &Inputs, Module *DestM,
-    ValueToValueMapTy &VMap, Type *ReturnType, OutlineAnalysis &OA);
+Function *createHelperForTask(Function &F, Task *T, ValueSet &Inputs,
+                              Module *DestM, CloneFunctionChangeType Changes,
+                              ValueToValueMapTy &VMap, Type *ReturnType,
+                              OutlineAnalysis &OA);
 
 /// Outlines the content of taskframe \p TF in function \p F into a new helper
 /// function.  The parameter \p Inputs specified the inputs to the helper
 /// function.  The map \p VMap is updated with the mapping of instructions in \p
 /// TF to instructions in the new helper function.
-Function *createHelperForTaskFrame(
-    Function &F, Spindle *TF, ValueSet &Args, Module *DestM,
-    ValueToValueMapTy &VMap, Type *ReturnType, OutlineAnalysis &OA);
+Function *createHelperForTaskFrame(Function &F, Spindle *TF, ValueSet &Args,
+                                   Module *DestM,
+                                   CloneFunctionChangeType Changes,
+                                   ValueToValueMapTy &VMap, Type *ReturnType,
+                                   OutlineAnalysis &OA);
 
 /// Replaces the taskframe \p TF, with associated TaskOutlineInfo \p Out, with a
 /// call or invoke to the outlined helper function created for \p TF.
@@ -547,7 +565,8 @@ Instruction *replaceTaskFrameWithCallToOutline(
 /// helper function is returned as a TaskOutlineInfo structure.
 TaskOutlineInfo outlineTask(Task *T, ValueSet &Inputs,
                             SmallVectorImpl<Value *> &HelperInputs,
-                            Module *DestM, ValueToValueMapTy &VMap,
+                            Module *DestM, CloneFunctionChangeType Changes,
+                            ValueToValueMapTy &VMap,
                             TapirTarget::ArgStructMode UseArgStruct,
                             Type *ReturnType, ValueToValueMapTy &InputMap,
                             OutlineAnalysis &OA, TapirTarget *Target);
@@ -558,7 +577,8 @@ TaskOutlineInfo outlineTask(Task *T, ValueSet &Inputs,
 /// helper function is returned as a TaskOutlineInfo structure.
 TaskOutlineInfo outlineTaskFrame(Spindle *TF, ValueSet &Inputs,
                                  SmallVectorImpl<Value *> &HelperInputs,
-                                 Module *DestM, ValueToValueMapTy &VMap,
+                                 Module *DestM, CloneFunctionChangeType Changes,
+                                 ValueToValueMapTy &VMap,
                                  TapirTarget::ArgStructMode UseArgStruct,
                                  Type *ReturnType, ValueToValueMapTy &InputMap,
                                  OutlineAnalysis &OA);

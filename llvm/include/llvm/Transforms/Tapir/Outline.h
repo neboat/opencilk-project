@@ -17,6 +17,7 @@
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/AssumptionCache.h"
+#include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
@@ -50,12 +51,12 @@ public:
 void CloneIntoFunction(
     Function *NewFunc, const Function *OldFunc,
     std::vector<BasicBlock *> Blocks, ValueToValueMapTy &VMap,
-    bool ModuleLevelChanges, SmallVectorImpl<ReturnInst *> &Returns,
-    const StringRef NameSuffix,
+    CloneFunctionChangeType Changes, SmallVectorImpl<ReturnInst *> &Returns,
+    const StringRef NameSuffix, std::optional<DebugInfoFinder> &DIFinder,
     SmallPtrSetImpl<BasicBlock *> *ReattachBlocks = nullptr,
     SmallPtrSetImpl<BasicBlock *> *DetachedRethrowBlocks = nullptr,
     SmallPtrSetImpl<BasicBlock *> *SharedEHEntries = nullptr,
-    DISubprogram *SP = nullptr, ClonedCodeInfo *CodeInfo = nullptr,
+    DISubprogram *SPClonedWithinModule = nullptr, ClonedCodeInfo *CodeInfo = nullptr,
     ValueMapTypeRemapper *TypeMapper = nullptr,
     OutlineMaterializer *Materializer = nullptr);
 
@@ -67,7 +68,7 @@ Function *
 CreateHelper(const ValueSet &Inputs, const ValueSet &Outputs,
              std::vector<BasicBlock *> Blocks, BasicBlock *Header,
              const BasicBlock *OldEntry, const BasicBlock *OldExit,
-             ValueToValueMapTy &VMap, Module *DestM, bool ModuleLevelChanges,
+             ValueToValueMapTy &VMap, Module *DestM, CloneFunctionChangeType Changes,
              SmallVectorImpl<ReturnInst *> &Returns, const StringRef NameSuffix,
              SmallPtrSetImpl<BasicBlock *> *ReattachBlocks = nullptr,
              SmallPtrSetImpl<BasicBlock *> *TaskResumeBlocks = nullptr,

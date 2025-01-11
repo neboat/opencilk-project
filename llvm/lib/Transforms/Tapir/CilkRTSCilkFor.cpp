@@ -19,6 +19,7 @@
 #include "llvm/Support/ModRef.h"
 #include "llvm/Transforms/Tapir/Outline.h"
 #include "llvm/Transforms/Tapir/TapirLoopInfo.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/TapirUtils.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Local.h"
@@ -239,7 +240,7 @@ void RuntimeCilkFor::processOutlinedLoopCall(TapirLoopInfo &TL,
   Twine NameSuffix = ".shelper";
   Function *SpawnHelper =
       CreateHelper(SHInputs, Outputs, BlocksToClone, CallBlock, DetBlock,
-                   CallCont, VMap, &M, Parent->getSubprogram() != nullptr,
+                   CallCont, VMap, &M, CloneFunctionChangeType::LocalChangesOnly,
                    Returns, NameSuffix.str(), nullptr, nullptr, nullptr,
                    UnwindDest);
 

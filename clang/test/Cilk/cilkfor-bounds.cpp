@@ -1,4 +1,4 @@
-// RUN: %clang_cc1 %s -std=c++11 -triple x86_64-unknown-linux-gnu -fopencilk -ftapir=none -verify -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -std=c++11 -triple x86_64-unknown-linux-gnu -fopencilk -ftapir=none -verify -emit-llvm -o - | FileCheck %s
 // expected-no-diagnostics
 
 typedef __SIZE_TYPE__ size_t;

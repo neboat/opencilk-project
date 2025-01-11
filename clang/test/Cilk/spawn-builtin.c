@@ -1,6 +1,6 @@
 // Check the spawning of builtins.
 //
-// RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -fopencilk -verify -ftapir=none -S -emit-llvm -o - | FileCheck %s
+// RUN: %clang_cc1 %s -triple x86_64-unknown-linux-gnu -fopencilk -verify -ftapir=none -emit-llvm -o - | FileCheck %s
 
 // Thanks to Brian Wheatman for originally finding the bug captured by this
 // test.

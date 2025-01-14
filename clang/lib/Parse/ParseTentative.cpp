@@ -1226,6 +1226,7 @@ Parser::isCXXDeclarationSpecifier(ImplicitTypenameContext AllowImplicitTypename,
 
     // Cilk
   case tok::kw__Hyperobject:
+  case tok::kw_cilk_reducer:
 
     // GNU
   case tok::kw_restrict:

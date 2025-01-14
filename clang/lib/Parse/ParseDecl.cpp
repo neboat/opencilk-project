@@ -5499,6 +5499,7 @@ bool Parser::isKnownToBeTypeSpecifier(const Token &Tok) const {
   case tok::kw_signed:
   case tok::kw_unsigned:
   case tok::kw__Hyperobject:
+  case tok::kw_cilk_reducer:
   case tok::kw__Complex:
   case tok::kw__Imaginary:
   case tok::kw_void:
@@ -5584,6 +5585,7 @@ bool Parser::isTypeSpecifierQualifier() {
   case tok::kw_signed:
   case tok::kw_unsigned:
   case tok::kw__Hyperobject:
+  case tok::kw_cilk_reducer:
   case tok::kw__Complex:
   case tok::kw__Imaginary:
   case tok::kw_void:
@@ -5802,6 +5804,7 @@ bool Parser::isDeclarationSpecifier(
   case tok::kw_signed:
   case tok::kw_unsigned:
   case tok::kw__Hyperobject:
+  case tok::kw_cilk_reducer:
   case tok::kw__Complex:
   case tok::kw__Imaginary:
   case tok::kw_void:
@@ -6304,7 +6307,7 @@ static bool isPtrOperatorToken(tok::TokenKind Kind, const LangOptions &Lang,
       Lang.getOpenCLCompatibleVersion() >= 200)
     return true;
 
-  if (Kind == tok::kw__Hyperobject)
+  if (Kind == tok::kw__Hyperobject || Kind == tok::kw_cilk_reducer)
     return true;
 
   if (!Lang.CPlusPlus)
@@ -6436,7 +6439,7 @@ void Parser::ParseDeclaratorInternal(Declarator &D,
   SourceLocation Loc = ConsumeToken();  // Eat the *, ^, & or &&.
   D.SetRangeEnd(Loc);
 
-  if (Kind == tok::kw__Hyperobject) {
+  if (Kind == tok::kw__Hyperobject || Kind == tok::kw_cilk_reducer) {
     // Is a hyperobject.
     DeclSpec DS(AttrFactory);
 

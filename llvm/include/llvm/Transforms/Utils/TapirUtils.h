@@ -231,8 +231,12 @@ BasicBlock *CreateSubTaskUnwindEdge(Intrinsic::ID TermFunc, Value *Token,
 
 /// promoteCallsInTasksToInvokes - Traverse the control-flow graph of F to
 /// convert calls to invokes, recursively traversing tasks and taskframes to
-/// insert appropriate detached.rethrow and taskframe.resume terminators.
-void promoteCallsInTasksToInvokes(Function &F, const Twine Name = "cleanup");
+/// insert appropriate detached.rethrow and taskframe.resume terminators.  The
+/// optional \p IgnoreFunctionCheck parameter allows the caller to handle some
+/// call sites in a custom manner.
+void promoteCallsInTasksToInvokes(
+    Function &F, const Twine Name = "cleanup",
+    std::function<bool(CallBase *)> IgnoreFunctionCheck = nullptr);
 
 /// eraseTaskFrame - Remove the specified taskframe and all uses of it.  The
 /// given \p TaskFrame should correspond to a taskframe.create call.  The

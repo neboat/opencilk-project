@@ -746,7 +746,15 @@ void CSIImpl::setupCalls(Function &F) {
   if (F.doesNotThrow())
     return;
 
-  promoteCallsInTasksToInvokes(F, "csi.cleanup");
+  promoteCallsInTasksToInvokes(F, "csi.cleanup", [](CallBase *CB) {
+    if (const Function *F = CB->getCalledFunction()) {
+      if (F->getName().starts_with("__asan")) {
+        CB->setDoesNotThrow();
+        return true;
+      }
+    }
+    return false;
+  });
 }
 
 static BasicBlock *splitOffPreds(BasicBlock *BB,

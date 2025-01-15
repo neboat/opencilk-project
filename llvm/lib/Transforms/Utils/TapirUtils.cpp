@@ -2007,9 +2007,9 @@ BasicBlock *llvm::CreateSubTaskUnwindEdge(Intrinsic::ID TermFunc, Value *Token,
   return NewUnwindEdge;
 }
 
-static BasicBlock *maybePromoteCallInBlock(BasicBlock *BB,
-                                           BasicBlock *UnwindEdge,
-                                           const Value *TaskFrame) {
+static BasicBlock *maybePromoteCallInBlock(
+    BasicBlock *BB, BasicBlock *UnwindEdge, const Value *TaskFrame,
+    std::function<bool(CallBase *)> IgnoreFunctionCheck) {
   for (BasicBlock::iterator BBI = BB->begin(), E = BB->end(); BBI != E;) {
     Instruction *I = &*BBI++;
 
@@ -2032,6 +2032,8 @@ static BasicBlock *maybePromoteCallInBlock(BasicBlock *BB,
       continue;
     // We cannot transform calls with musttail tag.
     if (CI->isMustTailCall())
+      continue;
+    if (IgnoreFunctionCheck && IgnoreFunctionCheck(CI))
       continue;
 
     // We do not need to (and in fact, cannot) convert possibly throwing calls
@@ -2075,10 +2077,10 @@ static Instruction *getTaskFrameInstructionInBlock(BasicBlock *BB,
 
 // Recursively handle inlined tasks.
 static void promoteCallsInTasksHelper(
-    BasicBlock *EntryBlock, BasicBlock *UnwindEdge,
-    BasicBlock *Unreachable, Value *CurrentTaskFrame,
-    SmallVectorImpl<BasicBlock *> *ParentWorklist,
-    SmallPtrSetImpl<BasicBlock *> &Processed) {
+    BasicBlock *EntryBlock, BasicBlock *UnwindEdge, BasicBlock *Unreachable,
+    Value *CurrentTaskFrame, SmallVectorImpl<BasicBlock *> *ParentWorklist,
+    SmallPtrSetImpl<BasicBlock *> &Processed,
+    std::function<bool(CallBase *)> IgnoreFunctionCheck) {
   SmallVector<DetachInst *, 8> DetachesToReplace;
   SmallVector<BasicBlock *, 32> Worklist;
   // TODO: See if we need a global Visited set over all recursive calls, i.e.,
@@ -2092,8 +2094,8 @@ static void promoteCallsInTasksHelper(
       continue;
 
     // Promote any calls in the block to invokes.
-    while (BasicBlock *NewBB =
-           maybePromoteCallInBlock(BB, UnwindEdge, CurrentTaskFrame))
+    while (BasicBlock *NewBB = maybePromoteCallInBlock(
+               BB, UnwindEdge, CurrentTaskFrame, IgnoreFunctionCheck))
       BB = cast<InvokeInst>(NewBB->getTerminator())->getNormalDest();
 
     Instruction *TFI = getTaskFrameInstructionInBlock(BB, CurrentTaskFrame);
@@ -2115,7 +2117,8 @@ static void promoteCallsInTasksHelper(
 
         // Recursively check all blocks
         promoteCallsInTasksHelper(NewBB, TaskFrameUnwindEdge, Unreachable,
-                                  TFCreate, &Worklist, Processed);
+                                  TFCreate, &Worklist, Processed,
+                                  IgnoreFunctionCheck);
 
         // Remove the unwind edge for the taskframe if it is not needed.
         if (pred_empty(TaskFrameUnwindEdge))
@@ -2172,7 +2175,7 @@ static void promoteCallsInTasksHelper(
         // Recursively check all blocks in the detached task.
         promoteCallsInTasksHelper(DI->getDetached(), SubTaskUnwindEdge,
                                   Unreachable, CurrentTaskFrame, &Worklist,
-                                  Processed);
+                                  Processed, IgnoreFunctionCheck);
         // If the new unwind edge is not used, remove it.
         if (pred_empty(SubTaskUnwindEdge))
           SubTaskUnwindEdge->eraseFromParent();
@@ -2180,9 +2183,16 @@ static void promoteCallsInTasksHelper(
           DetachesToReplace.push_back(DI);
 
       } else {
-        // Because this detach has an unwind destination, Any calls in the
+        // Because this detach has an unwind destination, any calls in the
         // spawned task that may throw should already be invokes.  Hence there
         // is no need to promote calls in this task.
+        if (IgnoreFunctionCheck) {
+          // This recursive call should only apply IgnoreFunctionCheck to callsites.
+          promoteCallsInTasksHelper(DI->getDetached(), DI->getUnwindDest(),
+                                    Unreachable, CurrentTaskFrame, &Worklist,
+                                    Processed, IgnoreFunctionCheck);
+        }
+
         if (Visited.insert(DI->getUnwindDest()).second)
           // If the detach-unwind isn't dead, add it to the worklist.
           Worklist.push_back(DI->getUnwindDest());
@@ -2225,7 +2235,9 @@ static FunctionCallee getDefaultPersonalityFn(Module *M) {
                                 FunctionType::get(Type::getInt32Ty(C), true));
 }
 
-void llvm::promoteCallsInTasksToInvokes(Function &F, const Twine Name) {
+void llvm::promoteCallsInTasksToInvokes(
+    Function &F, const Twine Name,
+    std::function<bool(CallBase *)> IgnoreFunctionCheck) {
   // Collect blocks to process, in order to handle unreachable blocks.
   SmallVector<BasicBlock *, 8> ToProcess;
   ToProcess.push_back(&F.getEntryBlock());
@@ -2256,7 +2268,7 @@ void llvm::promoteCallsInTasksToInvokes(Function &F, const Twine Name) {
   for (BasicBlock *BB : ToProcess) {
     if (!Processed.contains(BB))
       promoteCallsInTasksHelper(BB, CleanupBB, UnreachableBlk, nullptr, nullptr,
-                                Processed);
+                                Processed, IgnoreFunctionCheck);
   }
 
   // Either finish inserting the cleanup block (and associated data) or remove

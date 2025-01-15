@@ -222,7 +222,6 @@ cleanup272:                                       ; preds = %pfor.cond.cleanup26
 
 ; CHECK: define internal fastcc void @ggml_compute_forward_mul_mat.outline_pfor.cond.us.us.ls1(
 ; CHECK: pfor.cond.us.us.preheader.ls1:
-; CHECK-NEXT: %[[NESTED_SPAWN_SYNCREG:.+]] = {{.*}}call token @llvm.syncregion.start()
 ; CHECK-NEXT: %[[LOOP_DAC_SYNCREG:.+]] = {{.*}}call token @llvm.syncregion.start()
 ; CHECK: br label %[[LOOP_DAC_HEADER:.+]]
 
@@ -240,6 +239,7 @@ cleanup272:                                       ; preds = %pfor.cond.cleanup26
 ; Check for a newly introduced taskframe that contains the static alloca.
 ; CHECK: %[[NEW_TF:.+]] = call token @llvm.taskframe.create()
 ; CHECK-NEXT: %[[TMP:.+]] = alloca [32 x float]
+; CHECK-NEXT: %[[NESTED_SPAWN_SYNCREG:.+]] = {{.*}}call token @llvm.syncregion.start()
 ; CHECK-NEXT: br label %[[NESTED_LOOP_HEADER:.+]]
 
 ; CHECK: [[NESTED_LOOP_HEADER]]:

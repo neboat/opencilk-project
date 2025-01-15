@@ -75,10 +75,9 @@ det.achd.i.i.ls2:                                 ; preds = %invoke.cont61.tf.i.
 
 ; CHECK-LABEL: define {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2(ptr %call.i.i.i.i31.i874.ls2)
 ; CHECK: invoke.cont61.tf.i.i.ls2:
-; CHECK-NEXT: %[[FIXUP_ALLOCA:.+]] = alloca ptr
 ; CHECK-NEXT: call token @llvm.syncregion.start()
 ; CHECK-NEXT: call token @llvm.syncregion.start()
-; CHECK-NEXT: call {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.otf0(ptr %call.i.i.i.i31.i874.ls2, ptr %[[FIXUP_ALLOCA]])
+; CHECK-NEXT: call {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.otf0(ptr %call.i.i.i.i31.i874.ls2)
 ; CHECK-NEXT: br label %sync.continue28.i.i1530.ls2.tfend
 
 ; CHECK: sync.continue28.i.i1530.ls2.tfend:
@@ -89,12 +88,10 @@ det.achd.i.i.ls2:                                 ; preds = %invoke.cont61.tf.i.
 ; CHECK: call void @__cilkrts_detach(
 ; CHECK: ret void
 
-; CHECK-LABEL: define {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.tf.otf1(ptr {{.*}}%call.i.i.i.i31.i874.ls2.otf1,
-; CHECK: ptr {{.*}}%[[ARG:.+]])
+; CHECK-LABEL: define {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.tf.otf1(ptr {{.*}}%call.i.i.i.i31.i874.ls2.otf1)
 
 ; CHECK: invoke.cont61.tf.i.i.ls2.tf.tf.otf1:
 ; CHECK: %[[ADDR:.+]] = getelementptr %"struct.parlay::sequence_internal::sequence_base<double, parlay::allocator<double>, false>::storage_impl::capacitated_buffer::header", ptr %call.i.i.i.i31.i874.ls2.otf1, i64 0, i32 1
-; CHECK-NEXT: store ptr %[[ADDR]], ptr %[[ARG]]
 ; CHECK-NEXT: call void @__cilkrts_enter_frame(
 ; CHECK-NEXT: %[[TAPIR_RT_START:.+]] = call token @llvm.tapir.runtime.start()
 ; CHECK-NEXT: call i32 @__cilk_prepare_spawn(
@@ -136,22 +133,15 @@ det.achd.i.i.ls2:                                 ; preds = %invoke.cont61.tf.i.
 
 ; CHECK: ret void
 
-; CHECK-LABEL: define {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.otf0(ptr align 1 %call.i.i.i.i31.i874.ls2.otf0,
-; CHECK: ptr {{.*}}%[[ARG:.+]])
-; CHECK: %[[FIXUP_ALLOCA:.+]] = alloca ptr
+; CHECK-LABEL: define {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.otf0(ptr align 1 %call.i.i.i.i31.i874.ls2.otf0)
 
-; CHECK: call void @llvm.lifetime.start.p0(i64 8, ptr %[[FIXUP_ALLOCA]])
-; CHECK-NEXT: call void @__cilkrts_enter_frame(
+; CHECK: call void @__cilkrts_enter_frame(
 ; CHECK-NEXT: %[[TAPIR_RT_START:.+]] = call token @llvm.tapir.runtime.start()
 ; CHECK-NEXT: call void @__cilk_parent_epilogue(
 ; CHECK-NEXT: call void @llvm.tapir.runtime.end(token %[[TAPIR_RT_START]])
-; CHECK-NEXT: call {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.tf.otf1(ptr %call.i.i.i.i31.i874.ls2.otf0, ptr %[[FIXUP_ALLOCA]])
+; CHECK-NEXT: call {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont61.tf.i.i.ls2.tf.tf.otf1(ptr %call.i.i.i.i31.i874.ls2.otf0)
 
-; CHECK: %[[FIXUP_LOAD:.+]] = load ptr, ptr %[[FIXUP_ALLOCA]]
-; CHECK-NEXT: store ptr %[[FIXUP_LOAD]], ptr %[[ARG]]
-; CHECK-NEXT: call {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont.i.i.i.i.i266.i.i.ls2.tf.otf1()
-
-; CHECK: call void @llvm.lifetime.end.p0(i64 8, ptr %[[FIXUP_ALLOCA]])
+; CHECK: call {{.*}}void @_Z6kmeansIFdRKN6parlay8sequenceIdNS0_9allocatorIdEELb0EEES6_EEDaRNS1_IS4_NS2_IS4_EELb0EEEiRT_d.outline_pfor.cond.i.i.i182.ls2.outline_invoke.cont.i.i.i.i.i266.i.i.ls2.tf.otf1()
 
 ; CHECK: ret void
 

@@ -24,12 +24,14 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/EHPersonalities.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
@@ -1138,10 +1140,19 @@ bool CSIImpl::instrumentMemIntrinsic(Instruction *I) {
 }
 
 void CSIImpl::instrumentBasicBlock(BasicBlock &BB, const TaskInfo &TI) {
-  IRBuilder<> IRB(&*BB.getFirstInsertionPt());
+  Instruction *InsertPt = &*BB.getFirstInsertionPt();
   bool IsEntry = isEntryBlock(BB, TI);
   if (IsEntry)
-    IRB.SetInsertPoint(getEntryBBInsertPt(BB));
+    InsertPt = getEntryBBInsertPt(BB);
+  // Skip any sync.unwind intrinsics, which need to remain paired with
+  // corresponding syncs.
+  if (isSyncUnwind(InsertPt))
+    InsertPt = InsertPt->getNextNode();
+  // Skip any taskframe.end intrinsics, to keep the basic-block instrumentation
+  // in the same basic block.
+  if (isTapirIntrinsic(Intrinsic::taskframe_end, InsertPt))
+    InsertPt = InsertPt->getNextNode();
+  IRBuilder<> IRB(InsertPt);
   uint64_t LocalId = BasicBlockFED.add(BB);
   uint64_t BBSizeId = BBSize.add(BB, GetTTI ?
                                  &(*GetTTI)(*BB.getParent()) : nullptr);
@@ -1235,8 +1246,24 @@ void CSIImpl::instrumentLoop(Loop &L, TaskInfo &TI, ScalarEvolution *SE) {
   insertHookCall(&*IRB.GetInsertPoint(), CsiLoopBodyEntry, {LoopCsiId,
                                                             LoopPropVal});
 
+  SmallPtrSet<BasicBlock *, 4> ExitingBlocksVisited;
   // Insert hooks at the ends of the exiting blocks.
-  for (BasicBlock *BB : ExitingBlocks) {
+  while (!ExitingBlocks.empty()) {
+    BasicBlock *BB = ExitingBlocks.pop_back_val();
+    if (!ExitingBlocksVisited.insert(BB).second)
+      continue;
+    if (isSyncUnwind(BB->getTerminator())) {
+      // Insert the loopbody_exit hook before the sync instruction, rather than
+      // the sync.unwind.
+      // TODO: I don't think there's anything preventing a sync.unwind from
+      // having multiple sync-instruction predecessors, so all such predecessors
+      // need to be addressed.  This logic should become simpler if sync itself
+      // is modified to have an unwind destination.
+      for (BasicBlock *Pred : predecessors(BB))
+        ExitingBlocks.push_back(Pred);
+      continue;
+    }
+
     // Record properties of this loop exit
     CsiLoopExitProperty LoopExitProp;
     LoopExitProp.setIsLatch(L.isLoopLatch(BB));
@@ -1806,13 +1833,16 @@ CallInst *CSIImpl::insertHookCallInSuccessorBB(BasicBlock *Succ, BasicBlock *BB,
                                                ArrayRef<Value *> HookArgs,
                                                ArrayRef<Value *> DefaultArgs) {
   assert(HookFunction && "No hook function given.");
+  Instruction *InsertPt = &*Succ->getFirstInsertionPt();
+  if (isSyncUnwind(InsertPt))
+    InsertPt = InsertPt->getNextNode();
+
   // If this successor block has a unique predecessor, just insert the hook call
   // as normal.
   if (Succ->getUniquePredecessor()) {
     assert(Succ->getUniquePredecessor() == BB &&
            "BB is not unique predecessor of successor block");
-    return insertHookCall(&*Succ->getFirstInsertionPt(), HookFunction,
-                          HookArgs);
+    return insertHookCall(InsertPt, HookFunction, HookArgs);
   }
 
   if (updateArgPHIs(Succ, BB, HookFunction, HookArgs, DefaultArgs))
@@ -1823,7 +1853,7 @@ CallInst *CSIImpl::insertHookCallInSuccessorBB(BasicBlock *Succ, BasicBlock *BB,
   for (PHINode *ArgPHI : ArgPHIs[Key])
     SuccessorHookArgs.push_back(ArgPHI);
 
-  IRBuilder<> IRB(&*Succ->getFirstInsertionPt());
+  IRBuilder<> IRB(InsertPt);
   // Insert the hook call, using the PHI as the CSI ID.
   CallInst *Call = IRB.CreateCall(HookFunction, SuccessorHookArgs);
   setInstrumentationDebugLoc(*Succ, (Instruction *)Call);
@@ -2747,6 +2777,11 @@ void CSIImpl::instrumentFunction(Function &F) {
     for (BasicBlock *BB : BasicBlocks)
       instrumentBasicBlock(*BB, TI);
 
+  if (Options.InstrumentLoops)
+    // Recursively instrument all loops
+    for (Loop *L : LI)
+      instrumentLoop(*L, TI, SE);
+
   // Instrument Tapir constructs.
   if (Options.InstrumentTapir) {
     if (Config->DoesFunctionRequireInstrumentationForPoint(
@@ -2767,11 +2802,6 @@ void CSIImpl::instrumentFunction(Function &F) {
   if (Options.InstrumentAllocas)
     for (Instruction *I : Allocas)
       instrumentAlloca(I, TI);
-
-  if (Options.InstrumentLoops)
-    // Recursively instrument all loops
-    for (Loop *L : LI)
-      instrumentLoop(*L, TI, SE);
 
   // Do this work in a separate loop after copying the iterators so that we
   // aren't modifying the list as we're iterating.

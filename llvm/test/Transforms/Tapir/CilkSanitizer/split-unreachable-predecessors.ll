@@ -116,9 +116,6 @@ cleanup.cont:                                     ; preds = %cleanup, %cleanup
 unreachable:                                      ; preds = %cleanup, %lpad
   unreachable
 
-; CHECK: [[DR_UNREACHABLE]]:
-; CHECK-NEXT: unreachable
-
 ; CHECK: unreachable:
 ; CHECK: unreachable
 }

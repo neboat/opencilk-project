@@ -11,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Utils/TapirUtils.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/CFG.h"
 #include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/Analysis/LoopInfo.h"
@@ -85,16 +86,13 @@ bool llvm::isSkippableTapirIntrinsic(const Instruction *I) {
 /// Returns true if the given basic block \p B is a placeholder successor of a
 /// taskframe.resume or detached.rethrow.
 bool llvm::isTapirPlaceholderSuccessor(const BasicBlock *B) {
-  for (const BasicBlock *Pred : predecessors(B)) {
+  return llvm::any_of(predecessors(B), [&](const BasicBlock *Pred) {
     if (!isDetachedRethrow(Pred->getTerminator()) &&
         !isTaskFrameResume(Pred->getTerminator()))
       return false;
-
     const InvokeInst *II = dyn_cast<InvokeInst>(Pred->getTerminator());
-    if (B != II->getNormalDest())
-      return false;
-  }
-  return true;
+    return B == II->getNormalDest();
+  });
 }
 
 /// Returns a taskframe.resume that uses the given taskframe, or nullptr if no
@@ -2166,37 +2164,28 @@ static void promoteCallsInTasksHelper(
     // spawned task recursively.
     if (DetachInst *DI = dyn_cast<DetachInst>(BB->getTerminator())) {
       Processed.insert(BB);
-      if (!DI->hasUnwindDest()) {
-        // Create an unwind edge for the subtask, which is terminated with a
-        // detached-rethrow.
-        BasicBlock *SubTaskUnwindEdge = CreateSubTaskUnwindEdge(
-            Intrinsic::detached_rethrow, DI->getSyncRegion(), UnwindEdge,
-            Unreachable, DI);
-        // Recursively check all blocks in the detached task.
-        promoteCallsInTasksHelper(DI->getDetached(), SubTaskUnwindEdge,
-                                  Unreachable, CurrentTaskFrame, &Worklist,
-                                  Processed, IgnoreFunctionCheck);
-        // If the new unwind edge is not used, remove it.
-        if (pred_empty(SubTaskUnwindEdge))
-          SubTaskUnwindEdge->eraseFromParent();
-        else
-          DetachesToReplace.push_back(DI);
 
-      } else {
-        // Because this detach has an unwind destination, any calls in the
-        // spawned task that may throw should already be invokes.  Hence there
-        // is no need to promote calls in this task.
-        if (IgnoreFunctionCheck) {
-          // This recursive call should only apply IgnoreFunctionCheck to callsites.
-          promoteCallsInTasksHelper(DI->getDetached(), DI->getUnwindDest(),
-                                    Unreachable, CurrentTaskFrame, &Worklist,
-                                    Processed, IgnoreFunctionCheck);
-        }
+      // Create an unwind edge for the subtask, which is terminated with a
+      // detached-rethrow.
+      BasicBlock *SubTaskUnwindEdge = CreateSubTaskUnwindEdge(
+          Intrinsic::detached_rethrow, DI->getSyncRegion(),
+          DI->hasUnwindDest() ? DI->getUnwindDest() : UnwindEdge, Unreachable,
+          DI);
+      // Recursively check all blocks in the detached task.
+      promoteCallsInTasksHelper(DI->getDetached(), SubTaskUnwindEdge,
+                                Unreachable, CurrentTaskFrame, &Worklist,
+                                Processed, IgnoreFunctionCheck);
 
-        if (Visited.insert(DI->getUnwindDest()).second)
-          // If the detach-unwind isn't dead, add it to the worklist.
-          Worklist.push_back(DI->getUnwindDest());
-      }
+      // If the new unwind edge is not used, remove it.
+      if (pred_empty(SubTaskUnwindEdge))
+        SubTaskUnwindEdge->eraseFromParent();
+      else if (!DI->hasUnwindDest())
+        DetachesToReplace.push_back(DI);
+
+      if (DI->hasUnwindDest() && Visited.insert(DI->getUnwindDest()).second)
+        // If the detach-unwind isn't dead, add it to the worklist.
+        Worklist.push_back(DI->getUnwindDest());
+
       // Add the continuation to the worklist.
       if (isTaskFrameResume(UnwindEdge->getTerminator()) &&
           (CurrentTaskFrame == getTaskFrameUsed(DI->getDetached()))) {

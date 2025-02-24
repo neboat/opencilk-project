@@ -1597,9 +1597,6 @@ public:
     llvm::AllocaInst *TFEHSelectorSlot = nullptr;
     Address TFNormalCleanupDest = Address::invalid();
 
-    // Saved state in an initialized detach scope.
-    llvm::AssertingVH<llvm::Instruction> SavedDetachedAllocaInsertPt = nullptr;
-
     // Information about a reference temporary created early in the detached
     // block.
     RawAddress RefTmp = RawAddress::invalid();

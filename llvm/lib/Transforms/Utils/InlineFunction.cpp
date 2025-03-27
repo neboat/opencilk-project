@@ -2032,6 +2032,12 @@ static void HandleByValArgumentInit(Type *ByValType, Value *Dst, Value *Src,
       CI->setDebugLoc(DILocation::get(SP->getContext(), 0, 0, SP));
 }
 
+static bool isTaskFrameCreate(const Instruction &I) {
+  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I))
+    return Intrinsic::taskframe_create == II->getIntrinsicID();
+  return false;
+}
+
 /// When inlining a call site that has a byval argument,
 /// we have to make the implicit memcpy explicit by adding it.
 static Value *HandleByValArgument(Type *ByValType, Value *Arg,
@@ -2079,7 +2085,10 @@ static Value *HandleByValArgument(Type *ByValType, Value *Arg,
       new AllocaInst(ByValType, Arg->getType()->getPointerAddressSpace(),
                      nullptr, Alignment, Arg->getName());
   NewAlloca->setDebugLoc(DebugLoc::getCompilerGenerated());
-  NewAlloca->insertBefore(NewCtx->begin());
+  BasicBlock::iterator InsertPoint = NewCtx->begin();
+  if (isTaskFrameCreate(*InsertPoint))
+    InsertPoint++;
+  NewAlloca->insertBefore(InsertPoint);
   IFI.StaticAllocas.push_back(NewAlloca);
 
   // Uses of the argument in the function should use our new alloca
@@ -2759,12 +2768,6 @@ llvm::InlineResult llvm::InlineFunction(CallBase &CB, InlineFunctionInfo &IFI,
   };
   CtxProf.update(Updater, Caller);
   return Ret;
-}
-
-static bool isTaskFrameCreate(const Instruction &I) {
-  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I))
-    return Intrinsic::taskframe_create == II->getIntrinsicID();
-  return false;
 }
 
 static BasicBlock *SplitResume(ResumeInst *RI, Intrinsic::ID TermFunc,

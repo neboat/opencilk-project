@@ -2023,6 +2023,12 @@ static void HandleByValArgumentInit(Type *ByValType, Value *Dst, Value *Src,
       CI->setDebugLoc(DILocation::get(SP->getContext(), 0, 0, SP));
 }
 
+static bool isTaskFrameCreate(const Instruction &I) {
+  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I))
+    return Intrinsic::taskframe_create == II->getIntrinsicID();
+  return false;
+}
+
 /// When inlining a call site that has a byval argument,
 /// we have to make the implicit memcpy explicit by adding it.
 static Value *HandleByValArgument(Type *ByValType, Value *Arg,
@@ -2069,7 +2075,10 @@ static Value *HandleByValArgument(Type *ByValType, Value *Arg,
   AllocaInst *NewAlloca =
       new AllocaInst(ByValType, Arg->getType()->getPointerAddressSpace(),
                      nullptr, Alignment, Arg->getName());
-  NewAlloca->insertBefore(NewCtx->begin());
+  BasicBlock::iterator InsertPoint = NewCtx->begin();
+  if (isTaskFrameCreate(*InsertPoint))
+    InsertPoint++;
+  NewAlloca->insertBefore(InsertPoint);
   IFI.StaticAllocas.push_back(NewAlloca);
 
   // Uses of the argument in the function should use our new alloca
@@ -2504,6 +2513,7 @@ inlineRetainOrClaimRVCalls(CallBase &CB, objcarc::ARCInstKind RVCallKind,
   }
 }
 
+<<<<<<< HEAD
 // In contextual profiling, when an inline succeeds, we want to remap the
 // indices of the callee into the index space of the caller. We can't just leave
 // them as-is because the same callee may appear in other places in this caller
@@ -2752,12 +2762,8 @@ llvm::InlineResult llvm::InlineFunction(CallBase &CB, InlineFunctionInfo &IFI,
   return Ret;
 }
 
-static bool isTaskFrameCreate(const Instruction &I) {
-  if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(&I))
-    return Intrinsic::taskframe_create == II->getIntrinsicID();
-  return false;
-}
-
+=======
+>>>>>>> f78ab9ab309a ([InlineFunction] When inlining a function with byval arguments into a taskframe, ensure that the alloca for the inlined byval argument is inserted inside the taskframe.)
 static BasicBlock *SplitResume(ResumeInst *RI, Intrinsic::ID TermFunc,
                                Value *Token, BasicBlock *Unreachable) {
   Value *RIValue = RI->getValue();

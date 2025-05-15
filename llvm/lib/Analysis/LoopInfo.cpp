@@ -185,13 +185,15 @@ BasicBlock *Loop::getExitingBlock(bool IgnoreDetachUnwind) const {
 /// getExitBlocks - Return all of the successor blocks of this loop.  These
 /// are the blocks _outside of the current loop_ which are branched to.
 ///
-void Loop::getExitBlocks(
-    SmallVectorImpl<BasicBlock *> &ExitBlocks) const {
+void Loop::getExitBlocks(SmallVectorImpl<BasicBlock *> &ExitBlocks,
+                         bool IgnoreTaskExits) const {
   assert(!isInvalid() && "Loop not in a valid state!");
   std::vector<BasicBlock *> Blocks(block_begin(), block_end());
   SmallPtrSet<BasicBlock *, 4> TaskExits;
-  getTaskExits(TaskExits);
-  Blocks.insert(Blocks.end(), TaskExits.begin(), TaskExits.end());
+  if (!IgnoreTaskExits) {
+    getTaskExits(TaskExits);
+    Blocks.insert(Blocks.end(), TaskExits.begin(), TaskExits.end());
+  }
 
   for (const auto BB : Blocks)
     for (auto *Succ : children<BasicBlock *>(BB))

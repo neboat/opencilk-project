@@ -74,7 +74,8 @@ public:
 
   /// Return all of the successor blocks of this loop. These are the blocks
   /// _outside of the current loop_ which are branched to.
-  void getExitBlocks(SmallVectorImpl<BasicBlock *> &ExitBlocks) const;
+  void getExitBlocks(SmallVectorImpl<BasicBlock *> &ExitBlocks,
+                     bool IgnoreTaskExits = false) const;
 
   /// If getExitBlocks would return exactly one block, return that block.
   /// Otherwise return null.

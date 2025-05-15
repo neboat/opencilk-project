@@ -257,7 +257,7 @@ private:
     // predecessors are in the loop. This may not be the case, as the input loop
     // may not by in loop-simplify/canonical form.
     SmallVector<BasicBlock *, 8> ExitBlocks;
-    L.getExitBlocks(ExitBlocks);
+    L.getExitBlocks(ExitBlocks, /*IgnoreTaskExits=*/true);
     SmallPtrSet<BasicBlock *, 8> UniqueDeadExits;
     for (auto *ExitBlock : ExitBlocks)
       if (!LiveExitBlocks.count(ExitBlock) &&

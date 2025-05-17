@@ -2183,6 +2183,16 @@ PassBuilder::buildLTODefaultPipeline(OptimizationLevel Level,
 
     invokeFullLinkTimeOptimizationLastEPCallbacks(MPM, Level);
 
+    // Add passes to run just before Tapir lowering.
+    invokeTapirLateEPCallbacks(MPM, Level);
+
+    // Lower Tapir if necessary
+    if (LowerTapir)
+      MPM.addPass(buildTapirLoweringPipeline(
+          Level, ThinOrFullLTOPhase::FullLTOPostLink));
+    else
+      invokeTapirLoopEndEPCallbacks(MPM, Level);
+
     // Emit annotation remarks.
     addAnnotationRemarksPass(MPM);
 

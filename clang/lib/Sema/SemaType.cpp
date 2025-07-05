@@ -20,9 +20,11 @@
 #include "clang/AST/DeclObjC.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
 #include "clang/AST/TypeLocVisitor.h"
+#include "clang/Basic/Builtins.h"
 #include "clang/Basic/PartialDiagnostic.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/Specifiers.h"
@@ -30,10 +32,12 @@
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Sema/DeclSpec.h"
 #include "clang/Sema/DelayedDiagnostic.h"
+#include "clang/Sema/Initialization.h"
 #include "clang/Sema/Lookup.h"
 #include "clang/Sema/ParsedAttr.h"
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/ScopeInfo.h"
+#include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaCUDA.h"
 #include "clang/Sema/SemaInternal.h"
 #include "clang/Sema/SemaObjC.h"
@@ -936,7 +940,6 @@ static std::optional<unsigned> ContainsHyperobject(QualType Outer) {
   case Type::BlockPointer:
   case Type::FunctionProto:
   case Type::FunctionNoProto:
-    return diag::confusing_hyperobject;
   case Type::Builtin:
   case Type::TemplateTypeParm:
   default:
@@ -2032,11 +2035,30 @@ Expr *Sema::ValidateReducerCallback(Expr *E, unsigned NumArgs,
     ArgTy.push_back(Ptr);
     assert(NumArgs == 2);
   }
+  // FIXME: This code should be dead
   // TODO: Give these types names for better error messages.
   QualType FnTy =
       BuildFunctionType(Context.VoidTy, ArgTy, E->getExprLoc(),
                         DeclarationName(), FunctionProtoType::ExtProtoInfo());
   FnTy = BuildPointerType(FnTy, E->getExprLoc(), DeclarationName());
+
+  // Get the ToType from the prototype of the __hyper_lookup builtin.
+  FunctionDecl *HyperLookupDecl;
+  QualType HyperLookupParam;
+  unsigned ParamDeclNum = (NumArgs > 1) ? 3 : 2;
+  {
+    StringRef Name = Context.BuiltinInfo.getName(Builtin::BI__hyper_lookup);
+    LookupResult R(*this, &Context.Idents.get(Name), Loc,
+                   Sema::LookupOrdinaryName);
+    LookupName(R, TUScope, /*AllowBuiltinCreation=*/true);
+
+    HyperLookupDecl = R.getAsSingle<FunctionDecl>();
+    assert(HyperLookupDecl && "failed to find builtin declaration");
+
+    HyperLookupParam = HyperLookupDecl->getParamDecl(ParamDeclNum)->getType();
+  }
+
+  FnTy = HyperLookupParam;
 
   if (T == Context.OverloadTy) {
     DeclAccessPair What;
@@ -2060,6 +2082,13 @@ Expr *Sema::ValidateReducerCallback(Expr *E, unsigned NumArgs,
     Cast = CK_NullToPointer;
   } else if (Mismatch == IntToPointer) {
     Cast = CK_IntegralToPointer;
+  } else {
+    // Handle std::function parameter
+    ParmVarDecl *Param = HyperLookupDecl->getParamDecl(ParamDeclNum);
+    InitializedEntity Entity = InitializedEntity::InitializeParameter(
+        Context, Param, HyperLookupParam);
+    ExprResult ArgE = PerformCopyInitialization(Entity, SourceLocation(), E);
+    return ArgE.get();
   }
 
   return ImplicitCastExpr::Create(Context, Context.VoidPtrTy, Cast, E, nullptr,

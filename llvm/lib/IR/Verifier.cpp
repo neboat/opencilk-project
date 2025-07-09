@@ -6756,6 +6756,8 @@ void Verifier::visitIntrinsicCall(Intrinsic::ID ID, CallBase &Call) {
     if (InvokeInst *I = dyn_cast<InvokeInst>(&Call)) {
       Check(isa<UnreachableInst>(I->getNormalDest()->getTerminator()),
             "taskframe.resume normal destination is not unreachable", &Call);
+      Check(isa<Instruction>(I->getOperand(0)),
+            "taskframe.resume not associated with a valid taskframe.", &Call);
     }
     break;
   }

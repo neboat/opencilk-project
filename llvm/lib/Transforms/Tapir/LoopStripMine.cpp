@@ -743,7 +743,7 @@ static BasicBlock *nestDetachUnwindPredecessors(
   // destination.
   ReplaceInstWithInst(
       InnerUD->getTerminator(),
-      InvokeInst::Create(Intrinsic::getDeclaration(
+      InvokeInst::Create(Intrinsic::getOrInsertDeclaration(
                              M, Intrinsic::detached_rethrow, {OrigLPadTy}),
                          NewUnreachable, OuterUD, {SyncReg, InnerUDLPad}));
 
@@ -1145,8 +1145,8 @@ Loop *llvm::StripMineLoop(Loop *L, unsigned Count, bool AllowExpensiveTripCount,
         SplitBlockPredecessors(Header, HeaderPreds, ".strpm.detachloop.entry",
                                DT, LI, nullptr, PreserveLCSSA);
       NewSyncReg = CallInst::Create(
-          Intrinsic::getDeclaration(M, Intrinsic::syncregion_start), {},
-          &*LoopDetEntry->getFirstInsertionPt());
+          Intrinsic::getOrInsertDeclaration(M, Intrinsic::syncregion_start), {},
+          LoopDetEntry->getFirstInsertionPt());
       NewSyncReg->setName(SyncReg->getName() + ".strpm.detachloop");
     }
     LoopReattach = SplitEdge(Latch, NewExit, DT, LI);
@@ -1406,7 +1406,7 @@ Loop *llvm::StripMineLoop(Loop *L, unsigned Count, bool AllowExpensiveTripCount,
     if (!OrigUnwindDest && F->doesNotThrow()) {
       // Insert a call to sync.unwind.
       CallInst *SyncUnwind = CallInst::Create(
-          Intrinsic::getDeclaration(M, Intrinsic::sync_unwind), { NewSyncReg },
+          Intrinsic::getOrInsertDeclaration(M, Intrinsic::sync_unwind), { NewSyncReg },
           "", LoopReattach->getFirstNonPHIOrDbg());
       // If the Tapir loop has an unwind destination, change the sync.unwind to
       // an invoke that unwinds to the cloned unwind destination.

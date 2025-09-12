@@ -7,8 +7,8 @@ define i32 @nested(i32 %src) #0 {
 ; CHECK-SAME: i32 [[A0:%.*]]) #[[ATTR0:[0-9]+]] {
 ; CHECK-NEXT:  [[BB15160:.*:]]
 ; CHECK-NEXT:    [[T1:%.*]] = call token @llvm.experimental.convergence.entry()
-; CHECK-NEXT:    %"vl15001llvm.experimental.convergence.anchor()" = call token @llvm.experimental.convergence.anchor()
-; CHECK-NEXT:    %"op68297llvm.amdgcn.readfirstlane.i32([[A0]], vl15001llvm.experimental.convergence.anchor())" = call i32 @llvm.amdgcn.readfirstlane.i32(i32 [[A0]]) [ "convergencectrl"(token %"vl15001llvm.experimental.convergence.anchor()") ]
+; CHECK-NEXT:    %"vl23547llvm.experimental.convergence.anchor()" = call token @llvm.experimental.convergence.anchor()
+; CHECK-NEXT:    %"op34316llvm.amdgcn.readfirstlane.i32([[A0]], vl23547llvm.experimental.convergence.anchor())" = call i32 @llvm.amdgcn.readfirstlane.i32(i32 [[A0]]) [ "convergencectrl"(token %"vl23547llvm.experimental.convergence.anchor()") ]
 ; CHECK-NEXT:    ret i32 undef
 ;
   %t1 = call token @llvm.experimental.convergence.entry()

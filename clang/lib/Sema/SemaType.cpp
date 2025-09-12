@@ -36,6 +36,7 @@
 #include "clang/Sema/ParsedAttr.h"
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/ScopeInfo.h"
+#include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaCUDA.h"
 #include "clang/Sema/SemaHLSL.h"
 #include "clang/Sema/SemaObjC.h"
@@ -2077,7 +2078,7 @@ Expr *Sema::ValidateReducerCallback(Expr *E, unsigned NumArgs,
       CheckAssignmentConstraints(E->getExprLoc(), FnTy, T);
 
   if (DiagnoseAssignmentResult(Mismatch, E->getExprLoc(), FnTy, T, E,
-                               AA_Passing)) {
+                               AssignmentAction::Passing)) {
     E = new (Context) CXXNullPtrLiteralExpr(Context.NullPtrTy, E->getExprLoc());
     Cast = CK_NullToPointer;
   } else if (Mismatch == IntToPointer) {

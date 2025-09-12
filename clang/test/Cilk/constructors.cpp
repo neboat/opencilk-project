@@ -431,7 +431,7 @@ void array_out() {
   // CHECK: %[[REFTMP:.+]] = alloca %class.Baz
   // CHECK: %[[AGGTMP:.+]] = alloca %class.Bar
   // CHECK-O0: %[[ARRIDX:.+]] = getelementptr inbounds [5 x %class.Bar], ptr %[[ArrBar:.+]], i64 0, i64 1
-  // CHECK-O1: %[[ARRIDX:.+]] = getelementptr inbounds i8, ptr %[[ArrBar:.+]], i64 16
+  // CHECK-O1: %[[ARRIDX:.+]] = getelementptr inbounds nuw i8, ptr %[[ArrBar:.+]], i64 16
   // CHECK: invoke void @_ZN3BarC1Ev(ptr {{.*}}dereferenceable(16) %[[AGGTMP]])
   // CHECK-NEXT: to label %[[INVOKECONT:.+]] unwind label %[[TFLPAD:.+]]
   // CHECK: [[INVOKECONT]]:
@@ -468,7 +468,7 @@ void array_out() {
   // CHECK: [[CONTINUE2]]:
 
   // CHECK-O0: %[[ARRIDX3:.+]] = getelementptr inbounds %class.Bar, ptr %[[LISTBAR2]], i64 1
-  // CHECK-O1: %[[ARRIDX3:.+]] = getelementptr inbounds i8, ptr %[[LISTBAR2]], i64 16
+  // CHECK-O1: %[[ARRIDX3:.+]] = getelementptr inbounds nuw i8, ptr %[[LISTBAR2]], i64 16
   // CHECK: %[[TASKFRAME3:.+]] = call token @llvm.taskframe.create()
   // CHECK: detach within %[[SYNCREG]], label %[[DETACHED3:.+]], label %[[CONTINUE3:.+]] unwind label %[[TFLPAD3:.+]]
   // CHECK: [[DETACHED3]]:
@@ -478,7 +478,7 @@ void array_out() {
   // CHECK-NEXT: reattach within %[[SYNCREG]], label %[[CONTINUE3]]
 
   // CHECK-O0: %[[ARRIDX4:.+]] = getelementptr inbounds %class.Bar, ptr %[[LISTBAR2]], i64 2
-  // CHECK-O1: %[[ARRIDX4:.+]] = getelementptr inbounds i8, ptr %[[LISTBAR2]], i64 32
+  // CHECK-O1: %[[ARRIDX4:.+]] = getelementptr inbounds nuw i8, ptr %[[LISTBAR2]], i64 32
   // CHECK-O0: %[[TASKFRAME4:.+]] = call token @llvm.taskframe.create()
   // CHECK: %[[REFTMP2:.+]] = alloca %class.Baz
   // CHECK: %[[AGGTMP3:.+]] = alloca %class.Bar

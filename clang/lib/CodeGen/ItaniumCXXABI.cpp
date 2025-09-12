@@ -3887,8 +3887,8 @@ void ItaniumRTTIBuilder::BuildVTablePointer(const Type *Ty,
 
   case Type::Hyperobject:
     // XXX needs work
-    BuildVTablePointer
-      (cast<HyperobjectType>(Ty)->getElementType().getTypePtr());
+    BuildVTablePointer(cast<HyperobjectType>(Ty)->getElementType().getTypePtr(),
+                       StorageAddress);
     return;
 
   case Type::ConstantArray:

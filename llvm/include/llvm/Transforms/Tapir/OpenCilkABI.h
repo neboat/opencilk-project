@@ -168,6 +168,12 @@ public:
   Value *lowerGrainsizeCall(CallInst *GrainsizeCall) override final;
   void lowerSync(SyncInst &SI) override final;
   void lowerReducerOperation(CallBase *CI) override;
+  bool lowerTapirRTCalls(SmallVectorImpl<CallInst *> &TapirRTCalls, Function &F,
+                         BasicBlock *TFEntry) override final {
+    // OpenCilkABI lowers tapir_runtime_{start,end} calls in other methods, but
+    // this method acknowledges when lowering is done.
+    return !TapirRTCalls.empty();
+  }
 
   ArgStructMode getArgStructMode() const override final {
     return ArgStructMode::None;

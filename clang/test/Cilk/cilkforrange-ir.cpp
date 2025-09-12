@@ -41,11 +41,11 @@ void iterate(X::C c) {
 // CHECK-NEXT: store ptr %[[C]], ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[CONTAINER:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[BEGINCALL:.+]] = call i32 @_ZN1X1C5beginEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINER]])
-// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
+// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[BEGINCALL]], ptr %[[BEGINCOERCE]], align 4
 // CHECK-NEXT: %[[CONTAINERAGAIN:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[ENDCALL:.+]] = call i32 @_ZN1X1C3endEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINERAGAIN]])
-// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
+// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ENDCALL]], ptr %[[ENDCOERCE]], align 4
 // CHECK-NEXT: store i32 0, ptr %[[CILKLOOPINDEX]], align 4
 // CHECK-NEXT: %[[CALL:.+]] = call noundef i32 @_ZN1X1C2ItmiERS1_(ptr noundef nonnull align 4 dereferenceable(4) %[[END]], ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]])
@@ -72,7 +72,7 @@ void iterate(X::C c) {
 // CHECK-NEXT: store i32 %[[INITITER]], ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[LOOPINDEXCOPY:.+]] = load i32, ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[ITERREF:.+]] = call i32 @_ZN1X1C2ItplEi(ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]], i32 noundef %[[LOOPINDEXCOPY]])
-// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
+// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ITERREF]], ptr %[[ITER2]], align 4
 // CHECK-NEXT: %[[ELEM:.+]] = call noundef nonnull align 4 dereferenceable(4) ptr @_ZN1X1C2ItdeEv(ptr noundef nonnull align 4 dereferenceable(4) %[[ITER]])
 // CHECK-NEXT: %[[ELEMVAL:.+]] = load i32, ptr %[[ELEM]], align 4
@@ -107,11 +107,11 @@ void iterate_ref(X::C c) {
 // CHECK-NEXT: store ptr %[[C]], ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[CONTAINER:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[BEGINCALL:.+]] = call i32 @_ZN1X1C5beginEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINER]])
-// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
+// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[BEGINCALL]], ptr %[[BEGINCOERCE]], align 4
 // CHECK-NEXT: %[[CONTAINERAGAIN:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[ENDCALL:.+]] = call i32 @_ZN1X1C3endEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINERAGAIN]])
-// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
+// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ENDCALL]], ptr %[[ENDCOERCE]], align 4
 // CHECK-NEXT: store i32 0, ptr %[[CILKLOOPINDEX]], align 4
 // CHECK-NEXT: %[[CONTAINERLENGTH:.+]] = call noundef i32 @_ZN1X1C2ItmiERS1_(ptr noundef nonnull align 4 dereferenceable(4) %[[END]], ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]])
@@ -138,7 +138,7 @@ void iterate_ref(X::C c) {
 // CHECK-NEXT: store i32 %[[INITITER]], ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[LOOPINDEXCOPY:.+]] = load i32, ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[ITERREF:.+]] = call i32 @_ZN1X1C2ItplEi(ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]], i32 noundef %[[LOOPINDEXCOPY]])
-// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
+// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ITERREF]], ptr %[[ITER2]], align 4
 // CHECK-NEXT: %[[ELEM:.+]] = call noundef nonnull align 4 dereferenceable(4) ptr @_ZN1X1C2ItdeEv(ptr noundef nonnull align 4 dereferenceable(4) %[[ITER]])
 // CHECK-NEXT: store ptr %[[ELEM]], ptr %[[X]], align 8
@@ -172,11 +172,11 @@ void iterate_auto(X::C c) {
 // CHECK-NEXT: store ptr %[[C]], ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[CONTAINER:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[BEGINCALL:.+]] = call i32 @_ZN1X1C5beginEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINER]])
-// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
+// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[BEGINCALL]], ptr %[[BEGINCOERCE]], align 4
 // CHECK-NEXT: %[[CONTAINERAGAIN:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[ENDCALL:.+]] = call i32 @_ZN1X1C3endEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINERAGAIN]])
-// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
+// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ENDCALL]], ptr %[[ENDCOERCE]], align 4
 // CHECK-NEXT: store i32 0, ptr %[[CILKLOOPINDEX]], align 4
 // CHECK-NEXT: %[[CONTAINERLENGTH:.+]] = call noundef i32 @_ZN1X1C2ItmiERS1_(ptr noundef nonnull align 4 dereferenceable(4) %[[END]], ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]])
@@ -203,7 +203,7 @@ void iterate_auto(X::C c) {
 // CHECK-NEXT: store i32 %[[INITITER]], ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[LOOPINDEXCOPY:.+]] = load i32, ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[ITERREF:.+]] = call i32 @_ZN1X1C2ItplEi(ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]], i32 noundef %[[LOOPINDEXCOPY]])
-// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
+// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ITERREF]], ptr %[[ITER2]], align 4
 // CHECK-NEXT: %[[ELEM:.+]] = call noundef nonnull align 4 dereferenceable(4) ptr @_ZN1X1C2ItdeEv(ptr noundef nonnull align 4 dereferenceable(4) %[[ITER]])
 // CHECK-NEXT: %[[ELEMVAL:.+]] = load i32, ptr %[[ELEM]], align 4
@@ -238,11 +238,11 @@ void iterate_autoref(X::C c) {
 // CHECK-NEXT: store ptr %[[C]], ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[CONTAINER:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[BEGINCALL:.+]] = call i32 @_ZN1X1C5beginEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINER]])
-// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
+// CHECK-NEXT: %[[BEGINCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[BEGIN]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[BEGINCALL]], ptr %[[BEGINCOERCE]], align 4
 // CHECK-NEXT: %[[CONTAINERAGAIN:.+]] = load ptr, ptr %[[RANGE]], align 8
 // CHECK-NEXT: %[[ENDCALL:.+]] = call i32 @_ZN1X1C3endEv(ptr noundef nonnull align 1 dereferenceable(1) %[[CONTAINERAGAIN]])
-// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
+// CHECK-NEXT: %[[ENDCOERCE:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[END]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ENDCALL]], ptr %[[ENDCOERCE]], align 4
 // CHECK-NEXT: store i32 0, ptr %[[CILKLOOPINDEX]], align 4
 // CHECK-NEXT: %[[CONTAINERLENGTH:.+]] = call noundef i32 @_ZN1X1C2ItmiERS1_(ptr noundef nonnull align 4 dereferenceable(4) %[[END]], ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]])
@@ -270,7 +270,7 @@ void iterate_autoref(X::C c) {
 // CHECK-NEXT: store i32 %[[INITITER]], ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[LOOPINDEXCOPY:.+]] = load i32, ptr %__local_loopindex, align 4
 // CHECK-NEXT: %[[ITERREF:.+]] = call i32 @_ZN1X1C2ItplEi(ptr noundef nonnull align 4 dereferenceable(4) %[[BEGIN]], i32 noundef %[[LOOPINDEXCOPY]])
-// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
+// CHECK-NEXT: %[[ITER2:.+]] = getelementptr inbounds nuw %"struct.X::C::It", ptr %[[ITER]], i32 0, i32 0
 // CHECK-NEXT: store i32 %[[ITERREF]], ptr %[[ITER2]], align 4
 // CHECK-NEXT: %[[ELEM:.+]] = call noundef nonnull align 4 dereferenceable(4) ptr @_ZN1X1C2ItdeEv(ptr noundef nonnull align 4 dereferenceable(4) %[[ITER]])
 // CHECK-NEXT: store ptr %[[ELEM]], ptr %[[X]], align 8

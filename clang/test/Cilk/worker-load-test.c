@@ -69,7 +69,7 @@ void detectLocalizedCollisions(int32_t l, int32_t r, uint8_t h) {
 // CHECK: %[[CILKRTS_SF:.+]] = alloca %struct.__cilkrts_stack_frame
 // CHECK: %[[WORKER_LOAD:.+]] = load ptr, ptr @__cilkrts_tls_worker
 // CHECK: %[[WORKER_PHI:.+]] = phi ptr
-// CHECK: %[[WORKER_PTR:.+]] = getelementptr inbounds i8, ptr %[[CILKRTS_SF]], i64 16
+// CHECK: %[[WORKER_PTR:.+]] = getelementptr inbounds nuw i8, ptr %[[CILKRTS_SF]], i64 16
 // CHECK: %[[WORKER_LOAD_VAL:.+]] = ptrtoint ptr %[[WORKER_PHI]] to [[WORKER_INT_TY:i[0-9]+]]
 // CHECK: store atomic [[WORKER_INT_TY]] %[[WORKER_LOAD_VAL]], ptr %[[WORKER_PTR]]
 // CHECK: icmp

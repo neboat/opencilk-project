@@ -15,6 +15,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/IR/AttributeMask.h"
+#include "llvm/IR/Attributes.h"
 #include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/Support/Timer.h"
@@ -58,18 +59,15 @@ Value *OutlineMaterializer::materialize(Value *V) {
 /// This logic is based on CloneFunctionInto, defined in
 /// Transforms/Utils/CloneFunction, but with additional functionality specific
 /// to Tapir outlining.
-void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
-                             std::vector<BasicBlock *> Blocks,
-                             ValueToValueMapTy &VMap, CloneFunctionChangeType Changes,
-                             SmallVectorImpl<ReturnInst *> &Returns,
-                             const StringRef NameSuffix, std::optional<DebugInfoFinder> &DIFinder,
-                             SmallPtrSetImpl<BasicBlock *> *ReattachBlocks,
-                             SmallPtrSetImpl<BasicBlock *> *TaskResumeBlocks,
-                             SmallPtrSetImpl<BasicBlock *> *SharedEHEntries,
-                              DISubprogram *SPClonedWithinModule,
-                             ClonedCodeInfo *CodeInfo,
-                             ValueMapTypeRemapper *TypeMapper,
-                             OutlineMaterializer *Materializer) {
+void llvm::CloneIntoFunction(
+    Function *NewFunc, const Function *OldFunc,
+    std::vector<BasicBlock *> Blocks, ValueToValueMapTy &VMap,
+    RemapFlags RemapFlag, SmallVectorImpl<ReturnInst *> &Returns,
+    const StringRef NameSuffix, SmallPtrSetImpl<BasicBlock *> *ReattachBlocks,
+    SmallPtrSetImpl<BasicBlock *> *TaskResumeBlocks,
+    SmallPtrSetImpl<BasicBlock *> *SharedEHEntries, ClonedCodeInfo *CodeInfo,
+    ValueMapTypeRemapper *TypeMapper, OutlineMaterializer *Materializer,
+    const MetadataSetTy *IdentityMD) {
   // Get the predecessors of the exit blocks
   SmallPtrSet<const BasicBlock *, 4> EHEntryPreds, ClonedEHEntryPreds;
   if (SharedEHEntries)
@@ -77,22 +75,15 @@ void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
       for (BasicBlock *Pred : predecessors(EHEntry))
         EHEntryPreds.insert(Pred);
 
-  bool ModuleLevelChanges = Changes > CloneFunctionChangeType::LocalChangesOnly;
-
   // Loop over all of the basic blocks in the function, cloning them as
   // appropriate.
-  {
-  NamedRegionTimer NRT("CloneBlocks", "Clone basic blocks",
-                       TimerGroupName, TimerGroupDescription,
-                       TimePassesIsEnabled);
   for (const BasicBlock *BB : Blocks) {
     // Record all exit block predecessors that are cloned.
     if (EHEntryPreds.count(BB))
       ClonedEHEntryPreds.insert(BB);
 
     // Create a new basic block and copy instructions into it!
-    BasicBlock *CBB = CloneBasicBlock(BB, VMap, NameSuffix, NewFunc, CodeInfo,
-                                      DIFinder ? &*DIFinder : nullptr);
+    BasicBlock *CBB = CloneBasicBlock(BB, VMap, NameSuffix, NewFunc, CodeInfo);
 
     // Add basic block mapping.
     VMap[BB] = CBB;
@@ -113,7 +104,6 @@ void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
     if (ReturnInst *RI = dyn_cast<ReturnInst>(CBB->getTerminator()))
       Returns.push_back(RI);
   }
-  } // end timed region
 
   // For each exit block, clean up its phi nodes to exclude predecessors that
   // were not cloned.  Also replace detached_rethrow invokes with resumes.
@@ -152,8 +142,7 @@ void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
       // Don't get the remapped name of this successor yet.  Subsequent
       // remapping will take correct the name.
       BasicBlock *Succ = ClonedRB->getSingleSuccessor();
-      ReplaceInstWithInst(ClonedRB->getTerminator(),
-                          BranchInst::Create(Succ));
+      ReplaceInstWithInst(ClonedRB->getTerminator(), BranchInst::Create(Succ));
     }
   }
   if (TaskResumeBlocks) {
@@ -177,69 +166,8 @@ void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
     }
   }
 
-  llvm::RemapFlags RemapFlag;
-  {
-  NamedRegionTimer NRT("MapMetadata", "Map function metadata",
-                       TimerGroupName, TimerGroupDescription,
-                       TimePassesIsEnabled);
-  if (Changes < CloneFunctionChangeType::DifferentModule &&
-      DIFinder->subprogram_count() > 0) {
-    // Turn on module-level changes, since we need to clone (some of) the
-    // debug info metadata.
-    //
-    // FIXME: Metadata effectively owned by a function should be made
-    // local, and only that local metadata should be cloned.
-    ModuleLevelChanges = true;
-
-    auto mapToSelfIfNew = [&VMap](MDNode *N) {
-      // Avoid clobbering an existing mapping.
-      (void)VMap.MD().try_emplace(N, N);
-    };
-
-    // Avoid cloning types, compile units, and (other) subprograms.
-    SmallPtrSet<const DISubprogram *, 16> MappedToSelfSPs;
-    for (DISubprogram *ISP : DIFinder->subprograms()) {
-      if (ISP != SPClonedWithinModule) {
-        mapToSelfIfNew(ISP);
-        MappedToSelfSPs.insert(ISP);
-      }
-    }
-
-    // If a subprogram isn't going to be cloned skip its lexical blocks as well.
-    for (DIScope *S : DIFinder->scopes()) {
-      auto *LScope = dyn_cast<DILocalScope>(S);
-      if (LScope && MappedToSelfSPs.count(LScope->getSubprogram()))
-        mapToSelfIfNew(S);
-    }
-
-    for (DICompileUnit *CU : DIFinder->compile_units())
-      mapToSelfIfNew(CU);
-
-    for (DIType *Type : DIFinder->types())
-      mapToSelfIfNew(Type);
-  } else {
-    assert(!SPClonedWithinModule &&
-           "Subprogram should be in DIFinder->subprogram_count()...");
-  }
-
-  RemapFlag = ModuleLevelChanges ? RF_None : RF_NoModuleLevelChanges;
-  // Duplicate the metadata that is attached to the cloned function.
-  // Subprograms/CUs/types that were already mapped to themselves won't be
-  // duplicated.
-  SmallVector<std::pair<unsigned, MDNode *>, 1> MDs;
-  OldFunc->getAllMetadata(MDs);
-  for (auto MD : MDs) {
-    NewFunc->addMetadata(MD.first, *MapMetadata(MD.second, VMap, RemapFlag,
-                                                TypeMapper, Materializer));
-  }
-  } // end timed region
-
   // Loop over all of the instructions in the function, fixing up operand
   // references as we go.  This uses VMap to do all the hard work.
-  {
-  NamedRegionTimer NRT("RemapBlock", "Remap instructions in block",
-                       TimerGroupName, TimerGroupDescription,
-                       TimePassesIsEnabled);
   for (const BasicBlock *BB : Blocks) {
     BasicBlock *CBB = cast<BasicBlock>(VMap[BB]);
     LLVM_DEBUG(dbgs() << "In block " << CBB->getName() << "\n");
@@ -247,9 +175,10 @@ void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
     // attached debug-info records.
     for (Instruction &II : *CBB) {
       LLVM_DEBUG(dbgs() << "  Remapping " << II << "\n");
-      RemapInstruction(&II, VMap, RemapFlag, TypeMapper, Materializer);
+      RemapInstruction(&II, VMap, RemapFlag, TypeMapper, Materializer,
+                       IdentityMD);
       RemapDbgRecordRange(II.getModule(), II.getDbgRecordRange(), VMap,
-                          RemapFlag, TypeMapper, Materializer);
+                          RemapFlag, TypeMapper, Materializer, IdentityMD);
     }
   }
 
@@ -261,41 +190,12 @@ void llvm::CloneIntoFunction(Function *NewFunc, const Function *OldFunc,
       BasicBlock *BB = Materializer->BlocksToRemap.pop_back_val();
       for (Instruction &II : *BB) {
         LLVM_DEBUG(dbgs() << "  Remapping " << II << "\n");
-      RemapInstruction(&II, VMap, RemapFlag, TypeMapper, Materializer);
-      RemapDbgRecordRange(II.getModule(), II.getDbgRecordRange(), VMap,
-                          RemapFlag, TypeMapper, Materializer);
+        RemapInstruction(&II, VMap, RemapFlag, TypeMapper, Materializer,
+                         IdentityMD);
+        RemapDbgRecordRange(II.getModule(), II.getDbgRecordRange(), VMap,
+                            RemapFlag, TypeMapper, Materializer, IdentityMD);
       }
     }
-  } // end timed region
-
-  // Only update !llvm.dbg.cu for DifferentModule (not CloneModule). In the
-  // same module, the compile unit will already be listed (or not). When
-  // cloning a module, CloneModule() will handle creating the named metadata.
-  if (Changes != CloneFunctionChangeType::DifferentModule)
-    return;
-
-  // Update !llvm.dbg.cu with compile units added to the new module if this
-  // function is being cloned in isolation.
-  //
-  // FIXME: This is making global / module-level changes, which doesn't seem
-  // like the right encapsulation  Consider dropping the requirement to update
-  // !llvm.dbg.cu (either obsoleting the node, or restricting it to
-  // non-discardable compile units) instead of discovering compile units by
-  // visiting the metadata attached to global values, which would allow this
-  // code to be deleted. Alternatively, perhaps give responsibility for this
-  // update to CloneFunctionInto's callers.
-  auto *NewModule = NewFunc->getParent();
-  auto *NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
-  // Avoid multiple insertions of the same DICompileUnit to NMD.
-  SmallPtrSet<const void *, 8> Visited;
-  for (auto *Operand : NMD->operands())
-    Visited.insert(Operand);
-  for (auto *Unit : DIFinder->compile_units()) {
-    MDNode *MappedUnit =
-        MapMetadata(Unit, VMap, RF_None, TypeMapper, Materializer);
-    if (Visited.insert(MappedUnit).second)
-      NMD->addOperand(MappedUnit);
-  }
 }
 
 /// Create a helper function whose signature is based on Inputs and
@@ -312,11 +212,10 @@ Function *llvm::CreateHelper(
     SmallVectorImpl<ReturnInst *> &Returns, const StringRef NameSuffix,
     SmallPtrSetImpl<BasicBlock *> *ReattachBlocks,
     SmallPtrSetImpl<BasicBlock *> *DetachRethrowBlocks,
-    SmallPtrSetImpl<BasicBlock *> *SharedEHEntries,
-    const BasicBlock *OldUnwind,
-    SmallPtrSetImpl<BasicBlock *> *UnreachableExits,
-    Type *ReturnType, ClonedCodeInfo *CodeInfo,
-    ValueMapTypeRemapper *TypeMapper, OutlineMaterializer *Materializer) {
+    SmallPtrSetImpl<BasicBlock *> *SharedEHEntries, const BasicBlock *OldUnwind,
+    SmallPtrSetImpl<BasicBlock *> *UnreachableExits, Type *ReturnType,
+    ClonedCodeInfo *CodeInfo, ValueMapTypeRemapper *TypeMapper,
+    OutlineMaterializer *Materializer) {
   LLVM_DEBUG(dbgs() << "inputs: " << Inputs.size() << "\n");
   LLVM_DEBUG(dbgs() << "outputs: " << Outputs.size() << "\n");
 
@@ -362,8 +261,8 @@ Function *llvm::CreateHelper(
   uint64_t MaxVectorArgWidth = 0;
   Function::arg_iterator DestI = NewFunc->arg_begin();
   for (Value *I : Inputs) {
-    if (VMap.count(I) == 0) {       // Is this argument preserved?
-      DestI->setName(I->getName()+NameSuffix); // Copy the name over...
+    if (VMap.count(I) == 0) {                    // Is this argument preserved?
+      DestI->setName(I->getName() + NameSuffix); // Copy the name over...
 
       // The normal Tapir lowering process should never add a constant to the
       // input list for a helper function, because the input list is determined
@@ -373,7 +272,7 @@ Function *llvm::CreateHelper(
       // VMap, so that other instances of this constant won't get remapped
       // to the function argument.
       if (!isa<Constant>(I))
-        VMap[I] = &*DestI;               // Add mapping to VMap
+        VMap[I] = &*DestI; // Add mapping to VMap
 
       DestI++;
     }
@@ -394,9 +293,9 @@ Function *llvm::CreateHelper(
     }
   }
   for (Value *I : Outputs)
-    if (VMap.count(I) == 0) {              // Is this argument preserved?
-      DestI->setName(I->getName()+NameSuffix); // Copy the name over...
-      VMap[I] = &*DestI++;                 // Add mapping to VMap
+    if (VMap.count(I) == 0) {                    // Is this argument preserved?
+      DestI->setName(I->getName() + NameSuffix); // Copy the name over...
+      VMap[I] = &*DestI++;                       // Add mapping to VMap
     }
 
   bool ModuleLevelChanges = Changes > CloneFunctionChangeType::LocalChangesOnly;
@@ -432,22 +331,17 @@ Function *llvm::CreateHelper(
   AttributeList OldAttrs = OldFunc->getAttributes();
 
   // Clone any argument attributes
-  {
-  NamedRegionTimer NRT("CloneArgAttrs", "Clone argument attributes",
-                       TimerGroupName, TimerGroupDescription,
-                       TimePassesIsEnabled);
   for (Argument &OldArg : OldFunc->args()) {
-    // Check if we're passing this argument to the helper.  We check Inputs here
-    // instead of the VMap to avoid potentially populating the VMap with a null
-    // entry for the old argument.
+    // Check if we're passing this argument to the helper.  We check Inputs
+    // here instead of the VMap to avoid potentially populating the VMap with
+    // a null entry for the old argument.
     if (Inputs.count(&OldArg) || Outputs.count(&OldArg)) {
       Argument *NewArg = dyn_cast<Argument>(VMap[&OldArg]);
       NewArgAttrs[NewArg->getArgNo()] =
           OldAttrs.getParamAttrs(OldArg.getArgNo())
-          .removeAttribute(NewFunc->getContext(), Attribute::Returned);
+              .removeAttribute(NewFunc->getContext(), Attribute::Returned);
     }
   }
-  } // end timed region
 
   NewFunc->setAttributes(
       AttributeList::get(NewFunc->getContext(), OldAttrs.getFnAttrs(),
@@ -459,8 +353,14 @@ Function *llvm::CreateHelper(
     NewFunc->setPrologueData(nullptr);
 
   // Remove old return attributes.
-  NewFunc->removeRetAttrs(
-      AttributeFuncs::typeIncompatible(NewFunc->getReturnType()));
+  AttributeList Attrs = NewFunc->getAttributes();
+  AttributeMask IncompatibleAttrs = AttributeFuncs::typeIncompatible(
+      OldFunc->getReturnType(), Attrs.getRetAttrs());
+  NewFunc->removeRetAttrs(IncompatibleAttrs);
+  // Remove return attributes not compatible with the new return type.
+  AttributeMask NewIncompatibleAttrs = AttributeFuncs::typeIncompatible(
+      NewFunc->getReturnType(), Attrs.getRetAttrs());
+  NewFunc->removeRetAttrs(NewIncompatibleAttrs);
 
   // Update vector-related attributes in the caller and new function
   if (VectorArg && OldFunc->hasFnAttribute("min-legal-vector-width")) {
@@ -492,23 +392,19 @@ Function *llvm::CreateHelper(
   // duplicate instructions and then freeze them in the MD map. We also record
   // information about dbg.value and dbg.declare to avoid duplicating the
   // types.
-  std::optional<DebugInfoFinder> DIFinder;
+  DebugInfoFinder DIFinder;
 
   // Track the subprogram attachment that needs to be cloned to fine-tune the
   // mapping within the same module.
-  DISubprogram *SPClonedWithinModule = nullptr;
   if (Changes < CloneFunctionChangeType::DifferentModule) {
+    // Need to find subprograms, types, and compile units.
+
     assert((NewFunc->getParent() == nullptr ||
             NewFunc->getParent() == OldFunc->getParent()) &&
            "Expected NewFunc to have the same parent, or no parent");
-
-    // Need to find subprograms, types, and compile units.
-    DIFinder.emplace();
-
-    SPClonedWithinModule = OldFunc->getSubprogram();
-    if (SPClonedWithinModule)
-      DIFinder->processSubprogram(SPClonedWithinModule);
   } else {
+    // Need to find all the compile units.
+
     assert((NewFunc->getParent() == nullptr ||
             NewFunc->getParent() != OldFunc->getParent()) &&
            "Expected NewFunc to have different parents, or no parent");
@@ -516,11 +412,14 @@ Function *llvm::CreateHelper(
     if (Changes == CloneFunctionChangeType::DifferentModule) {
       assert(NewFunc->getParent() &&
              "Need parent of new function to maintain debug info invariants");
-
-      // Need to find all the compile units.
-      DIFinder.emplace();
     }
   }
+
+  DISubprogram *SPClonedWithinModule =
+      CollectDebugInfoForCloning(*OldFunc, Changes, DIFinder);
+
+  MetadataSetTy IdentityMD =
+      FindDebugInfoToIdentityMap(Changes, DIFinder, SPClonedWithinModule);
 
   // If the outlined function has pointer arguments its memory effects are
   // unknown.  Otherwise it inherits the memory effects of its parent.
@@ -538,10 +437,10 @@ Function *llvm::CreateHelper(
   // The new function needs a root node because other nodes can branch to the
   // head of the region, but the entry node of a function cannot have preds.
   BasicBlock *NewEntry = BasicBlock::Create(
-      Header->getContext(), OldEntry->getName()+NameSuffix, NewFunc);
+      Header->getContext(), OldEntry->getName() + NameSuffix, NewFunc);
   // The new function also needs an exit node.
-  BasicBlock *NewExit = BasicBlock::Create(
-      Header->getContext(), OldExit->getName()+NameSuffix);
+  BasicBlock *NewExit =
+      BasicBlock::Create(Header->getContext(), OldExit->getName() + NameSuffix);
 
   // Add mappings to the NewEntry and NewExit.
   VMap[OldEntry] = NewEntry;
@@ -550,25 +449,61 @@ Function *llvm::CreateHelper(
   BasicBlock *NewUnwind = nullptr;
   // Create a new unwind destination for the cloned blocks if it's needed.
   if (OldUnwind) {
-    NewUnwind = BasicBlock::Create(
-        NewFunc->getContext(), OldUnwind->getName()+NameSuffix);
+    NewUnwind = BasicBlock::Create(NewFunc->getContext(),
+                                   OldUnwind->getName() + NameSuffix);
     VMap[OldUnwind] = NewUnwind;
   }
 
   // Create an new unreachable exit block, if needed.
   BasicBlock *NewUnreachable = nullptr;
   if (UnreachableExits && !UnreachableExits->empty()) {
-    NewUnreachable = BasicBlock::Create(
-        NewFunc->getContext(), "unreachable"+NameSuffix);
+    NewUnreachable =
+        BasicBlock::Create(NewFunc->getContext(), "unreachable" + NameSuffix);
     new UnreachableInst(NewFunc->getContext(), NewUnreachable);
     for (BasicBlock *Unreachable : *UnreachableExits)
       VMap[Unreachable] = NewUnreachable;
   }
 
+  // Cloning is always a Module level operation, since Metadata needs to be
+  // cloned.
+  const auto RemapFlag = RF_None;
+
+  CloneFunctionMetadataInto(*NewFunc, *OldFunc, VMap, RemapFlag, TypeMapper,
+                            Materializer, &IdentityMD);
+
   // Clone Blocks into the new function.
-  CloneIntoFunction(NewFunc, OldFunc, Blocks, VMap, Changes,
-                    Returns, NameSuffix, DIFinder, ReattachBlocks, DetachRethrowBlocks,
-                    SharedEHEntries, SPClonedWithinModule, CodeInfo, TypeMapper, Materializer);
+  CloneIntoFunction(NewFunc, OldFunc, Blocks, VMap, RemapFlag, // Changes,
+                    Returns, NameSuffix, ReattachBlocks, DetachRethrowBlocks,
+                    SharedEHEntries, CodeInfo, TypeMapper, Materializer,
+                    &IdentityMD);
+
+  // Only update !llvm.dbg.cu for DifferentModule (not CloneModule). In the
+  // same module, the compile unit will already be listed (or not). When
+  // cloning a module, CloneModule() will handle creating the named metadata.
+  if (Changes != CloneFunctionChangeType::DifferentModule) {
+    // Update !llvm.dbg.cu with compile units added to the new module if this
+    // function is being cloned in isolation.
+    //
+    // FIXME: This is making global / module-level changes, which doesn't seem
+    // like the right encapsulation  Consider dropping the requirement to update
+    // !llvm.dbg.cu (either obsoleting the node, or restricting it to
+    // non-discardable compile units) instead of discovering compile units by
+    // visiting the metadata attached to global values, which would allow this
+    // code to be deleted. Alternatively, perhaps give responsibility for this
+    // update to CloneFunctionInto's callers.
+    auto *NewModule = NewFunc->getParent();
+    auto *NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
+    // Avoid multiple insertions of the same DICompileUnit to NMD.
+    SmallPtrSet<const void *, 8> Visited;
+    for (auto *Operand : NMD->operands())
+      Visited.insert(Operand);
+    for (auto *Unit : DIFinder.compile_units()) {
+      MDNode *MappedUnit =
+          MapMetadata(Unit, VMap, RF_None, TypeMapper, Materializer);
+      if (Visited.insert(MappedUnit).second)
+        NMD->addOperand(MappedUnit);
+    }
+  }
 
   // Add a branch in the new function to the cloned Header.
   BasicBlock *ClonedHeader = cast<BasicBlock>(VMap[Header]);
@@ -602,9 +537,8 @@ Function *llvm::CreateHelper(
   // new function.
   if (OldUnwind) {
     NewUnwind->insertInto(NewFunc);
-    LandingPadInst *LPad =
-      LandingPadInst::Create(OldUnwind->getLandingPadInst()->getType(), 0,
-                             "lpadval", NewUnwind);
+    LandingPadInst *LPad = LandingPadInst::Create(
+        OldUnwind->getLandingPadInst()->getType(), 0, "lpadval", NewUnwind);
     LPad->setCleanup(true);
     ResumeInst *NewResume = ResumeInst::Create(LPad, NewUnwind);
     // Set the debug location of the resume to match the debug location of some
@@ -625,16 +559,18 @@ Function *llvm::CreateHelper(
 
 // Add alignment assumptions to parameters of outlined function, based on known
 // alignment data in the caller.
-void llvm::AddAlignmentAssumptions(
-    const Function *Caller, const ValueSet &Args, ValueToValueMapTy &VMap,
-    const Instruction *CallSite, AssumptionCache *AC, DominatorTree *DT) {
+void llvm::AddAlignmentAssumptions(const Function *Caller, const ValueSet &Args,
+                                   ValueToValueMapTy &VMap,
+                                   const Instruction *CallSite,
+                                   AssumptionCache *AC, DominatorTree *DT) {
   NamedRegionTimer NRT("AddAlignmentAssumptions", "Add alignment assumptions",
                        TimerGroupName, TimerGroupDescription,
                        TimePassesIsEnabled);
   auto &DL = Caller->getParent()->getDataLayout();
   for (Value *ArgVal : Args) {
     // Ignore arguments to non-pointer types
-    if (!ArgVal->getType()->isPointerTy()) continue;
+    if (!ArgVal->getType()->isPointerTy())
+      continue;
     // Ignore constant pointer arguments.  The normal Tapir lowering process
     // should never add a constant to the input list for a helper function,
     // because the input list is determined by uses within the outlined blocks
@@ -642,12 +578,15 @@ void llvm::AddAlignmentAssumptions(
     // targets can add constant inputs to the list, however.  We'll rely on
     // the Tapir target to supply appropriate alignment information for this
     // pointer argument.
-    if (isa<Constant>(ArgVal)) continue;
+    if (isa<Constant>(ArgVal))
+      continue;
     Argument *Arg = cast<Argument>(VMap[ArgVal]);
     // Ignore arguments to non-pointer types
-    if (!Arg->getType()->isPointerTy()) continue;
+    if (!Arg->getType()->isPointerTy())
+      continue;
     // If the argument already has an alignment attribute, skip it.
-    if (Arg->getParamAlign()) continue;
+    if (Arg->getParamAlign())
+      continue;
     // Get any known alignment information for this argument's value.
     Align Alignment = getKnownAlignment(ArgVal, DL, CallSite, AC, DT);
     // If we have alignment data, add it as an attribute to the outlined

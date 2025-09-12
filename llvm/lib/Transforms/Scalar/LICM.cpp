@@ -2159,7 +2159,7 @@ bool llvm::promoteLoopAccessesToScalars(
 
         if (!LoadIsGuaranteedToExecute)
           LoadIsGuaranteedToExecute =
-              SafetyInfo->isGuaranteedToExecute(*UI, DT, CurLoop);
+              SafetyInfo->isGuaranteedToExecute(*UI, DT, TI, CurLoop);
 
         // Note that proving a load safe to speculate requires proving
         // sufficient alignment at the target location.  Proving it guaranteed

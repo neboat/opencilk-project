@@ -5,11 +5,11 @@ define double @foo(double %a0, double %a1) {
 ; CHECK-LABEL: define double @foo(
 ; CHECK-SAME: double [[A0:%.*]], double [[A1:%.*]]) {
 ; CHECK-NEXT:  [[BB17254:.*:]]
-; CHECK-NEXT:    %"vl93562([[A0]], 2.000000e+00)" = fmul double [[A0]], 2.000000e+00
-; CHECK-NEXT:    %"op95858(vl93562)" = fmul double 6.000000e+00, %"vl93562([[A0]], 2.000000e+00)"
+; CHECK-NEXT:    %"vl90885([[A0]], 2.000000e+00)" = fmul double [[A0]], 2.000000e+00
+; CHECK-NEXT:    %"op25798(vl90885)" = fmul double 6.000000e+00, %"vl90885([[A0]], 2.000000e+00)"
 ; CHECK-NEXT:    [[A:%.*]] = fmul double [[A0]], [[A1]]
 ; CHECK-NEXT:    [[C:%.*]] = fmul double 6.000000e+00, [[A]]
-; CHECK-NEXT:    ret double %"op95858(vl93562)"
+; CHECK-NEXT:    ret double %"op25798(vl90885)"
 ;
 entry:
   %a = fmul double %a0, %a1
@@ -28,16 +28,16 @@ define double @baz(double %x) {
 ; CHECK-SAME: double [[A0:%.*]]) {
 ; CHECK-NEXT:  [[BB76951:.*:]]
 ; CHECK-NEXT:    [[IFCOND:%.*]] = fcmp one double [[A0]], 0.000000e+00
-; CHECK-NEXT:    br i1 [[IFCOND]], label %[[BB91455:.*]], label %[[BB914551:.*]]
-; CHECK:       [[BB91455]]:
-; CHECK-NEXT:    %"vl15001bir()" = call double @bir()
+; CHECK-NEXT:    br i1 [[IFCOND]], label %[[BB10608:.*]], label %[[BB106081:.*]]
+; CHECK:       [[BB10608]]:
+; CHECK-NEXT:    %"vl23547bir()" = call double @bir()
 ; CHECK-NEXT:    br label %[[BB17254:.*]]
-; CHECK:       [[BB914551]]:
-; CHECK-NEXT:    %"vl69719bar()" = call double @bar()
+; CHECK:       [[BB106081]]:
+; CHECK-NEXT:    %"vl17404bar()" = call double @bar()
 ; CHECK-NEXT:    br label %[[BB17254]]
 ; CHECK:       [[BB17254]]:
-; CHECK-NEXT:    %"op19734(vl15001, vl69719)" = phi double [ %"vl15001bir()", %[[BB91455]] ], [ %"vl69719bar()", %[[BB914551]] ]
-; CHECK-NEXT:    ret double %"op19734(vl15001, vl69719)"
+; CHECK-NEXT:    %"op18551(vl23547, vl17404)" = phi double [ %"vl23547bir()", %[[BB10608]] ], [ %"vl17404bar()", %[[BB106081]] ]
+; CHECK-NEXT:    ret double %"op18551(vl23547, vl17404)"
 ;
 entry:
   %ifcond = fcmp one double %x, 0.000000e+00

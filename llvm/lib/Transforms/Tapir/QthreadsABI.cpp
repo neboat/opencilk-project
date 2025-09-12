@@ -219,14 +219,14 @@ Value *QthreadsABI::getOrCreateSinc(Value *SyncRegion, Function *F) {
     Value* null = Constant::getNullValue(PointerType::getUnqual(C));
     std::vector<Value*> createArgs = {zero, null, null, zero};
     sinc = CallInst::Create(QTHREAD_FUNC(qt_sinc_create), createArgs, "",
-                            F->getEntryBlock().getTerminator());
+                            F->getEntryBlock().getTerminator()->getIterator());
     SyncRegionToSinc[SyncRegion] = sinc;
 
     // Make sure we destroy the sinc at all exit points to prevent memory leaks
     for(BasicBlock &BB : *F) {
       if(isa<ReturnInst>(BB.getTerminator())){
         CallInst::Create(QTHREAD_FUNC(qt_sinc_destroy), {sinc}, "",
-                         BB.getTerminator());
+                         BB.getTerminator()->getIterator());
       }
     }
 
@@ -319,7 +319,8 @@ bool QthreadsABI::preProcessFunction(Function &F, TaskInfo &TI,
     IRBuilder<> preSpawnB(detB);
     Value* one = ConstantInt::get(Type::getInt64Ty(C), 1);
     std::vector<Value*> expectArgs = {sinc, one};
-    CallInst::Create(QTHREAD_FUNC(qt_sinc_expect), expectArgs, "", Detach);
+    CallInst::Create(QTHREAD_FUNC(qt_sinc_expect), expectArgs, "",
+                     Detach->getIterator());
 
     // Add a submit to end of task body
     //

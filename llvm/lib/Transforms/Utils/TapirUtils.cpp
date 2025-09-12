@@ -47,6 +47,10 @@ bool llvm::isTapirIntrinsic(Intrinsic::ID ID, const Instruction *I,
           return true;
   return false;
 }
+bool llvm::isTapirIntrinsic(Intrinsic::ID ID, BasicBlock::const_iterator It,
+                            const Value *V) {
+  return isTapirIntrinsic(ID, &*It, V);
+}
 
 /// Returns true if the given instruction performs a detached.rethrow, false
 /// otherwise.  If \p SyncRegion is specified, then additionally checks that the
@@ -55,6 +59,10 @@ bool llvm::isDetachedRethrow(const Instruction *I, const Value *SyncRegion) {
   return isa<InvokeInst>(I) &&
       isTapirIntrinsic(Intrinsic::detached_rethrow, I, SyncRegion);
 }
+bool llvm::isDetachedRethrow(BasicBlock::const_iterator It,
+                             const Value *SyncRegion) {
+  return isDetachedRethrow(&*It, SyncRegion);
+}
 
 /// Returns true if the given instruction performs a taskframe.resume, false
 /// otherwise.  If \p TaskFrame is specified, then additionally checks that the
@@ -62,6 +70,10 @@ bool llvm::isDetachedRethrow(const Instruction *I, const Value *SyncRegion) {
 bool llvm::isTaskFrameResume(const Instruction *I, const Value *TaskFrame) {
   return isa<InvokeInst>(I) &&
       isTapirIntrinsic(Intrinsic::taskframe_resume, I, TaskFrame);
+}
+bool llvm::isTaskFrameResume(BasicBlock::const_iterator It,
+                             const Value *TaskFrame) {
+  return isTaskFrameResume(&*It, TaskFrame);
 }
 
 // Check if the given instruction is a Tapir intrinsic that can be skipped.
@@ -81,6 +93,9 @@ bool llvm::isSkippableTapirIntrinsic(const Instruction *I) {
         return true;
       }
   return false;
+}
+bool llvm::isSkippableTapirIntrinsic(BasicBlock::const_iterator It) {
+  return isSkippableTapirIntrinsic(&*It);
 }
 
 /// Returns true if the given basic block \p B is a placeholder successor of a
@@ -123,6 +138,10 @@ bool llvm::isSyncUnwind(const Instruction *I, const Value *SyncRegion,
   if (isTapirIntrinsic(Intrinsic::sync_unwind, I, SyncRegion))
     return !CheckForInvoke || isa<InvokeInst>(I);
   return false;
+}
+bool llvm::isSyncUnwind(BasicBlock::const_iterator It, const Value *SyncRegion,
+                        bool CheckForInvoke) {
+  return isSyncUnwind(&*It, SyncRegion, CheckForInvoke);
 }
 
 /// Returns true if BasicBlock \p B is a placeholder successor, that is, it's
@@ -476,7 +495,7 @@ BasicBlock *LandingPadInliningInfo::getInnerResumeDest() {
   if (isa<LandingPadInst>(SpawnerLPad))
     SplitPoint = ++cast<Instruction>(SpawnerLPad)->getIterator();
   else
-    SplitPoint = OuterResumeDest->getFirstNonPHI()->getIterator();
+    SplitPoint = OuterResumeDest->getFirstNonPHIIt();
   InnerResumeDest =
     OuterResumeDest->splitBasicBlock(SplitPoint,
                                      OuterResumeDest->getName() + ".body");
@@ -497,7 +516,7 @@ BasicBlock *LandingPadInliningInfo::getInnerResumeDest() {
   const unsigned PHICapacity = 2;
 
   // Create corresponding new PHIs for all the PHIs in the outer landing pad.
-  Instruction *InsertPoint = &InnerResumeDest->front();
+  BasicBlock::iterator InsertPoint = InnerResumeDest->begin();
   BasicBlock::iterator I = OuterResumeDest->begin();
   for (unsigned i = 0, e = UnwindDestPHIValues.size(); i != e; ++i, ++I) {
     PHINode *OuterPHI = cast<PHINode>(I);
@@ -942,7 +961,7 @@ void llvm::SerializeDetach(DetachInst *DI, BasicBlock *ParentEntry,
     if (!TaskFrame) {
       // Create a new task frame.
       Function *TFCreate =
-          Intrinsic::getDeclaration(M, Intrinsic::taskframe_create);
+          Intrinsic::getOrInsertDeclaration(M, Intrinsic::taskframe_create);
       TaskFrame = IRBuilder<>(TaskEntry, TaskEntry->begin())
                       .CreateCall(TFCreate, {}, "repltf");
     }
@@ -959,7 +978,7 @@ void llvm::SerializeDetach(DetachInst *DI, BasicBlock *ParentEntry,
       for (Instruction *I : *DetachedRethrows) {
         InvokeInst *II = cast<InvokeInst>(I);
         Value *LPad = II->getArgOperand(1);
-        Function *TFResume = Intrinsic::getDeclaration(
+        Function *TFResume = Intrinsic::getOrInsertDeclaration(
             M, Intrinsic::taskframe_resume, {LPad->getType()});
         IRBuilder<>(II).CreateInvoke(TFResume, II->getNormalDest(),
                                      II->getUnwindDest(), {TaskFrame, LPad});
@@ -989,7 +1008,8 @@ void llvm::SerializeDetach(DetachInst *DI, BasicBlock *ParentEntry,
     // If we're replacing the detach with a taskframe, insert a taskframe.end
     // immediately before the reattach.
     if (ReplaceWithTaskFrame) {
-      Function *TFEnd = Intrinsic::getDeclaration(M, Intrinsic::taskframe_end);
+      Function *TFEnd =
+          Intrinsic::getOrInsertDeclaration(M, Intrinsic::taskframe_end);
       IRBuilder<>(I).CreateCall(TFEnd, {TaskFrame});
     }
     ReplaceInstWithInst(I, BranchInst::Create(Continue));
@@ -1853,8 +1873,8 @@ void llvm::fixupTaskFrameExternalUses(Spindle *TF, const TaskInfo &TI,
   // Localize any syncregions used in this taskframe.
   for (auto &SRUsed : SyncRegionsToLocalize) {
     Value *ReplSR = CallInst::Create(
-        Intrinsic::getDeclaration(M, Intrinsic::syncregion_start),
-        SRUsed.first->getName(), cast<Instruction>(TaskFrame)->getNextNode());
+        Intrinsic::getOrInsertDeclaration(M, Intrinsic::syncregion_start),
+        SRUsed.first->getName(), ++cast<Instruction>(TaskFrame)->getIterator());
     for (Instruction *UseToRewrite : SRUsed.second) {
       // Replace the syncregion of each sync.
       if (SyncInst *SI = dyn_cast<SyncInst>(UseToRewrite)) {
@@ -1911,8 +1931,8 @@ void llvm::fixupTaskFrameExternalUses(Spindle *TF, const TaskInfo &TI,
       Builder.SetInsertPoint(&*Continuation->getFirstInsertionPt());
       if (T)
         Builder.CreateCall(
-            Intrinsic::getDeclaration(M, Intrinsic::taskframe_load_guard,
-                                      {AI->getType()}),
+            Intrinsic::getOrInsertDeclaration(
+                M, Intrinsic::taskframe_load_guard, {AI->getType()}),
             {AI});
       ContinVal = Builder.CreateLoad(TFInstrTy, AI);
     }
@@ -1932,8 +1952,8 @@ void llvm::fixupTaskFrameExternalUses(Spindle *TF, const TaskInfo &TI,
           Builder.SetInsertPoint(&*(TFResumeContin->getFirstInsertionPt()));
           if (T)
             Builder.CreateCall(
-                Intrinsic::getDeclaration(M, Intrinsic::taskframe_load_guard,
-                                          {AI->getType()}),
+                Intrinsic::getOrInsertDeclaration(
+                    M, Intrinsic::taskframe_load_guard, {AI->getType()}),
                 {AI});
           EHContinVal = Builder.CreateLoad(TFInstrTy, AI);
         }
@@ -1998,9 +2018,9 @@ BasicBlock *llvm::CreateSubTaskUnwindEdge(Intrinsic::ID TermFunc, Value *Token,
   LPad->setCleanup(true);
 
   // Add the terminator-function invocation.
-  Builder.CreateInvoke(Intrinsic::getDeclaration(M, TermFunc,
-                                                 { LPad->getType() }),
-                       Unreachable, UnwindEdge, { Token, LPad });
+  Builder.CreateInvoke(
+      Intrinsic::getOrInsertDeclaration(M, TermFunc, {LPad->getType()}),
+      Unreachable, UnwindEdge, {Token, LPad});
 
   return NewUnwindEdge;
 }

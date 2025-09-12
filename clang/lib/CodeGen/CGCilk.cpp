@@ -422,8 +422,8 @@ llvm::Instruction *CodeGenFunction::EmitSyncRegionStart() {
   // point.
   auto NL = ApplyDebugLocation::CreateArtificial(*this);
   llvm::Instruction *SRStart = llvm::CallInst::Create(
-      CGM.getIntrinsic(llvm::Intrinsic::syncregion_start),
-      "syncreg", &*AllocaInsertPt);
+      CGM.getIntrinsic(llvm::Intrinsic::syncregion_start), "syncreg",
+      AllocaInsertPt->getIterator());
   SRStart->setDebugLoc(Builder.getCurrentDebugLocation());
   return SRStart;
 }

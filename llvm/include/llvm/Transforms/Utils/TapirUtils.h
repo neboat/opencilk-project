@@ -35,19 +35,26 @@ class TaskInfo;
 // the intrinsic matches \p V.
 bool isTapirIntrinsic(Intrinsic::ID ID, const Instruction *I,
                       const Value *V = nullptr);
+bool isTapirIntrinsic(Intrinsic::ID ID, BasicBlock::const_iterator It,
+                      const Value *V = nullptr);
 
 /// Returns true if the given instruction performs a detached.rethrow, false
 /// otherwise.  If \p SyncRegion is specified, then additionally checks that the
 /// detached.rethrow uses \p SyncRegion.
 bool isDetachedRethrow(const Instruction *I, const Value *SyncRegion = nullptr);
+bool isDetachedRethrow(BasicBlock::const_iterator It,
+                       const Value *SyncRegion = nullptr);
 
 /// Returns true if the given instruction performs a taskframe.resume, false
 /// otherwise.  If \p TaskFrame is specified, then additionally checks that the
 /// taskframe.resume uses \p TaskFrame.
 bool isTaskFrameResume(const Instruction *I, const Value *TaskFrame = nullptr);
+bool isTaskFrameResume(BasicBlock::const_iterator It,
+                       const Value *TaskFrame = nullptr);
 
 /// Check if the given instruction is a Tapir intrinsic that can be skipped.
 bool isSkippableTapirIntrinsic(const Instruction *I);
+bool isSkippableTapirIntrinsic(BasicBlock::const_iterator It);
 
 /// Returns true if the given basic block \p B is a placeholder successor of a
 /// taskframe.resume or detached.rethrow.
@@ -65,6 +72,9 @@ BasicBlock *getTaskFrameResumeDest(Value *TaskFrame);
 /// \p SyncRegion is specified, then additionally checks that the sync.unwind
 /// uses \p SyncRegion.
 bool isSyncUnwind(const Instruction *I, const Value *SyncRegion = nullptr,
+                  bool CheckForInvoke = false);
+bool isSyncUnwind(BasicBlock::const_iterator It,
+                  const Value *SyncRegion = nullptr,
                   bool CheckForInvoke = false);
 
 /// Returns true if BasicBlock \p B is a placeholder successor, that is, it's

@@ -74,16 +74,16 @@ lpad:
   resume { ptr, i32 } zeroinitializer
 }
 
-; CHECK-LABEL: @invoke_with_same_range()
-; CHECK: tail call i8 @invoke_with_range()
-
 define i8 @call_with_same_range() {
-; CHECK-DAG: @call_with_same_range
-; CHECK-DAG: tail call i8 @call_with_range
+; CHECK-LABEL: @call_with_same_range
+; CHECK: tail call i8 @call_with_range
   bitcast i8 0 to i8
   %out = call i8 @dummy(), !range !0
   ret i8 %out
 }
+
+; CHECK-LABEL: @invoke_with_same_range()
+; CHECK: tail call i8 @invoke_with_range()
 
 declare i8 @dummy();
 declare i32 @__gxx_personality_v0(...)

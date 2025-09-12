@@ -464,14 +464,15 @@ void OMPTaskABI::lowerSync(SyncInst &SI) {
   if (!SyncUnwindDest) {
     if (Fn.doesNotThrow())
       CB = CallInst::Create(RTSSyncNoThrow, Args, "",
-                            /*insert before*/ &SI);
+                            /*insert before*/ SI.getIterator());
     else
-      CB = CallInst::Create(RTSSync, Args, "", /*insert before*/ &SI);
+      CB = CallInst::Create(RTSSync, Args, "",
+                            /*insert before*/ SI.getIterator());
 
     BranchInst::Create(SyncCont, CB->getParent());
   } else {
     CB = InvokeInst::Create(RTSSync, SyncCont, SyncUnwindDest, Args, "",
-                            /*insert before*/ &SI);
+                            /*insert before*/ SI.getIterator());
     for (PHINode &PN : SyncCont->phis())
       PN.addIncoming(PN.getIncomingValueForBlock(SyncUnwind->getParent()),
                      SI.getParent());

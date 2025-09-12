@@ -282,7 +282,7 @@ static bool removeUselessSyncs(Function &F, DomTreeUpdater *DTU) {
       if (!ReachingDetach) {
         BasicBlock* Succ = Sync->getSuccessor(0);
         const Value *SyncReg = Sync->getSyncRegion();
-        Instruction *MaybeSyncUnwind = Succ->getFirstNonPHIOrDbgOrLifetime();
+        auto MaybeSyncUnwind = Succ->getFirstNonPHIOrDbgOrLifetime();
         ReplaceInstWithInst(Sync, BranchInst::Create(Succ));
         Changed = true;
         bool Recheck = false;

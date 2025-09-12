@@ -123,38 +123,38 @@ void CilkABI::prepareModule() {
   WorkerTy = StructType::lookupOrCreate(C, "struct.__cilkrts_worker");
 
   if (PedigreeTy->isOpaque())
-    PedigreeTy->setBody(Int64Ty, PointerType::getUnqual(PedigreeTy));
+    PedigreeTy->setBody({Int64Ty, PointerType::getUnqual(PedigreeTy)});
   if (StackFrameTy->isOpaque()) {
     Type *PedigreeUnionTy = StructType::get(PedigreeTy);
-    StackFrameTy->setBody(Int32Ty, // flags
-                          Int32Ty, // size
-                          PointerType::getUnqual(StackFrameTy), // call_parent
-                          PointerType::getUnqual(WorkerTy), // worker
-                          VoidPtrTy, // except_data
-                          ArrayType::get(VoidPtrTy, 5), // ctx
-                          Int32Ty, // mxcsr
-                          Int16Ty, // fpcsr
-                          Int16Ty, // reserved
-                          // union { spawn_helper_pedigree, parent_pedigree }
-                          PedigreeUnionTy
-                          );
+    StackFrameTy->setBody({Int32Ty,                              // flags
+                           Int32Ty,                              // size
+                           PointerType::getUnqual(StackFrameTy), // call_parent
+                           PointerType::getUnqual(WorkerTy),     // worker
+                           VoidPtrTy,                            // except_data
+                           ArrayType::get(VoidPtrTy, 5),         // ctx
+                           Int32Ty,                              // mxcsr
+                           Int16Ty,                              // fpcsr
+                           Int16Ty,                              // reserved
+                           // union { spawn_helper_pedigree, parent_pedigree }
+                           PedigreeUnionTy});
   }
   PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
   if (WorkerTy->isOpaque())
-    WorkerTy->setBody(PointerType::getUnqual(StackFramePtrTy), // tail
-                      PointerType::getUnqual(StackFramePtrTy), // head
-                      PointerType::getUnqual(StackFramePtrTy), // exc
-                      PointerType::getUnqual(StackFramePtrTy), // protected_tail
-                      PointerType::getUnqual(StackFramePtrTy), // ltq_limit
-                      Int32Ty, // self
-                      VoidPtrTy, // g
-                      VoidPtrTy, // l
-                      VoidPtrTy, // reducer_map
-                      StackFramePtrTy, // current_stack_frame
-                      VoidPtrTy, // saved_protected_tail
-                      VoidPtrTy, // sysdep
-                      PedigreeTy // pedigree
-                      );
+    WorkerTy->setBody({
+        PointerType::getUnqual(StackFramePtrTy), // tail
+        PointerType::getUnqual(StackFramePtrTy), // head
+        PointerType::getUnqual(StackFramePtrTy), // exc
+        PointerType::getUnqual(StackFramePtrTy), // protected_tail
+        PointerType::getUnqual(StackFramePtrTy), // ltq_limit
+        Int32Ty,                                 // self
+        VoidPtrTy,                               // g
+        VoidPtrTy,                               // l
+        VoidPtrTy,                               // reducer_map
+        StackFramePtrTy,                         // current_stack_frame
+        VoidPtrTy,                               // saved_protected_tail
+        VoidPtrTy,                               // sysdep
+        PedigreeTy                               // pedigree
+    });
 }
 
 // Accessors for opaque Cilk RTS functions
@@ -362,7 +362,7 @@ CallInst *CilkABI::EmitCilkSetJmp(IRBuilder<> &B, Value *SF) {
 
   // Store the frame pointer in the 0th slot
   Value *FrameAddr = B.CreateCall(
-      Intrinsic::getDeclaration(&M, Intrinsic::frameaddress, Int8PtrTy),
+      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::frameaddress, Int8PtrTy),
       ConstantInt::get(Int32Ty, 0));
 
   Value *FrameSaveSlot = GEP(B, Buf, BufTy, 0);
@@ -377,7 +377,8 @@ CallInst *CilkABI::EmitCilkSetJmp(IRBuilder<> &B, Value *SF) {
   Buf = B.CreateBitCast(Buf, Int8PtrTy);
 
   // Call LLVM's EH setjmp, which is lightweight.
-  Function *F = Intrinsic::getDeclaration(&M, Intrinsic::eh_sjlj_setjmp);
+  Function *F =
+      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::eh_sjlj_setjmp);
 
   CallInst *SetjmpCall = B.CreateCall(F, Buf);
   SetjmpCall->setCanReturnTwice();
@@ -1193,37 +1194,6 @@ Function *CilkABI::Get__cilkrts_enter_frame_fast_1() {
   return Fn;
 }
 
-// /// Get or create a LLVM function for __cilk_parent_prologue.
-// /// It is equivalent to the following C code:
-// ///
-// /// void __cilk_parent_prologue(__cilkrts_stack_frame *sf) {
-// ///   __cilkrts_enter_frame_1(sf);
-// /// }
-// static Function *GetCilkParentPrologue(Module &M) {
-//   Function *Fn = 0;
-
-//   if (GetOrCreateFunction<cilk_func>("__cilk_parent_prologue", M, Fn))
-//     return Fn;
-
-//   // If we get here we need to add the function body
-//   LLVMContext &Ctx = M.getContext();
-
-//   Function::arg_iterator args = Fn->arg_begin();
-//   Value *SF = &*args;
-
-//   BasicBlock *Entry = BasicBlock::Create(Ctx, "entry", Fn);
-//   IRBuilder<> B(Entry);
-
-//   // __cilkrts_enter_frame_1(sf)
-//   B.CreateCall(CILKRTS_FUNC(enter_frame_1), SF);
-
-//   B.CreateRetVoid();
-
-//   Fn->addFnAttr(Attribute::InlineHint);
-
-//   return Fn;
-// }
-
 /// Get or create a LLVM function for __cilk_parent_epilogue.  It is equivalent
 /// to the following C code:
 ///
@@ -1258,10 +1228,6 @@ Function *CilkABI::GetCilkParentEpilogueFn(bool instrument) {
   {
     IRBuilder<> B(Entry);
 
-    // if (instrument)
-    //   // cilk_leave_begin
-    //   B.CreateCall(CILK_CSI_FUNC(leave_begin, M), SF);
-
     // __cilkrts_pop_frame(sf)
     PopFrame = B.CreateCall(CILKRTS_FUNC(pop_frame), SF);
 
@@ -1286,9 +1252,6 @@ Function *CilkABI::GetCilkParentEpilogueFn(bool instrument) {
   // Exit
   {
     IRBuilder<> B(Exit);
-    // if (instrument)
-    //   // cilk_leave_end
-    //   B.CreateCall(CILK_CSI_FUNC(leave_end, M));
     B.CreateRetVoid();
   }
 
@@ -1329,35 +1292,11 @@ Value *CilkABI::GetOrInitCilkStackFrame(Function &F, bool Helper,
   BasicBlock::iterator InsertPt = ++SF->getIterator();
   IRBuilder<> IRB(&(F.getEntryBlock()), InsertPt);
 
-  // if (instrument) {
-  //   Type *Int8PtrTy = IRB.getInt8PtrTy();
-  //   Value *ThisFn = ConstantExpr::getBitCast(&F, Int8PtrTy);
-  //   Value *ReturnAddress =
-  //     IRB.CreateCall(Intrinsic::getDeclaration(M,
-  //                                              Intrinsic::returnaddress),
-  //                    IRB.getInt32(0));
-  //   StackSave =
-  //     IRB.CreateCall(Intrinsic::getDeclaration(M,
-  //                                              Intrinsic::stacksave));
-  //   if (Helper) {
-  //     Value *begin_args[3] = { SF, ThisFn, ReturnAddress };
-  //     IRB.CreateCall(CILK_CSI_FUNC(enter_helper_begin, *M),
-  //                    begin_args);
-  //   } else {
-  //     Value *begin_args[4] = { IRB.getInt32(0), SF, ThisFn, ReturnAddress };
-  //     IRB.CreateCall(CILK_CSI_FUNC(enter_begin, *M), begin_args);
-  //   }
-  // }
   Value *Args[1] = { SF };
   if (Helper || fastCilk)
     IRB.CreateCall(CILKRTS_FUNC(enter_frame_fast_1), Args);
   else
     IRB.CreateCall(CILKRTS_FUNC(enter_frame_1), Args);
-
-  // if (instrument) {
-  //   Value* end_args[2] = { SF, StackSave };
-  //   IRB.CreateCall(CILK_CSI_FUNC(enter_end, *M), end_args);
-  // }
 
   EscapeEnumerator EE(F, "cilkabi_epilogue", false);
   while (IRBuilder<> *AtExit = EE.Next()) {
@@ -1424,35 +1363,13 @@ bool CilkABI::makeFunctionDetachable(Function &Extracted, Instruction *DetachPt,
   if (TaskFrameCreate)
     IRB.SetInsertPoint(TaskFrameCreate);
 
-  // if (instrument) {
-  //   Type *Int8PtrTy = IRB.getInt8PtrTy();
-  //   Value *ThisFn = ConstantExpr::getBitCast(&Extracted, Int8PtrTy);
-  //   Value *ReturnAddress =
-  //     IRB.CreateCall(Intrinsic::getDeclaration(M, Intrinsic::returnaddress),
-  //                    IRB.getInt32(0));
-  //   StackSave =
-  //     IRB.CreateCall(Intrinsic::getDeclaration(M, Intrinsic::stacksave));
-  //   Value *begin_args[3] = { SF, ThisFn, ReturnAddress };
-  //   IRB.CreateCall(CILK_CSI_FUNC(enter_helper_begin, *M), begin_args);
-  // }
-
   IRB.CreateCall(CILKRTS_FUNC(enter_frame_fast_1), Args);
-
-  // if (instrument) {
-  //   Value *end_args[2] = { SF, StackSave };
-  //   IRB.CreateCall(CILK_CSI_FUNC(enter_end, *M), end_args);
-  // }
 
   // __cilkrts_detach()
   {
-    // if (instrument)
-    //   IRB.CreateCall(CILK_CSI_FUNC(detach_begin, *M), args);
     if (DetachPt)
       IRB.SetInsertPoint(DetachPt);
     IRB.CreateCall(CILKRTS_FUNC(detach), Args);
-
-    // if (instrument)
-    //   IRB.CreateCall(CILK_CSI_FUNC(detach_end, *M));
   }
 
   EscapeEnumerator EE(Extracted, "cilkabi_epilogue", false);
@@ -1547,14 +1464,15 @@ void CilkABI::lowerSync(SyncInst &SI) {
   if (!SyncUnwindDest) {
     if (Fn.doesNotThrow())
       CB = CallInst::Create(GetCilkSyncNothrowFn(), args, "",
-                            /*insert before*/&SI);
+                            /*insert before*/ SI.getIterator());
     else
-      CB = CallInst::Create(GetCilkSyncFn(), args, "", /*insert before*/&SI);
+      CB = CallInst::Create(GetCilkSyncFn(), args, "",
+                            /*insert before*/ SI.getIterator());
 
     BranchInst::Create(SyncCont, CB->getParent());
   } else {
     CB = InvokeInst::Create(GetCilkSyncFn(), SyncCont, SyncUnwindDest, args, "",
-                            /*insert before*/&SI);
+                            /*insert before*/ SI.getIterator());
     for (PHINode &PN : SyncCont->phis())
       PN.addIncoming(PN.getIncomingValueForBlock(SyncUnwind->getParent()),
                      SI.getParent());
@@ -1627,7 +1545,7 @@ void CilkABI::processSubTaskCall(TaskOutlineInfo &TOI, DominatorTree &DT) {
   // Split the basic block containing the detach replacement just before the
   // start of the detach-replacement instructions.
   BasicBlock *DetBlock = ReplStart->getParent();
-  BasicBlock *CallBlock = SplitBlock(DetBlock, ReplStart, &DT);
+  BasicBlock *CallBlock = SplitBlock(DetBlock, ReplStart);
 
   // Emit a Cilk setjmp at the end of the block preceding the split-off detach
   // replacement.

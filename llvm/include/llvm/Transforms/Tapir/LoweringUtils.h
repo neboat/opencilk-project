@@ -254,7 +254,7 @@ public:
   /// Lower calls to the tapir.runtime.{start,end} intrinsics.  Only
   /// tapir.runtime.start intrinsics are stored; uses of those intrinsics
   /// identify the tapir.runtime.end intrinsics to lower.
-  virtual void lowerTapirRTCalls(SmallVectorImpl<CallInst *> &TapirRTCalls,
+  virtual bool lowerTapirRTCalls(SmallVectorImpl<CallInst *> &TapirRTCalls,
                                  Function &F, BasicBlock *TFEntry);
 
   // TODO: Add more options to control outlining.

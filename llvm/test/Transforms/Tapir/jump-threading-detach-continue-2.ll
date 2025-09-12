@@ -19,9 +19,9 @@ entry:
 ; Function Attrs: nounwind willreturn memory(argmem: readwrite)
 declare token @llvm.syncregion.start() #0
 
-define linkonce_odr void @_ZN21delta_compressed_leafIjE14parallel_splitILb1ELb0ELb0EZZN4CPMAI10PMA_traitsIS0_L8HeadForm0ELm0ELb0ELb0ELb0ELm4096ELb1E19overwrite_on_insertISt5tupleIJRjEES6_IJjEEEEE9grow_listEmENKUlvE0_clEvEUlmE_10empty_typeSF_EEvmmmPjmT2_T3_T4_m(i64 %num_leaves) personality ptr null {
+define linkonce_odr void @_ZN21delta_compressed_leafIjE14parallel_splitILb1ELb0ELb0EZZN4CPMAI10PMA_traitsIS0_L8HeadForm0ELm0ELb0ELb0ELb0ELm4096ELb1E19overwrite_on_insertISt5tupleIJRjEES6_IJjEEEEE9grow_listEmENKUlvE0_clEvEUlmE_10empty_typeSF_EEvmmmPjmT2_T3_T4_m(i64 %num_leaves, ptr %x) personality ptr null {
 entry:
-  call void @_ZN13ParallelTools12parallel_forIZN21delta_compressed_leafIjE14parallel_splitILb1ELb0ELb0EZZN4CPMAI10PMA_traitsIS2_L8HeadForm0ELm0ELb0ELb0ELb0ELm4096ELb1E19overwrite_on_insertISt5tupleIJRjEES8_IJjEEEEE9grow_listEmENKUlvE0_clEvEUlmE_10empty_typeSH_EEvmmmPjmT2_T3_T4_mEUlmE_EEvmmT_(i64 1, i64 %num_leaves, ptr byval(%class.anon.1003) null)
+  call void @_ZN13ParallelTools12parallel_forIZN21delta_compressed_leafIjE14parallel_splitILb1ELb0ELb0EZZN4CPMAI10PMA_traitsIS2_L8HeadForm0ELm0ELb0ELb0ELb0ELm4096ELb1E19overwrite_on_insertISt5tupleIJRjEES8_IJjEEEEE9grow_listEmENKUlvE0_clEvEUlmE_10empty_typeSH_EEvmmmPjmT2_T3_T4_mEUlmE_EEvmmT_(i64 1, i64 %num_leaves, ptr byval(%class.anon.1003) %x)
   ret void
 }
 
@@ -54,7 +54,7 @@ common.ret:                                       ; preds = %pfor.inc, %entry
 
 define linkonce_odr void @_ZZN21delta_compressed_leafIjE14parallel_splitILb1ELb0ELb0EZZN4CPMAI10PMA_traitsIS0_L8HeadForm0ELm0ELb0ELb0ELb0ELm4096ELb1E19overwrite_on_insertISt5tupleIJRjEES6_IJjEEEEE9grow_listEmENKUlvE0_clEvEUlmE_10empty_typeSF_EEvmmmPjmT2_T3_T4_mENKUlmE_clEm(ptr %this, i64 %i) {
 entry:
-  %i.addr111 = alloca [0 x [0 x [0 x i64]]], i32 0, align 8
+  %i.addr111 = alloca [1 x [1 x [1 x i64]]], i32 1, align 8
   store i64 %i, ptr %i.addr111, align 8
   %0 = load ptr, ptr %this, align 8
   %call = call ptr @_ZSt3minImERKT_S2_S2_(ptr %i.addr111, ptr %0)
@@ -103,6 +103,7 @@ cleanup:                                          ; preds = %if.then10, %for.con
 
 
 ; uselistorder directives
-uselistorder ptr null, { 0, 1, 2, 3, 4, 6, 7, 8, 5 }
+; uselistorder ptr null, { 0, 1, 2, 3, 4, 6, 7, 8, 5 }
+uselistorder ptr null, { 0, 1, 2, 3, 4, 6, 7, 5 }
 
 attributes #0 = { nounwind willreturn memory(argmem: readwrite) }

@@ -3230,7 +3230,8 @@ Instruction *llvm::removeUnwindEdge(BasicBlock *BB, DomTreeUpdater *DTU) {
     if (auto *Called = II->getCalledFunction()) {
       if (Intrinsic::detached_rethrow == Called->getIntrinsicID() ||
           Intrinsic::taskframe_resume == Called->getIntrinsicID()) {
-        BranchInst *BI = BranchInst::Create(II->getNormalDest(), II);
+        BranchInst *BI =
+            BranchInst::Create(II->getNormalDest(), II->getIterator());
         BI->takeName(II);
         BI->setDebugLoc(II->getDebugLoc());
         II->getUnwindDest()->removePredecessor(BB);
@@ -3260,7 +3261,7 @@ Instruction *llvm::removeUnwindEdge(BasicBlock *BB, DomTreeUpdater *DTU) {
     UnwindDest = CatchSwitch->getUnwindDest();
   } else if (auto *DI = dyn_cast<DetachInst>(TI)) {
     NewTI = DetachInst::Create(DI->getDetached(), DI->getContinue(),
-                               DI->getSyncRegion(), DI);
+                               DI->getSyncRegion(), DI->getIterator());
     UnwindDest = DI->getUnwindDest();
   } else {
     llvm_unreachable("Could not find unwind successor");

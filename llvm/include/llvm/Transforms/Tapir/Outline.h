@@ -46,29 +46,27 @@ public:
 
 /// Clone Blocks into NewFunc, transforming the old arguments into references to
 /// VMap values.
-///
-/// TODO: Fix the std::vector part of the type of this function.
 void CloneIntoFunction(
     Function *NewFunc, const Function *OldFunc,
     std::vector<BasicBlock *> Blocks, ValueToValueMapTy &VMap,
-    CloneFunctionChangeType Changes, SmallVectorImpl<ReturnInst *> &Returns,
-    const StringRef NameSuffix, std::optional<DebugInfoFinder> &DIFinder,
+    RemapFlags RemapFlag, SmallVectorImpl<ReturnInst *> &Returns,
+    const StringRef NameSuffix,
     SmallPtrSetImpl<BasicBlock *> *ReattachBlocks = nullptr,
     SmallPtrSetImpl<BasicBlock *> *DetachedRethrowBlocks = nullptr,
     SmallPtrSetImpl<BasicBlock *> *SharedEHEntries = nullptr,
-    DISubprogram *SPClonedWithinModule = nullptr, ClonedCodeInfo *CodeInfo = nullptr,
+    ClonedCodeInfo *CodeInfo = nullptr,
     ValueMapTypeRemapper *TypeMapper = nullptr,
-    OutlineMaterializer *Materializer = nullptr);
+    OutlineMaterializer *Materializer = nullptr,
+    const MetadataSetTy *IdentityMD = nullptr);
 
 /// Create a helper function whose signature is based on Inputs and
 /// Outputs as follows: f(in0, ..., inN, out0, ..., outN)
-///
-/// TODO: Fix the std::vector part of the type of this function.
 Function *
 CreateHelper(const ValueSet &Inputs, const ValueSet &Outputs,
              std::vector<BasicBlock *> Blocks, BasicBlock *Header,
              const BasicBlock *OldEntry, const BasicBlock *OldExit,
-             ValueToValueMapTy &VMap, Module *DestM, CloneFunctionChangeType Changes,
+             ValueToValueMapTy &VMap, Module *DestM,
+             CloneFunctionChangeType Changes,
              SmallVectorImpl<ReturnInst *> &Returns, const StringRef NameSuffix,
              SmallPtrSetImpl<BasicBlock *> *ReattachBlocks = nullptr,
              SmallPtrSetImpl<BasicBlock *> *TaskResumeBlocks = nullptr,

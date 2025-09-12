@@ -332,8 +332,8 @@ void OpenCilkABI::prepareModule() {
   } else {
     // Promote the stack frame structure alignment to the largest convenient
     // value given the ABI.
-    Align ABIStackAlign = M.getDataLayout().getStackAlignment();
-    if (ABIStackAlign > StackFrameAlign.valueOrOne())
+    MaybeAlign ABIStackAlign = M.getDataLayout().getStackAlignment();
+    if (*ABIStackAlign > StackFrameAlign.valueOrOne())
       StackFrameAlign = ABIStackAlign;
   }
   // Create declarations of all CilkRTS functions, and add basic attributes to
@@ -598,22 +598,24 @@ void OpenCilkABI::InsertStackFramePop(Function &F, bool PromoteCallsToInvokes,
           GetCilkHelperEpilogueFn(),
           {SF, F.getArg(getParentSFArgNum(F)),
            ConstantInt::getBool(Type::getInt1Ty(F.getContext()), Spawner)},
-          "", RI);
+          "", RI->getIterator());
     } else {
-      CI = CallInst::Create(GetCilkParentEpilogueFn(), {SF}, "", RI);
+      CI = CallInst::Create(GetCilkParentEpilogueFn(), {SF}, "",
+                            RI->getIterator());
     }
     copyDebugLocation(CI, RI, F);
   }
   for (ResumeInst *RI : Resumes) {
     if (InsertPauseFrame) {
-      Value *Exn = ExtractValueInst::Create(RI->getValue(), {0}, "", RI);
+      Value *Exn =
+          ExtractValueInst::Create(RI->getValue(), {0}, "", RI->getIterator());
       // If throwing an exception, pass the exception object to the epilogue
       // function.
       CallInst *CI = CallInst::Create(
           GetCilkHelperEpilogueExnFn(),
           {SF, F.getArg(getParentSFArgNum(F)), Exn,
            ConstantInt::getBool(Type::getInt1Ty(F.getContext()), Spawner)},
-          "", RI);
+          "", RI->getIterator());
       copyDebugLocation(CI, RI, F);
     }
   }
@@ -749,7 +751,7 @@ void OpenCilkABI::lowerSync(SyncInst &SI) {
       // This function doesn't throw any exceptions, so use the no-throw version
       // of cilk_sync.
       CB = CallInst::Create(GetCilkSyncNoThrowFn(), Args, "",
-                            /*insert before*/ &SI);
+                            /*insert before*/ SI.getIterator());
       BranchInst::Create(SyncCont, CB->getParent());
     } else if (SyncUnwind) {
       // The presence of the sync.unwind indicates that the sync might rethrow
@@ -764,15 +766,16 @@ void OpenCilkABI::lowerSync(SyncInst &SI) {
       // destination.
       CB = InvokeInst::Create(GetCilkSyncFn(), SyncCont, DefaultSyncLandingpad,
                               Args, "",
-                              /*insert before*/ &SI);
+                              /*insert before*/ SI.getIterator());
     } else {
       // TODO: This case shouldn't be reachable.  Check whether it is reachable.
-      CB = CallInst::Create(GetCilkSyncFn(), Args, "", /*insert before*/ &SI);
+      CB = CallInst::Create(GetCilkSyncFn(), Args, "",
+                            /*insert before*/ SI.getIterator());
       BranchInst::Create(SyncCont, CB->getParent());
     }
   } else {
     CB = InvokeInst::Create(GetCilkSyncFn(), SyncCont, SyncUnwindDest, Args, "",
-                            /*insert before*/ &SI);
+                            /*insert before*/ SI.getIterator());
     for (PHINode &PN : SyncCont->phis())
       PN.addIncoming(PN.getIncomingValueForBlock(SyncUnwind->getParent()),
                      SI.getParent());
@@ -890,7 +893,7 @@ void OpenCilkABI::processSubTaskCall(TaskOutlineInfo &TOI, DominatorTree &DT) {
   // Split the basic block containing the detach replacement just before the
   // start of the detach-replacement instructions.
   BasicBlock *DetBlock = ReplStart->getParent();
-  BasicBlock *CallBlock = SplitBlock(DetBlock, ReplStart, &DT);
+  BasicBlock *CallBlock = SplitBlock(DetBlock, ReplStart);
 
   // Emit a __cilk_spawn_prepare at the end of the block preceding the split-off
   // detach replacement.

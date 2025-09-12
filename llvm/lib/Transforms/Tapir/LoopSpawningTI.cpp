@@ -197,8 +197,8 @@ void LoopOutlineProcessor::addSyncToOutlineReturns(TapirLoopInfo &TL,
 
     // Insert a call to sync.unwind.
     CallInst *SyncUnwind = CallInst::Create(
-        Intrinsic::getDeclaration(&M, Intrinsic::sync_unwind),
-        { SyncRegion }, "", NewExit->getFirstNonPHIOrDbg());
+        Intrinsic::getOrInsertDeclaration(&M, Intrinsic::sync_unwind),
+        {SyncRegion}, "", NewExit->getFirstNonPHIOrDbg());
     // If the Tapir loop has an unwind destination, change the sync.unwind to an
     // invoke that unwinds to the cloned unwind destination.
     if (TL.getUnwindDest())
@@ -218,9 +218,9 @@ void LoopOutlineProcessor::maybeEncloseInTaskFrame(TapirLoopInfo &TL,
 
   // Get the taskframe intrinsics.
   Function *TFCreateFn =
-      Intrinsic::getDeclaration(&M, Intrinsic::taskframe_create);
+      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::taskframe_create);
   Function *TFEndFn =
-      Intrinsic::getDeclaration(&M, Intrinsic::taskframe_end);
+      Intrinsic::getOrInsertDeclaration(&M, Intrinsic::taskframe_end);
 
   // Insert the taskframe.create.
   Instruction *TFCreate =
@@ -270,7 +270,7 @@ void LoopOutlineProcessor::maybeEncloseInTaskFrame(TapirLoopInfo &TL,
 
   for (ResumeInst *R : Resumes) {
     Value *Exn = R->getValue();
-    Function *TFResumeFn = Intrinsic::getDeclaration(
+    Function *TFResumeFn = Intrinsic::getOrInsertDeclaration(
         &M, Intrinsic::taskframe_resume, {Exn->getType()});
     InvokeInst *TFResume = InvokeInst::Create(TFResumeFn, UnreachableBlk,
                                               NewResume, {TFCreate, Exn});
@@ -433,7 +433,7 @@ void LoopOutlineProcessor::moveCilksanInstrumentation(TapirLoopInfo &TL,
 
     // Insert new instrumentation call at the start of LatchExit.
     CallInst::Create(InstrFunc->getFunctionType(), InstrFunc, InstrArgs, "",
-                     LatchExit->getTerminator());
+                     LatchExit->getTerminator()->getIterator());
 
     // Remove old instrumentation calls from predecessors
     for (BasicBlock *Pred : predecessors(Latch))
@@ -628,10 +628,9 @@ static BasicBlock *createTaskUnwind(Function *F, BasicBlock *UnwindDest,
   BasicBlock *DRUnreachable = BasicBlock::Create(
       Ctx, CallUnwind->getName()+".unreachable", F);
   // Invoke the detached rethrow.
-  Builder.CreateInvoke(
-      Intrinsic::getDeclaration(M, Intrinsic::detached_rethrow,
-                                { LPad->getType() }),
-      DRUnreachable, UnwindDest, { SyncRegion, LPad });
+  Builder.CreateInvoke(Intrinsic::getOrInsertDeclaration(
+                           M, Intrinsic::detached_rethrow, {LPad->getType()}),
+                       DRUnreachable, UnwindDest, {SyncRegion, LPad});
 
   // Terminate the normal return of the detached rethrow with unreachable.
   Builder.SetInsertPoint(DRUnreachable);
@@ -691,7 +690,7 @@ void DACSpawning::implementDACIterSpawnOnHelper(
     // Move the syncregion corresponding with the original loop into Preheader,
     // so the new detach can use it.
     if (Instruction *SyncRegionI = dyn_cast<Instruction>(SyncRegion))
-      SyncRegionI->moveBefore(&*Preheader->getFirstInsertionPt());
+      SyncRegionI->moveBefore(Preheader->getFirstInsertionPt());
 
     if (!Preheader->getTerminator()->getDebugLoc())
       Preheader->getTerminator()->setDebugLoc(
@@ -1148,9 +1147,9 @@ static Value *computeGrainsize(TapirLoopInfo *TL) {
   Module *M = Preheader->getModule();
   IRBuilder<> B(Preheader->getTerminator());
   B.SetCurrentDebugLocation(TL->getDebugLoc());
-  return B.CreateCall(
-      Intrinsic::getDeclaration(M, Intrinsic::tapir_loop_grainsize,
-                                { IdxTy }), { TripCount });
+  return B.CreateCall(Intrinsic::getOrInsertDeclaration(
+                          M, Intrinsic::tapir_loop_grainsize, {IdxTy}),
+                      {TripCount});
 }
 
 /// Get the grainsize of this loop either from metadata or by computing the
@@ -1474,9 +1473,10 @@ Function *LoopSpawningImpl::createHelperForTapirLoop(
     if (ContainsDynamicAllocas) {
       Module *M = Helper->getParent();
       // Get the two intrinsics we care about.
-      Function *StackSave = Intrinsic::getDeclaration(M, Intrinsic::stacksave);
+      Function *StackSave =
+          Intrinsic::getOrInsertDeclaration(M, Intrinsic::stacksave);
       Function *StackRestore =
-          Intrinsic::getDeclaration(M, Intrinsic::stackrestore);
+          Intrinsic::getOrInsertDeclaration(M, Intrinsic::stackrestore);
 
       // Insert the llvm.stacksave.
       CallInst *SavedPtr =

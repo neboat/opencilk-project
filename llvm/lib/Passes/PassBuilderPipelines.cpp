@@ -1824,10 +1824,6 @@ PassBuilder::buildTapirLoweringPipeline(OptimizationLevel Level,
       SimplifyCFGPass(SimplifyCFGOptions().convertSwitchRangeToICmp(true)));
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(GlobalCleanupPM)));
 
-  // Synthesize function entry counts for non-PGO compilation.
-  if (EnableSyntheticCounts)
-    MPM.addPass(SyntheticCountsPropagation());
-
   MPM.addPass(AlwaysInlinerPass(
       /*InsertLifetimeIntrinsics=*/false));
 

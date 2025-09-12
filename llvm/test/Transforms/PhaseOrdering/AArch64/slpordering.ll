@@ -90,10 +90,8 @@ define i32 @slpordering(ptr noundef %p1, i32 noundef %ip1, ptr noundef %p2, i32 
 ; CHECK-NEXT:    [[TMP57:%.*]] = add nsw <16 x i32> [[TMP54]], [[TMP55]]
 ; CHECK-NEXT:    [[TMP58:%.*]] = shufflevector <16 x i32> [[TMP56]], <16 x i32> [[TMP57]], <16 x i32> <i32 0, i32 1, i32 2, i32 3, i32 20, i32 21, i32 22, i32 23, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison>
 ; CHECK-NEXT:    [[TMP59:%.*]] = shufflevector <16 x i32> [[TMP56]], <16 x i32> [[TMP57]], <16 x i32> <i32 8, i32 9, i32 10, i32 11, i32 28, i32 29, i32 30, i32 31, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison>
-; CHECK-NEXT:    [[TMP60:%.*]] = shufflevector <16 x i32> [[TMP56]], <16 x i32> [[TMP57]], <16 x i32> <i32 8, i32 9, i32 10, i32 11, i32 28, i32 29, i32 30, i32 31, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison>
-; CHECK-NEXT:    [[TMP61:%.*]] = shufflevector <16 x i32> [[TMP56]], <16 x i32> [[TMP57]], <16 x i32> <i32 0, i32 1, i32 2, i32 3, i32 20, i32 21, i32 22, i32 23, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison, i32 poison>
-; CHECK-NEXT:    [[TMP62:%.*]] = add nsw <16 x i32> [[TMP59]], [[TMP61]]
-; CHECK-NEXT:    [[TMP63:%.*]] = sub nsw <16 x i32> [[TMP58]], [[TMP60]]
+; CHECK-NEXT:    [[TMP62:%.*]] = add nsw <16 x i32> [[TMP59]], [[TMP58]]
+; CHECK-NEXT:    [[TMP63:%.*]] = sub nsw <16 x i32> [[TMP58]], [[TMP59]]
 ; CHECK-NEXT:    [[TMP64:%.*]] = shufflevector <16 x i32> [[TMP62]], <16 x i32> [[TMP63]], <16 x i32> <i32 16, i32 17, i32 18, i32 19, i32 20, i32 21, i32 22, i32 23, i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>
 ; CHECK-NEXT:    [[TMP65:%.*]] = lshr <16 x i32> [[TMP64]], splat (i32 15)
 ; CHECK-NEXT:    [[TMP66:%.*]] = and <16 x i32> [[TMP65]], splat (i32 65537)

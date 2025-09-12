@@ -1087,13 +1087,13 @@ TaskOutlineInfo llvm::outlineTask(
   DetachInst *DI = T->getDetach();
   Value *TFCreate = T->getTaskFrameUsed();
 
-  Instruction *LoadPt = T->getEntry()->getFirstNonPHIOrDbgOrLifetime();
+  auto LoadPt = T->getEntry()->getFirstNonPHIOrDbgOrLifetime();
   Instruction *StorePt = DI;
   BasicBlock *Unwind = DI->getUnwindDest();
   if (Spindle *TaskFrameCreate = T->getTaskFrameCreateSpindle()) {
     // If this task uses a taskframe, determine load and store points based on
     // taskframe intrinsics.
-    LoadPt = &*++TaskFrameCreate->getEntry()->begin();
+    LoadPt = ++TaskFrameCreate->getEntry()->begin();
     StorePt =
         TaskFrameCreate->getEntry()->getSinglePredecessor()->getTerminator();
     // Ensure debug information on StorePt
@@ -1106,8 +1106,8 @@ TaskOutlineInfo llvm::outlineTask(
 
   // Convert the inputs of the task to inputs to the helper.
   ValueSet TaskHelperArgs;
-  Instruction *ArgsStart = fixupHelperInputs(F, T, Inputs, TaskHelperArgs, StorePt,
-                                             LoadPt, UseArgStruct, InputMap);
+  Instruction *ArgsStart = fixupHelperInputs(
+      F, T, Inputs, TaskHelperArgs, StorePt, &*LoadPt, UseArgStruct, InputMap);
   ValueSet HelperArgs;
   Target->setupTaskOutlineArgs(F, HelperArgs, HelperInputs, TaskHelperArgs);
 
@@ -1271,14 +1271,14 @@ bool TapirTarget::shouldProcessFunction(const Function &F) const {
 void TapirTarget::lowerTaskFrameAddrCall(CallInst *TaskFrameAddrCall) {
   // By default, replace calls to task_frameaddress with ordinary calls to the
   // frameaddress intrinsic.
-  TaskFrameAddrCall->setCalledFunction(Intrinsic::getDeclaration(
+  TaskFrameAddrCall->setCalledFunction(Intrinsic::getOrInsertDeclaration(
       &M, Intrinsic::frameaddress, PointerType::getUnqual(M.getContext())));
 }
 
-void TapirTarget::lowerTapirRTCalls(SmallVectorImpl<CallInst *> &TapirRTCalls,
+bool TapirTarget::lowerTapirRTCalls(SmallVectorImpl<CallInst *> &TapirRTCalls,
                                     Function &F, BasicBlock *TFEntry) {
   // By default, do nothing with tapir_runtime_{start,end} calls.
-  return;
+  return false;
 }
 
 /// Process the Tapir instructions in an ordinary (non-spawning and not spawned)

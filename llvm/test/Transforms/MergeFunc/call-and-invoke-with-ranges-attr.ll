@@ -96,17 +96,17 @@ define i8 @call_with_same_range() {
 }
 
 define i8 @call_with_same_range_attr(i8 range(i8 0, 2) %v) {
-; CHECK-DAG: @call_with_same_range_attr
-; CHECK-DAG: tail call i8 @call_with_range_attr
+; CHECK-LABEL: @call_with_same_range_attr
+; CHECK: tail call i8 @call_with_range_attr
   %out = call i8 @dummy2(i8 %v)
   ret i8 %out
 }
 
-; CHECK-LABEL: @call_with_same_range
-; CHECK: tail call i8 @call_with_range
-
 ; CHECK-LABEL: @invoke_with_same_range()
 ; CHECK: tail call i8 @invoke_with_range()
+
+; CHECK-LABEL: @call_with_same_range
+; CHECK: tail call i8 @call_with_range
 
 declare i8 @dummy();
 declare i8 @dummy2(i8);

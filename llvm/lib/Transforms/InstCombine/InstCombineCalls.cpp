@@ -3286,7 +3286,7 @@ Instruction *InstCombinerImpl::visitCallInst(CallInst &CI) {
     if (II->getFunction()->doesNotThrow())
       return eraseInstFromFunction(CI);
 
-    if (II != II->getParent()->getFirstNonPHIOrDbgOrLifetime()) {
+    if (II != &*II->getParent()->getFirstNonPHIOrDbgOrLifetime()) {
       // Check if the instruction at the start of II's block is a redundant
       // sync.unwind.
       const Value *SyncReg = CI.getArgOperand(0);

@@ -15,7 +15,7 @@ void scan() {
     // CHECK-NEXT: store ptr %[[ARRAY]], ptr %array, align 8
     // CHECK: pfor.body:
     // CHECK: %[[ARRAY2:.+]] = load ptr, ptr %array
-    // CHECK: %[[ELEMENT:.+]] = getelementptr inbounds i8, ptr %[[ARRAY2]]
+    // CHECK: %[[ELEMENT:.+]] = getelementptr inbounds nuw i8, ptr %[[ARRAY2]]
     // CHECK: store i8 1, ptr %[[ELEMENT]]
     // CHECK-NEXT: br label
     array[i] = true;

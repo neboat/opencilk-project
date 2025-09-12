@@ -685,7 +685,7 @@ class HyperobjectType final : public Node {
 
 public:
   HyperobjectType(const Node *View_)
-      : Node(KHyperobjectType, View_->RHSComponentCache),
+      : Node(KHyperobjectType, View_->getRHSComponentCache()),
         View(View_) {}
 
   template<typename Fn> void match(Fn F) const { F(View); }

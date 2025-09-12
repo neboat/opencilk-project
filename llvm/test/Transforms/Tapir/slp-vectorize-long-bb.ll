@@ -10,337 +10,337 @@ target triple = "x86_64-unknown-linux-gnu"
 @buffer = dso_local global [4 x [64 x i64]] zeroinitializer, align 16
 
 ; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT': store <4 x i64>
 
 ; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
-; CHECK-NEXT: or disjoint <4 x i64>
-; CHECK-NEXT: store <4 x i64>
-
-; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
-; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
-; CHECK-NEXT: or disjoint <4 x i64>
-; CHECK-NEXT: store <4 x i64>
-
-; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
-; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK: load <4 x i64>, ptr
-; CHECK: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK: load <4 x i64>, ptr
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 8589934590, i64 8589934590, i64 8589934590, i64 8589934590>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK: load <4 x i64>, ptr
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
+; CHECK: load <4 x i64>, ptr
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
+; CHECK-NEXT: or disjoint <4 x i64>
+; CHECK-NEXT: store <4 x i64>
+
+; CHECK: load <4 x i64>, ptr
+; CHECK: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
+; CHECK: load <4 x i64>, ptr
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 8589934590)
+; CHECK-NEXT: or disjoint <4 x i64>
+; CHECK-NEXT: store <4 x i64>
+
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -8589934591, i64 -8589934591, i64 -8589934591, i64 -8589934591>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -8589934591)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
-; CHECK-NEXT: and <4 x i64>
-; CHECK-NEXT: or disjoint <4 x i64>
-; CHECK-NEXT: store <4 x i64>
-
-; CHECK-NEXT: and <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
-; CHECK-NEXT: or disjoint <4 x i64>
-; CHECK-NEXT: store <4 x i64>
-
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
-; CHECK-NEXT: and <4 x i64>
-; CHECK-NEXT: or disjoint <4 x i64>
-; CHECK-NEXT: store <4 x i64>
-
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK-NEXT: and <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -562941363617791, i64 -562941363617791, i64 -562941363617791, i64 -562941363617791>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
+; CHECK-NEXT: or disjoint <4 x i64>
+; CHECK-NEXT: store <4 x i64>
+
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -562941363617791)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391, i64 -143554428589179391>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -143554428589179391)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191, i64 -2170205185142300191>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
+; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: or disjoint <4 x i64>
+; CHECK-NEXT: store <4 x i64>
+
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
+; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: or disjoint <4 x i64>
+; CHECK-NEXT: store <4 x i64>
+
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -2170205185142300191)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
@@ -348,267 +348,266 @@ target triple = "x86_64-unknown-linux-gnu"
 ; CHECK: load <2 x i64>
 ; CHECK-NEXT: shufflevector <2 x i64>
 
+; CHECK: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
+; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -7378697629483820647, i64 -7378697629483820647, i64 7378697629483820646, i64 7378697629483820646>
-
-; CHECK: load <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
 ; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
 
+; CHECK: load <4 x i64>
+; CHECK-NEXT: load <2 x i64>
+; CHECK-NEXT: shufflevector <2 x i64>
+; CHECK-NEXT: shufflevector <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
+; CHECK-NEXT: or disjoint <4 x i64>
+; CHECK-NEXT: store <4 x i64>
+
+; CHECK: load <4 x i64>
 ; CHECK: load <2 x i64>
-; CHECK: load <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -7378697629483820647, i64 -7378697629483820647, i64 -7378697629483820647, i64 -7378697629483820647>
-; CHECK-NEXT: or disjoint <4 x i64>
-; CHECK-NEXT: store <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -7378697629483820647, i64 -7378697629483820647, i64 -7378697629483820647, i64 -7378697629483820647>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646, i64 7378697629483820646>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -7378697629483820647)
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 7378697629483820646)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK: load <2 x i64>
-; CHECK: load i64
+; CHECK-NEXT: shufflevector <2 x i64>
+; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: shufflevector <2 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: insertelement <4 x i64>
-; CHECK-NEXT: insertelement <4 x i64>
-; CHECK-NEXT: shufflevector <4 x i64>
 
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 -6148914691236517206, i64 -6148914691236517206, i64 -6148914691236517206>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 -6148914691236517206, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 -6148914691236517206)
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
-; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: load i64
 ; CHECK-NEXT: load <4 x i64>
 ; CHECK-NEXT: shufflevector <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>
 
 ; CHECK-NEXT: shufflevector <4 x i64>
 ; CHECK-NEXT: insertelement <4 x i64>
-; CHECK-NEXT: and <4 x i64> %{{.+}}, <i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205, i64 6148914691236517205>
+; CHECK-NEXT: and <4 x i64> %{{.+}}, splat (i64 6148914691236517205)
 ; CHECK-NEXT: and <4 x i64>
 ; CHECK-NEXT: or disjoint <4 x i64>
 ; CHECK-NEXT: store <4 x i64>

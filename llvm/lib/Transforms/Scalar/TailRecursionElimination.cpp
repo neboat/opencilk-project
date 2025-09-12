@@ -1150,7 +1150,7 @@ bool TailRecursionEliminator::processBlock(BasicBlock &BB) {
 
 void TailRecursionEliminator::InsertSyncsIntoReturnBlocks() {
   Function *SyncUnwindFn =
-      Intrinsic::getDeclaration(F.getParent(), Intrinsic::sync_unwind);
+      Intrinsic::getOrInsertDeclaration(F.getParent(), Intrinsic::sync_unwind);
   BasicBlock &NewEntry = F.getEntryBlock();
 
   for (auto ReturnsToSync : ReturnBlocksToSync) {
@@ -1158,7 +1158,7 @@ void TailRecursionEliminator::InsertSyncsIntoReturnBlocks() {
     SmallPtrSetImpl<BasicBlock *> &ReturnBlocks = ReturnsToSync.second;
 
     // Move the sync region start to the new entry block.
-    cast<Instruction>(SyncRegion)->moveBefore(&*(NewEntry.begin()));
+    cast<Instruction>(SyncRegion)->moveBefore(NewEntry.begin());
 
     // Insert syncs before relevant return blocks.
     for (BasicBlock *RetBlock : ReturnBlocks) {
@@ -1169,7 +1169,7 @@ void TailRecursionEliminator::InsertSyncsIntoReturnBlocks() {
 
       if (!F.doesNotThrow())
         CallInst::Create(SyncUnwindFn, {SyncRegion}, "",
-                         NewRetBlock->getTerminator());
+                         NewRetBlock->getTerminator()->getIterator());
     }
   }
 }

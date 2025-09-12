@@ -3070,9 +3070,8 @@ static Value *isSafeToSpeculateStore(Instruction *I, BasicBlock *BrBB,
             capturesNothing(
                 PointerMayBeCaptured(Obj, /*ReturnCaptures=*/false,
                                      CaptureComponents::Provenance)) &&
-            (!ObjiI ||
-             GetDetachedCtx(LI->getParent()) ==
-               GetDetachedCtx(ObjI->getParent())) &&
+            (!ObjI || GetDetachedCtx(LI->getParent()) ==
+                          GetDetachedCtx(ObjI->getParent())) &&
             (!ExplicitlyDereferenceableOnly ||
              isDereferenceablePointer(StorePtr, StoreTy,
                                       LI->getDataLayout()))) {
@@ -5255,7 +5254,8 @@ static bool isTaskFrameUnassociated(const Value *TFCreate) {
 static bool checkSubtaskUnwindPredecessor(
     BasicBlock *BB, Value *IncomingValue,
     SmallSetVector<BasicBlock *, 4> &TrivialUnwindBlocks) {
-  if (LandingPadInst *LPInst = dyn_cast<LandingPadInst>(BB->getFirstNonPHI())) {
+  if (LandingPadInst *LPInst =
+          dyn_cast<LandingPadInst>(BB->getFirstNonPHIIt())) {
     // Check the predecessors of this landingpad block for detached.rethrow and
     // taskframe.resume intrinsics, and check those predecessor blocks
     // recursively.
@@ -5307,8 +5307,8 @@ static bool checkSubtaskUnwindPredecessor(
 
     // Check that there are no other instructions except for debug and lifetime
     // intrinsics in the block.
-    if (!isCleanupBlockEmpty(
-            make_range(BB->getFirstNonPHI(), BB->getTerminator())))
+    if (!isCleanupBlockEmpty(make_range(BB->getFirstNonPHIIt(),
+                                        BB->getTerminator()->getIterator())))
       return false;
 
     PHINode *PhiLPInst = cast<PHINode>(IncomingValue);
@@ -8561,7 +8561,7 @@ static bool removeUndefIntroducingPredecessor(BasicBlock *BB,
 /// reattach.
 static bool serializeDetachToImmediateSync(BasicBlock *BB,
                                            DomTreeUpdater *DTU) {
-  Instruction *I = BB->getFirstNonPHIOrDbgOrLifetime();
+  auto I = BB->getFirstNonPHIOrDbgOrLifetime();
   if (isa<SyncInst>(I)) {
     // This block is empty
     bool Changed = false;
@@ -8641,27 +8641,27 @@ static bool serializeDetachToImmediateSync(BasicBlock *BB,
 /// remove the blocks appropriately.  Return false if BB does not terminate with
 /// a reattach or predecessor does terminate with detach.
 static bool serializeTrivialDetachedBlock(BasicBlock *BB, DomTreeUpdater *DTU) {
-  Instruction *I = BB->getFirstNonPHIOrDbgOrLifetime();
+  auto I = BB->getFirstNonPHIOrDbgOrLifetime();
   SmallVector<Instruction *, 2> ToErase;
   // Skip a possible taskframe.use intrinsic in the task.
   if (isTapirIntrinsic(Intrinsic::taskframe_use, I)) {
     Value *TaskFrame = cast<IntrinsicInst>(I)->getArgOperand(0);
     // Check for any other uses of TaskFrame.
     for (User *U : TaskFrame->users())
-      if (U != I)
+      if (U != &*I)
         // We found another use of the taskframe, making it too complicated for
         // us to handle.  Abort.
         return false;
-    ToErase.push_back(I);
+    ToErase.push_back(&*I);
     ToErase.push_back(cast<Instruction>(TaskFrame));
-    I = &*(++(I->getIterator()));
+    ++I;
   }
   if (ReattachInst *RI = dyn_cast<ReattachInst>(I)) {
     // This detached block is empty.
     // Scan predecessors to verify that all of them detach BB.
     for (BasicBlock *PredBB : predecessors(BB)) {
       if (!isa<DetachInst>(PredBB->getTerminator()))
-	return false;
+        return false;
     }
     // All predecessors detach BB, so we can serialize.  Copy the predecessors
     // into a separate vector, so we can safely remove the predecessors.
@@ -8767,7 +8767,7 @@ static bool removeEmptySyncs(BasicBlock *BB) {
       SmallPtrSet<CallBase *, 1> MaybeDeadSyncUnwinds;
       for (SyncInst *Sync : Syncs) {
         // Check for any sync.unwinds that might now be dead.
-        Instruction *MaybeSyncUnwind =
+        auto MaybeSyncUnwind =
             Sync->getSuccessor(0)->getFirstNonPHIOrDbgOrLifetime();
         if (isSyncUnwind(MaybeSyncUnwind, SyncRegion))
           MaybeDeadSyncUnwinds.insert(cast<CallBase>(MaybeSyncUnwind));

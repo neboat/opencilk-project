@@ -16,7 +16,7 @@
 #define LLVM_TRANSFORMS_COMPREHENSIVESTATICINSTRUMENTATION_H
 
 #include "llvm/IR/PassManager.h"
-#include "llvm/Transforms/Instrumentation.h"
+#include "llvm/Transforms/Utils/Instrumentation.h"
 
 namespace llvm {
 

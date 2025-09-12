@@ -455,9 +455,9 @@ Value *TapirLoopInfo::getOrCreateTripCount(PredicatedScalarEvolution &PSE,
                                 L->getLoopPreheader()->getTerminator());
 
   if (TripCount->getType()->isPointerTy())
-    TripCount =
-        CastInst::CreatePointerCast(TripCount, IdxTy, "exitcount.ptrcnt.to.int",
-                                    L->getLoopPreheader()->getTerminator());
+    TripCount = CastInst::CreatePointerCast(
+        TripCount, IdxTy, "exitcount.ptrcnt.to.int",
+        L->getLoopPreheader()->getTerminator()->getIterator());
 
   // Try to use the existing ConditionEnd for the trip count.
   if (TripCount != ConditionEnd) {

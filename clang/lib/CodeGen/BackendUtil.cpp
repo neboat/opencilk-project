@@ -38,6 +38,7 @@
 #include "llvm/LTO/LTOBackend.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Object/OffloadBinary.h"
+#include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Passes/StandardInstrumentations.h"
@@ -1222,12 +1223,13 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
             });
         break;
       case LangOptions::CSI_OptimizerLast:
-        PB.registerOptimizerLastEPCallback(
-            [&PB](ModulePassManager &MPM, OptimizationLevel Level) {
-              MPM.addPass(CSISetupPass());
-              MPM.addPass(ComprehensiveStaticInstrumentationPass());
-              MPM.addPass(PB.buildPostCilkInstrumentationPipeline(Level));
-            });
+        PB.registerOptimizerLastEPCallback([&PB](ModulePassManager &MPM,
+                                                 OptimizationLevel Level,
+                                                 ThinOrFullLTOPhase) {
+          MPM.addPass(CSISetupPass());
+          MPM.addPass(ComprehensiveStaticInstrumentationPass());
+          MPM.addPass(PB.buildPostCilkInstrumentationPipeline(Level));
+        });
         break;
       case LangOptions::CSI_None:
         break;
@@ -1244,7 +1246,7 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
       MPM.addPass(PB.buildLTOPreLinkDefaultPipeline(Level));
     } else {
       MPM.addPass(PB.buildPerModuleDefaultPipeline(
-          Level, /* LTOPreLink */ false, TLII->hasTapirTarget()));
+          Level, ThinOrFullLTOPhase::None, TLII->hasTapirTarget()));
     }
   }
 

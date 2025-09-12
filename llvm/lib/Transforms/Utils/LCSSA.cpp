@@ -408,7 +408,7 @@ static bool formLCSSAImpl(Loop &L, const DominatorTree &DT, const LoopInfo *LI,
     return false;
 
   if (!LoopTaskExits.count(&L))
-    L->getTaskExits(LoopTaskExits[&L]);
+    L.getTaskExits(LoopTaskExits[&L]);
   assert(LoopTaskExits.count(&L));
 
   SmallSetVector<BasicBlock *, 8> BlocksDominatingExits;

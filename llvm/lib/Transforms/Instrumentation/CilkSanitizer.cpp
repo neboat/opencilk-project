@@ -48,10 +48,10 @@
 #include "llvm/ProfileData/InstrProf.h"
 #include "llvm/Support/ModRef.h"
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
-#include "llvm/Transforms/Instrumentation.h"
 #include "llvm/Transforms/Instrumentation/CSI.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/EscapeEnumerator.h"
+#include "llvm/Transforms/Utils/Instrumentation.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Transforms/Utils/LoopSimplify.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
@@ -887,10 +887,10 @@ CallInst *CilkSanitizerImpl::createRTUnitInitCall(IRBuilder<> &IRB) {
   // Insert call to __csanrt_unit_init
   return IRB.CreateCall(
       RTUnitInit,
-      {IRB.CreateGlobalStringPtr(M.getName()),
-          ConstantExpr::getGetElementPtr(FEDGV->getValueType(), FEDGV, GepArgs),
-          ConstantExpr::getGetElementPtr(ObjGV->getValueType(), ObjGV, GepArgs),
-          InitCallsiteToFunction});
+      {IRB.CreateGlobalString(M.getName()),
+       ConstantExpr::getGetElementPtr(FEDGV->getValueType(), FEDGV, GepArgs),
+       ConstantExpr::getGetElementPtr(ObjGV->getValueType(), ObjGV, GepArgs),
+       InitCallsiteToFunction});
 }
 
 // Initialize all instrumentation hooks that are specific to CilkSanitizer.
@@ -3460,8 +3460,8 @@ bool CilkSanitizerImpl::instrumentFunctionUsingRI(Function &F) {
       // TODO: Determine if we actually want the frame pointer, not the stack
       // pointer.
       Value *FrameAddr =
-          IRB.CreateCall(Intrinsic::getDeclaration(&M, Intrinsic::frameaddress,
-                                                   IRB.getPtrTy()),
+          IRB.CreateCall(Intrinsic::getOrInsertDeclaration(
+                             &M, Intrinsic::frameaddress, IRB.getPtrTy()),
                          {IRB.getInt32(0)});
       Value *StackSave = IRB.CreateStackSave();
       CallInst *EntryCall =
@@ -4282,7 +4282,7 @@ bool CilkSanitizerImpl::instrumentDetach(DetachInst *DI, unsigned SyncRegNum,
     Prop.setNumSyncReg(NumSyncRegs);
     // Get the frame and stack pointers.
     Value *FrameAddr = IRB.CreateCall(
-        Intrinsic::getDeclaration(&M, Intrinsic::task_frameaddress),
+        Intrinsic::getOrInsertDeclaration(&M, Intrinsic::task_frameaddress),
         {IRB.getInt32(0)});
     Value *StackSave = IRB.CreateStackSave();
     Instruction *Call = IRB.CreateCall(CsanTaskEntry,

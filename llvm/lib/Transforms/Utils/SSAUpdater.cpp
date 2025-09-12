@@ -590,6 +590,11 @@ void LoadAndStorePromoter::run(const SmallVectorImpl<Instruction *> &Insts) {
     // the loaded value was stored later).  In this case, we need to recursively
     // propagate the updates until we get to the real value.
     if (!User->use_empty()) {
+      // If this instruction would use a detached value, then ReplaceLoads
+      // shouldn't have an entry for this instruction.
+      if (!ReplacedLoads.contains(User))
+        continue;
+
       Value *NewVal = ReplacedLoads[User];
       assert(NewVal && "not a replaced load?");
 

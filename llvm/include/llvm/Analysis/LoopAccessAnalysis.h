@@ -28,6 +28,7 @@ class DataLayout;
 class Loop;
 class raw_ostream;
 class TargetTransformInfo;
+class TaskInfo;
 
 /// Collection of parameters shared beetween the Loop Vectorizer and the
 /// Loop Access Analysis.

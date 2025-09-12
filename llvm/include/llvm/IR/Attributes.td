@@ -148,7 +148,7 @@ def InAlloca : TypeAttr<"inalloca", IntersectPreserve, [ParamAttr]>;
 def Initializes : ConstantRangeListAttr<"initializes", IntersectPreserve, [ParamAttr]>;
 
 /// Distinct arguments to this function yield distinct return values.
-def Injective : EnumAttr<"injective", [FnAttr]>;
+def Injective : EnumAttr<"injective", IntersectAnd, [FnAttr]>;
 
 /// Source said inlining was desirable.
 def InlineHint : EnumAttr<"inlinehint", IntersectAnd, [FnAttr]>;
@@ -278,9 +278,9 @@ def ReadNone : EnumAttr<"readnone", IntersectAnd, [ParamAttr]>;
 def ReadOnly : EnumAttr<"readonly", IntersectAnd, [ParamAttr]>;
 
 /// Tapir reducer-related attributes.
-def HyperView : EnumAttr<"hyper_view", [FnAttr]>;
-def ReducerRegister : EnumAttr<"reducer_register", [FnAttr]>;
-def ReducerUnregister : EnumAttr<"reducer_unregister", [FnAttr]>;
+def HyperView : EnumAttr<"hyper_view", IntersectPreserve, [FnAttr]>;
+def ReducerRegister : EnumAttr<"reducer_register", IntersectPreserve, [FnAttr]>;
+def ReducerUnregister : EnumAttr<"reducer_unregister", IntersectPreserve, [FnAttr]>;
 
 /// Return value is always equal to this argument.
 def Returned : EnumAttr<"returned", IntersectAnd, [ParamAttr]>;
@@ -317,11 +317,11 @@ def StackProtectReq : EnumAttr<"sspreq", IntersectPreserve, [FnAttr]>;
 def StackProtectStrong : EnumAttr<"sspstrong", IntersectPreserve, [FnAttr]>;
 
 /// Multiple calls to this function in a strand return the same result.
-def StrandPure : EnumAttr<"strand_pure", [FnAttr]>;
+def StrandPure : EnumAttr<"strand_pure", IntersectAnd, [FnAttr]>;
 
 /// This function acts like a system memory allocation function from
 /// the perspective of memory accesses within the same strand.
-def StrandNoAlias : EnumAttr<"strand_noalias", [ParamAttr, RetAttr]>;
+def StrandNoAlias : EnumAttr<"strand_noalias", IntersectAnd, [ParamAttr, RetAttr]>;
 
 /// Function was called in a scope requiring strict floating point semantics.
 def StrictFP : EnumAttr<"strictfp", IntersectPreserve, [FnAttr]>;
@@ -368,12 +368,12 @@ def SpeculativeLoadHardening : EnumAttr<"speculative_load_hardening",
                                         [FnAttr]>;
 
 /// CilkSanitizer is on.
-def SanitizeCilk : EnumAttr<"sanitize_cilk", [FnAttr]>;
+def SanitizeCilk : EnumAttr<"sanitize_cilk", IntersectPreserve, [FnAttr]>;
 
 /// From the Cilk perspective, a continuation in the function can be
 /// stolen.  This attribute is used ensure correct code generation for
 /// such functions.
-def Stealable : EnumAttr<"stealable", [FnAttr]>;
+def Stealable : EnumAttr<"stealable", IntersectPreserve, [FnAttr]>;
 
 /// Argument is swift error.
 def SwiftError : EnumAttr<"swifterror", IntersectPreserve, [ParamAttr]>;

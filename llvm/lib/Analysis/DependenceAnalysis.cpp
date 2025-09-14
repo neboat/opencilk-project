@@ -4347,17 +4347,15 @@ static Value *getGeneralAccessPointerOperand(GeneralAccess *A) {
   return const_cast<Value *>(A->Loc->Ptr);
 }
 
-static
-const SCEV *getElementSize(GeneralAccess *A, ScalarEvolution *SE) {
+static const SCEV *getElementSize(GeneralAccess *A, ScalarEvolution *SE) {
   Type *Ty = getGeneralAccessPointerOperand(A)->getType();
-  Type *ETy = SE->getEffectiveSCEVType(PointerType::getUnqual(Ty));
+  Type *ETy =
+      SE->getEffectiveSCEVType(PointerType::getUnqual(Ty->getContext()));
   if (A->Loc) {
     if (A->Loc->Size.hasValue())
       return SE->getConstant(ETy, A->Loc->Size.getValue());
-    else
-      return SE->getCouldNotCompute();
-  } else
-    return SE->getCouldNotCompute();
+  }
+  return SE->getSizeOfExpr(ETy, Ty);
 }
 
 /// Check if we can delinearize the subscripts. If the SCEVs representing the
@@ -4614,7 +4612,9 @@ bool DependenceInfo::tryDelinearizeParametricSize(
 //            PLDI 1991
 std::unique_ptr<Dependence>
 DependenceInfo::depends(GeneralAccess *SrcA, GeneralAccess *DstA,
-                        bool PossiblyLoopIndependent) {
+                        bool UnderRuntimeAssumptions) {
+  SmallVector<const SCEVPredicate *, 4> Assume;
+  bool PossiblyLoopIndependent = true;
   if (SrcA == DstA)
     PossiblyLoopIndependent = false;
 
@@ -4632,19 +4632,20 @@ DependenceInfo::depends(GeneralAccess *SrcA, GeneralAccess *DstA,
 
   if (!SrcA->isValid() || !DstA->isValid()) {
     LLVM_DEBUG(dbgs() << "could not interpret general accesses\n");
-    return std::make_unique<Dependence>(Src, Dst);
+    return std::make_unique<Dependence>(Src, Dst,
+                                        SCEVUnionPredicate(Assume, *SE));
   }
 
-  Value *SrcPtr = getGeneralAccessPointerOperand(SrcA);
-  Value *DstPtr = getGeneralAccessPointerOperand(DstA);
+  const MemoryLocation &DstLoc = *DstA->Loc;
+  const MemoryLocation &SrcLoc = *SrcA->Loc;
 
-  switch (underlyingObjectsAlias(AA, F->getParent()->getDataLayout(),
-                                 *DstA->Loc, *SrcA->Loc)) {
+  switch (underlyingObjectsAlias(AA, F->getDataLayout(), DstLoc, SrcLoc)) {
   case AliasResult::MayAlias:
   case AliasResult::PartialAlias:
     // cannot analyse objects if we don't understand their aliasing.
     LLVM_DEBUG(dbgs() << "can't analyze may or partial alias\n");
-    return std::make_unique<Dependence>(Src, Dst);
+    return std::make_unique<Dependence>(Src, Dst,
+                                        SCEVUnionPredicate(Assume, *SE));
   case AliasResult::NoAlias:
     // If the objects noalias, they are distinct, accesses are independent.
     LLVM_DEBUG(dbgs() << "no alias\n");
@@ -4655,33 +4656,29 @@ DependenceInfo::depends(GeneralAccess *SrcA, GeneralAccess *DstA,
 
   // If either Src or Dst is a call, and we are uncertain about the accessed
   // location's size, give up.
-  if (isa<CallBase>(Src))
-    if (!SrcA->Loc->Size.hasValue())
-      return std::make_unique<Dependence>(Src, Dst);
-  if (isa<CallBase>(Dst))
-    if (!DstA->Loc->Size.hasValue())
-      return std::make_unique<Dependence>(Src, Dst);
+  if ((isa<CallBase>(Src) && !SrcA->Loc->Size.hasValue()) ||
+      (isa<CallBase>(Dst) && !DstA->Loc->Size.hasValue())) {
+    LLVM_DEBUG(dbgs() << "can't analyze must alias with uncertain sizes\n");
+    return std::make_unique<Dependence>(Src, Dst,
+                                        SCEVUnionPredicate(Assume, *SE));
+  }
 
-  // establish loop nesting levels
-  establishNestingLevels(Src, Dst);
-  LLVM_DEBUG(dbgs() << "    common nesting levels = " << CommonLevels << "\n");
-  LLVM_DEBUG(dbgs() << "    maximum nesting levels = " << MaxLevels << "\n");
+  Value *SrcPtr = getGeneralAccessPointerOperand(SrcA);
+  Value *DstPtr = getGeneralAccessPointerOperand(DstA);
 
-  FullDependence Result(Src, Dst, PossiblyLoopIndependent, CommonLevels);
-  ++TotalArrayPairs;
-
-  unsigned Pairs = 1;
-  SmallVector<Subscript, 2> Pair(Pairs);
   if (!SE->isSCEVable(SrcPtr->getType()) ||
       !SE->isSCEVable(DstPtr->getType())) {
     LLVM_DEBUG(dbgs() << "can't analyze non-scevable pointers\n");
-    return std::make_unique<Dependence>(Src, Dst);
+    return std::make_unique<Dependence>(Src, Dst,
+                                        SCEVUnionPredicate(Assume, *SE));
   }
   const SCEV *SrcSCEV = SE->getSCEV(SrcPtr);
   const SCEV *DstSCEV = SE->getSCEV(DstPtr);
   LLVM_DEBUG(dbgs() << "    SrcSCEV = " << *SrcSCEV << "\n");
   LLVM_DEBUG(dbgs() << "    DstSCEV = " << *DstSCEV << "\n");
-  if (SE->getPointerBase(SrcSCEV) != SE->getPointerBase(DstSCEV)) {
+  const SCEV *SrcBase = SE->getPointerBase(SrcSCEV);
+  const SCEV *DstBase = SE->getPointerBase(DstSCEV);
+  if (SrcBase != DstBase) {
     // If two pointers have different bases, trying to analyze indexes won't
     // work; we can't compare them to each other. This can happen, for example,
     // if one is produced by an LCSSA PHI node.
@@ -4689,8 +4686,51 @@ DependenceInfo::depends(GeneralAccess *SrcA, GeneralAccess *DstA,
     // We check this upfront so we don't crash in cases where getMinusSCEV()
     // returns a SCEVCouldNotCompute.
     LLVM_DEBUG(dbgs() << "can't analyze SCEV with different pointer base\n");
-    return std::make_unique<Dependence>(Src, Dst);
+    return std::make_unique<Dependence>(Src, Dst,
+                                        SCEVUnionPredicate(Assume, *SE));
   }
+
+  uint64_t EltSize = SrcLoc.Size.toRaw();
+  const SCEV *SrcEv = SE->getMinusSCEV(SrcSCEV, SrcBase);
+  const SCEV *DstEv = SE->getMinusSCEV(DstSCEV, DstBase);
+
+  if (Src != Dst) {
+    // Check that memory access offsets are multiples of element sizes.
+    if (!SE->isKnownMultipleOf(SrcEv, EltSize, Assume) ||
+        !SE->isKnownMultipleOf(DstEv, EltSize, Assume)) {
+      LLVM_DEBUG(dbgs() << "can't analyze SCEV with different offsets\n");
+      return std::make_unique<Dependence>(Src, Dst,
+                                          SCEVUnionPredicate(Assume, *SE));
+    }
+  }
+
+  if (!Assume.empty()) {
+    if (!UnderRuntimeAssumptions)
+      return std::make_unique<Dependence>(Src, Dst,
+                                          SCEVUnionPredicate(Assume, *SE));
+    // Add non-redundant assumptions.
+    unsigned N = Assumptions.size();
+    for (const SCEVPredicate *P : Assume) {
+      bool Implied = false;
+      for (unsigned I = 0; I != N && !Implied; I++)
+        if (Assumptions[I]->implies(P, *SE))
+          Implied = true;
+      if (!Implied)
+        Assumptions.push_back(P);
+    }
+  }
+
+  // establish loop nesting levels
+  establishNestingLevels(Src, Dst);
+  LLVM_DEBUG(dbgs() << "    common nesting levels = " << CommonLevels << "\n");
+  LLVM_DEBUG(dbgs() << "    maximum nesting levels = " << MaxLevels << "\n");
+
+  FullDependence Result(Src, Dst, SCEVUnionPredicate(Assume, *SE),
+                        PossiblyLoopIndependent, CommonLevels);
+  ++TotalArrayPairs;
+
+  unsigned Pairs = 1;
+  SmallVector<Subscript, 2> Pair(Pairs);
   Pair[0].Src = SrcSCEV;
   Pair[0].Dst = DstSCEV;
 
@@ -4989,6 +5029,28 @@ DependenceInfo::depends(GeneralAccess *SrcA, GeneralAccess *DstA,
   for (unsigned II = 1; II <= CommonLevels; ++II)
     if (CompleteLoops[II])
       Result.DV[II - 1].Scalar = false;
+
+  // Set the distance to zero if the direction is EQ.
+  // TODO: Ideally, the distance should be set to 0 immediately simultaneously
+  // with the corresponding direction being set to EQ.
+  for (unsigned II = 1; II <= Result.getLevels(); ++II) {
+    if (Result.getDirection(II) == Dependence::DVEntry::EQ) {
+      if (Result.DV[II - 1].Distance == nullptr)
+        Result.DV[II - 1].Distance = SE->getZero(SrcSCEV->getType());
+      else
+        assert(Result.DV[II - 1].Distance->isZero() &&
+               "Inconsistency between distance and direction");
+    }
+
+#ifndef NDEBUG
+    // Check that the converse (i.e., if the distance is zero, then the
+    // direction is EQ) holds.
+    const SCEV *Distance = Result.getDistance(II);
+    if (Distance && Distance->isZero())
+      assert(Result.getDirection(II) == Dependence::DVEntry::EQ &&
+             "Distance is zero, but direction is not EQ");
+#endif
+  }
 
   if (PossiblyLoopIndependent) {
     // Make sure the LoopIndependent flag is set correctly.

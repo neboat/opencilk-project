@@ -1127,7 +1127,7 @@ void CodeGenFunction::EmitBranchThroughCleanup(JumpDest Dest, bool AfterSync) {
   if (!HaveInsertPoint())
     return;
 
-  // If needed, insert an implicit _Cilk_sync before the cleanups.
+  // If needed, insert an implicit cilk_sync before the cleanups.
   if (AfterSync)
     EmitImplicitSyncCleanup();
 

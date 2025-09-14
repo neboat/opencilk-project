@@ -597,7 +597,7 @@ void JumpScopeChecker::BuildScopeInformation(Stmt *S,
   }
 
   case Stmt::CilkScopeStmtClass: {
-    // Disallow jumps into _Cilk_scope statements.
+    // Disallow jumps into cilk_scope statements.
     CilkScopeStmt *CS = cast<CilkScopeStmt>(S);
     unsigned NewParentScope = Scopes.size();
     Scopes.push_back(GotoScope(ParentScope, diag::note_protected_by_cilk_scope,
@@ -607,7 +607,7 @@ void JumpScopeChecker::BuildScopeInformation(Stmt *S,
   }
 
   case Stmt::CilkSpawnStmtClass: {
-    // Disallow jumps into or out of _Cilk_spawn statements.
+    // Disallow jumps into or out of cilk_spawn statements.
     CilkSpawnStmt *CS = cast<CilkSpawnStmt>(S);
     unsigned NewParentScope = Scopes.size();
     Scopes.push_back(GotoScope(ParentScope,
@@ -1070,7 +1070,7 @@ void JumpScopeChecker::CheckJump(Stmt *From, Stmt *To, SourceLocation DiagLoc,
         S.Diag(From->getBeginLoc(), diag::warn_jump_out_of_seh_finally);
         break;
       } else if (Scopes[I].InDiag == diag::note_protected_by_spawn) {
-        // Similarly, check for jumps out of _Cilk_spawn or _Cilk_for.
+        // Similarly, check for jumps out of cilk_spawn or cilk_for.
         S.Diag(From->getBeginLoc(), diag::err_jump_out_of_spawn);
         break;
       } else if (Scopes[I].InDiag == diag::note_protected_by_cilk_for) {

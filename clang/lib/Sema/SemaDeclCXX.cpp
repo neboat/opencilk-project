@@ -5332,7 +5332,7 @@ static void MarkFieldDestructorReferenced(Sema &S, SourceLocation Location,
 
   const RecordType* RT = FieldType.stripHyperobject()->getAs<RecordType>();
   if (!RT)
-    continue;
+    return;
 
   auto *FieldClassDecl = RT->getAsCXXRecordDecl();
   if (!FieldClassDecl)

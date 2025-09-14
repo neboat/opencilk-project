@@ -550,6 +550,8 @@ static bool checkInstructionForRace(const Instruction *I,
       default: return true;
       case Intrinsic::annotation:
       case Intrinsic::assume:
+      case Intrinsic::donothing:
+      case Intrinsic::fake_use:
       case Intrinsic::invariant_start:
       case Intrinsic::invariant_end:
       case Intrinsic::launder_invariant_group:
@@ -1123,7 +1125,7 @@ bool AccessPtrAnalysis::PointerCapturedBefore(const Value *Ptr,
                       << *Ptr << "\n");
     Result = true;
   } else
-    Result = PointerMayBeCapturedBefore(StrippedPtr, false, false, I, &DT, true,
+    Result = PointerMayBeCapturedBefore(StrippedPtr, false, I, &DT, true,
                                         MaxUsesToExplore);
   MayBeCapturedCache[CaptureQuery] = Result;
   return Result;

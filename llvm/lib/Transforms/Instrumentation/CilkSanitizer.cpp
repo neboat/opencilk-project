@@ -37,6 +37,7 @@
 #include "llvm/Analysis/VectorUtils.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DebugInfoMetadata.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
@@ -555,8 +556,8 @@ private:
       if (isa<GlobalValue>(Ptr))
         MayBeCapturedCache.lookup(Ptr);
       else
-        MayBeCapturedCache[Ptr] = PointerMayBeCaptured(Ptr, true, false,
-                                                       MaxUsesToExploreCapture);
+        MayBeCapturedCache[Ptr] =
+            PointerMayBeCaptured(Ptr, true, MaxUsesToExploreCapture);
     }
     return MayBeCapturedCache[Ptr];
   }
@@ -689,14 +690,14 @@ uint64_t ObjectTable::add(Instruction &I, Value *Obj) {
 }
 
 PointerType *ObjectTable::getPointerType(LLVMContext &C) {
-  return PointerType::get(getSourceLocStructType(C), 0);
+  return PointerType::get(C, 0);
 }
 
 StructType *ObjectTable::getSourceLocStructType(LLVMContext &C) {
   return StructType::get(
-      /* Name */ PointerType::get(IntegerType::get(C, 8), 0),
+      /* Name */ PointerType::get(C, 0),
       /* Line */ IntegerType::get(C, 32),
-      /* File */ PointerType::get(IntegerType::get(C, 8), 0));
+      /* File */ PointerType::get(C, 0));
 }
 
 void ObjectTable::add(uint64_t ID, int32_t Line,
@@ -857,10 +858,9 @@ CallInst *CilkSanitizerImpl::createRTUnitInitCall(IRBuilder<> &IRB) {
       getUnitObjTableType(C, ObjectTable::getPointerType(C));
 
   // Lookup __csanrt_unit_init
-  SmallVector<Type *, 4> InitArgTypes({PointerType::getUnqual(C),
-                                       PointerType::get(UnitFedTableType, 0),
-                                       PointerType::get(UnitObjTableType, 0),
-                                       InitCallsiteToFunction->getType()});
+  SmallVector<Type *, 4> InitArgTypes(
+      {PointerType::getUnqual(C), PointerType::get(C, 0),
+       PointerType::get(C, 0), InitCallsiteToFunction->getType()});
   FunctionType *InitFunctionTy =
       FunctionType::get(IRB.getVoidTy(), InitArgTypes, false);
   RTUnitInit = M.getOrInsertFunction(CsanRtUnitInitName, InitFunctionTy);
@@ -918,9 +918,11 @@ void CilkSanitizerImpl::initializeCsanHooks() {
 
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
-    FnAttrs = FnAttrs.addParamAttribute(C, 2, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 2, Attribute::ReadNone);
     CsanFuncEntry = getHookFunction("__csan_func_entry", FnAttrs, RetType,
                                     /* func_id */ IDType,
@@ -935,21 +937,24 @@ void CilkSanitizerImpl::initializeCsanHooks() {
 
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
     CsanRead = getHookFunction("__csan_load", FnAttrs, RetType, IDType,
                                      AddrType, NumBytesType, LoadPropertyTy);
   }
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
     CsanWrite = getHookFunction("__csan_store", FnAttrs, RetType, IDType,
                                 AddrType, NumBytesType, StorePropertyTy);
   }
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
     CsanLargeRead =
         getHookFunction("__csan_large_load", FnAttrs, RetType, IDType, AddrType,
@@ -957,7 +962,8 @@ void CilkSanitizerImpl::initializeCsanHooks() {
   }
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
     CsanLargeWrite =
         getHookFunction("__csan_large_store", FnAttrs, RetType, IDType,
@@ -982,9 +988,11 @@ void CilkSanitizerImpl::initializeCsanHooks() {
   }
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 2, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 2, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 2, Attribute::ReadNone);
-    FnAttrs = FnAttrs.addParamAttribute(C, 3, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 3, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 3, Attribute::ReadNone);
     CsanTaskEntry = getHookFunction("__csan_task", FnAttrs, RetType,
                                     /* task_id */ IDType,
@@ -1014,9 +1022,11 @@ void CilkSanitizerImpl::initializeCsanHooks() {
 
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
-    FnAttrs = FnAttrs.addParamAttribute(C, 5, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 5, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 5, Attribute::ReadNone);
     CsanAfterAllocFn = getHookFunction(
         "__csan_after_allocfn", FnAttrs, RetType, IDType,
@@ -1026,7 +1036,8 @@ void CilkSanitizerImpl::initializeCsanHooks() {
   }
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::NoCapture);
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
     FnAttrs = FnAttrs.addParamAttribute(C, 1, Attribute::ReadNone);
     CsanAfterFree =
         getHookFunction("__csan_after_free", FnAttrs, RetType, IDType, AddrType,
@@ -1045,10 +1056,10 @@ void CilkSanitizerImpl::initializeCsanHooks() {
   Type *MAAPTy = IRB.getInt8Ty();
   {
     AttributeList FnAttrs;
-    FnAttrs = FnAttrs.addParamAttribute(C, 0, Attribute::NoCapture);
-    GetMAAP =
-        getHookFunction("__csan_get_MAAP", FnAttrs, RetType,
-                        PointerType::get(MAAPTy, 0), IDType, IRB.getInt8Ty());
+    FnAttrs = FnAttrs.addParamAttribute(
+        C, 0, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
+    GetMAAP = getHookFunction("__csan_get_MAAP", FnAttrs, RetType,
+                              PointerType::get(C, 0), IDType, IRB.getInt8Ty());
     // Unlike other hooks, GetMAAP writes to its pointer argument.  Make sure
     // the MemoryEffects on the hook reflect this fact.
     Function *HookFn = cast<Function>(GetMAAP.getCallee());
@@ -1070,7 +1081,8 @@ void CilkSanitizerImpl::initializeCsanHooks() {
 
   // Cilksan-specific attributes on CSI hooks
   Function *CsiAfterAllocaFn = cast<Function>(CsiAfterAlloca.getCallee());
-  CsiAfterAllocaFn->addParamAttr(1, Attribute::NoCapture);
+  CsiAfterAllocaFn->addParamAttr(
+      1, Attribute::getWithCaptureInfo(C, CaptureInfo::none()));
   CsiAfterAllocaFn->addParamAttr(1, Attribute::ReadNone);
   CsiAfterAllocaFn->setOnlyAccessesInaccessibleMemOrArgMem();
   CsiAfterAllocaFn->setDoesNotThrow();

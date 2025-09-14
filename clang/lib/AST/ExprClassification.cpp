@@ -331,7 +331,7 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::ParenExprClass:
     return ClassifyInternal(Ctx, cast<ParenExpr>(E)->getSubExpr());
 
-    // A _Cilk_spawn does not affect the classification of the spawned
+    // A cilk_spawn does not affect the classification of the spawned
     // expression.
   case Expr::CilkSpawnExprClass:
     return ClassifyInternal(Ctx, cast<CilkSpawnExpr>(E)->getSpawnedExpr());

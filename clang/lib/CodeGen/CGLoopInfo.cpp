@@ -54,12 +54,8 @@ LoopInfo::createPipeliningMetadata(const LoopAttributes &Attrs,
                             ConstantAsMetadata::get(ConstantInt::get(
                                 llvm::Type::getInt1Ty(Ctx), 1))}));
     }
-    return createLoopPropertiesMetadata(LoopProperties);
+    return Args;
   }
-
-  SmallVector<Metadata *, 4> Args;
-  Args.push_back(nullptr);
-  Args.append(LoopProperties.begin(), LoopProperties.end());
 
   if (Attrs.PipelineInitiationInterval > 0) {
     Metadata *Vals[] = {

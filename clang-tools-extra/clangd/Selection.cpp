@@ -710,7 +710,7 @@ public:
              TraverseStmt(S->getRangeInit()) && TraverseStmt(S->getBody());
     });
   }
-  // Simple _Cilk_for loops are processed in a special way, so traverse
+  // Simple cilk_for loops are processed in a special way, so traverse
   // specific substatements to determine the selection.
   bool TraverseCilkForStmt(CilkForStmt *S) {
     return traverseNode(S, [&] {

@@ -409,51 +409,52 @@ define i128 @cmov_bsr128_undef(i128 %x, i128 %y) nounwind {
 ; X86-NEXT:    movl 32(%ebp), %edi
 ; X86-NEXT:    movl 36(%ebp), %eax
 ; X86-NEXT:    testl %eax, %eax
-; X86-NEXT:    jne .LBB9_1
-; X86-NEXT:  # %bb.2:
+; X86-NEXT:    jne .LBB9_4
+; X86-NEXT:  # %bb.1:
 ; X86-NEXT:    bsrl %edi, %esi
 ; X86-NEXT:    xorl $31, %esi
 ; X86-NEXT:    orl $32, %esi
-; X86-NEXT:    jmp .LBB9_3
-; X86-NEXT:  .LBB9_1:
-; X86-NEXT:    bsrl %eax, %esi
-; X86-NEXT:    xorl $31, %esi
-; X86-NEXT:  .LBB9_3:
 ; X86-NEXT:    movl 24(%ebp), %ebx
 ; X86-NEXT:    testl %edx, %edx
-; X86-NEXT:    jne .LBB9_4
-; X86-NEXT:  # %bb.5:
+; X86-NEXT:    je .LBB9_5
+; X86-NEXT:  .LBB9_3:
+; X86-NEXT:    bsrl %edx, %ecx
+; X86-NEXT:    xorl $31, %ecx
+; X86-NEXT:    orl %eax, %edi
+; X86-NEXT:    je .LBB9_6
+; X86-NEXT:    jmp .LBB9_7
+; X86-NEXT:  .LBB9_4:
+; X86-NEXT:    bsrl %eax, %esi
+; X86-NEXT:    xorl $31, %esi
+; X86-NEXT:    movl 24(%ebp), %ebx
+; X86-NEXT:    testl %edx, %edx
+; X86-NEXT:    jne .LBB9_3
+; X86-NEXT:  .LBB9_5:
 ; X86-NEXT:    bsrl %ebx, %ecx
 ; X86-NEXT:    xorl $31, %ecx
 ; X86-NEXT:    orl $32, %ecx
 ; X86-NEXT:    orl %eax, %edi
-; X86-NEXT:    je .LBB9_7
-; X86-NEXT:    jmp .LBB9_8
-; X86-NEXT:  .LBB9_4:
-; X86-NEXT:    bsrl %edx, %ecx
-; X86-NEXT:    xorl $31, %ecx
-; X86-NEXT:    orl %eax, %edi
-; X86-NEXT:    jne .LBB9_8
-; X86-NEXT:  .LBB9_7:
+; X86-NEXT:    jne .LBB9_7
+; X86-NEXT:  .LBB9_6:
 ; X86-NEXT:    orl $64, %ecx
 ; X86-NEXT:    movl %ecx, %esi
-; X86-NEXT:  .LBB9_8:
+; X86-NEXT:  .LBB9_7:
 ; X86-NEXT:    orl %eax, %edx
 ; X86-NEXT:    orl 32(%ebp), %ebx
 ; X86-NEXT:    orl %edx, %ebx
 ; X86-NEXT:    jne .LBB9_9
-; X86-NEXT:  # %bb.10:
+; X86-NEXT:  # %bb.8:
 ; X86-NEXT:    movl 48(%ebp), %edx
 ; X86-NEXT:    movl 52(%ebp), %edi
 ; X86-NEXT:    movl 40(%ebp), %esi
 ; X86-NEXT:    movl 44(%ebp), %ecx
-; X86-NEXT:    jmp .LBB9_11
+; X86-NEXT:    jmp .LBB9_10
 ; X86-NEXT:  .LBB9_9:
 ; X86-NEXT:    xorl $127, %esi
 ; X86-NEXT:    xorl %ecx, %ecx
 ; X86-NEXT:    xorl %edx, %edx
 ; X86-NEXT:    xorl %edi, %edi
-; X86-NEXT:  .LBB9_11:
+; X86-NEXT:  .LBB9_10:
 ; X86-NEXT:    movl 8(%ebp), %eax
 ; X86-NEXT:    movl %edi, 12(%eax)
 ; X86-NEXT:    movl %edx, 8(%eax)

@@ -4,7 +4,7 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16
 target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: argmemonly norecurse nounwind uwtable
-define dso_local void @parfor_novec(double* noalias nocapture %y, double* noalias nocapture readonly %x, double %a, i32 %n) local_unnamed_addr #0 {
+define dso_local void @parfor_novec(double* noalias captures(none) %y, double* noalias captures(none) readonly %x, double %a, i32 %n) local_unnamed_addr #0 {
 entry:
   %syncreg = call token @llvm.syncregion.start()
   %cmp = icmp sgt i32 %n, 0
@@ -47,7 +47,7 @@ cleanup:                                          ; preds = %pfor.cond.cleanup, 
 declare token @llvm.syncregion.start() #1
 
 ; Function Attrs: argmemonly norecurse nounwind uwtable
-define dso_local void @parfor_unroll_vec(double* noalias nocapture %y, double* noalias nocapture readonly %x, double %a, i32 %n) local_unnamed_addr #0 {
+define dso_local void @parfor_unroll_vec(double* noalias captures(none) %y, double* noalias captures(none) readonly %x, double %a, i32 %n) local_unnamed_addr #0 {
 entry:
   %syncreg = call token @llvm.syncregion.start()
   %cmp = icmp sgt i32 %n, 0
@@ -86,12 +86,12 @@ cleanup:                                          ; preds = %pfor.cond.cleanup, 
   ret void
 }
 
-; CHECK: define dso_local void @parfor_novec(ptr noalias nocapture %y, ptr noalias nocapture readonly %x, double %a, i32 %n)
+; CHECK: define dso_local void @parfor_novec(ptr noalias captures(none) %y, ptr noalias readonly captures(none) %x, double %a, i32 %n)
 ; CHECK: !llvm.loop [[STRPM_LOOPID1:![0-9]+]]
 ; CHECK: !llvm.loop [[STRPM_OUTER_LOOPID1:![0-9]+]]
 ; CHECK: !llvm.loop [[STRPM_EPIL_LOOPID1:![0-9]+]]
 
-; CHECK: define dso_local void @parfor_unroll_vec(ptr noalias nocapture %y, ptr noalias nocapture readonly %x, double %a, i32 %n)
+; CHECK: define dso_local void @parfor_unroll_vec(ptr noalias captures(none) %y, ptr noalias readonly captures(none) %x, double %a, i32 %n)
 ; CHECK: !llvm.loop [[STRPM_LOOPID2:![0-9]+]]
 ; CHECK: !llvm.loop [[STRPM_OUTER_LOOPID2:![0-9]+]]
 ; CHECK: !llvm.loop [[STRPM_EPIL_LOOPID2:![0-9]+]]

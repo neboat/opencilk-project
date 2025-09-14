@@ -13,6 +13,7 @@
 #include "Symbols.h"
 #include "Target.h"
 
+#include "lld/Common/Args.h"
 #include "lld/Common/CommonLinkerContext.h"
 #include "lld/Common/Filesystem.h"
 #include "lld/Common/Strings.h"

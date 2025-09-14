@@ -1326,8 +1326,8 @@ public:
       Metadata *MD = MDV->getMetadata();
       if (auto *LAM = dyn_cast<LocalAsMetadata>(MD))
         if (LAM->getValue() == TripCount)
-          return MetadataAsValue::get(
-              V->getContext(), MDTuple::get(V->getContext(), std::nullopt));
+          return MetadataAsValue::get(V->getContext(),
+                                      MDTuple::get(V->getContext(), {}));
     }
 
     // Materialize TripCount with ArgEnd.  This should only occur in the loop

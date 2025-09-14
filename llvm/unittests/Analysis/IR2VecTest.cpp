@@ -323,8 +323,8 @@ TEST_F(IR2VecTestFixture, GetInstVecMap) {
   EXPECT_EQ(InstMap.at(AddInst).size(), 2u);
   EXPECT_EQ(InstMap.at(RetInst).size(), 2u);
 
-  EXPECT_TRUE(InstMap.at(AddInst).approximatelyEquals(Embedding(2, 27.6)));
-  EXPECT_TRUE(InstMap.at(RetInst).approximatelyEquals(Embedding(2, 16.8)));
+  EXPECT_TRUE(InstMap.at(AddInst).approximatelyEquals(Embedding(2, 28.8)));
+  EXPECT_TRUE(InstMap.at(RetInst).approximatelyEquals(Embedding(2, 17.4)));
 }
 
 TEST_F(IR2VecTestFixture, GetBBVecMap) {
@@ -337,9 +337,9 @@ TEST_F(IR2VecTestFixture, GetBBVecMap) {
   EXPECT_TRUE(BBMap.count(BB));
   EXPECT_EQ(BBMap.at(BB).size(), 2u);
 
-  // BB vector should be sum of add and ret: {27.6, 27.6} + {16.8, 16.8} =
-  // {44.4, 44.4}
-  EXPECT_TRUE(BBMap.at(BB).approximatelyEquals(Embedding(2, 44.4)));
+  // BB vector should be sum of add and ret: {28.8, 28.8} + {17.4, 17.4} =
+  // {46.2, 46.2}
+  EXPECT_TRUE(BBMap.at(BB).approximatelyEquals(Embedding(2, 46.2)));
 }
 
 TEST_F(IR2VecTestFixture, GetBBVector) {
@@ -349,7 +349,7 @@ TEST_F(IR2VecTestFixture, GetBBVector) {
   const auto &BBVec = Emb->getBBVector(*BB);
 
   EXPECT_EQ(BBVec.size(), 2u);
-  EXPECT_TRUE(BBVec.approximatelyEquals(Embedding(2, 44.4)));
+  EXPECT_TRUE(BBVec.approximatelyEquals(Embedding(2, 46.2)));
 }
 
 TEST_F(IR2VecTestFixture, GetFunctionVector) {
@@ -360,11 +360,11 @@ TEST_F(IR2VecTestFixture, GetFunctionVector) {
 
   EXPECT_EQ(FuncVec.size(), 2u);
 
-  // Function vector should match BB vector (only one BB): {44.4, 44.4}
-  EXPECT_TRUE(FuncVec.approximatelyEquals(Embedding(2, 44.4)));
+  // Function vector should match BB vector (only one BB): {46.2, 46.2}
+  EXPECT_TRUE(FuncVec.approximatelyEquals(Embedding(2, 46.2)));
 }
 
-static constexpr unsigned MaxOpcodes = 67;
+static constexpr unsigned MaxOpcodes = 70;
 static constexpr unsigned MaxTypeIDs = 21;
 static constexpr unsigned MaxOperands = 4;
 
@@ -398,7 +398,7 @@ TEST(IR2VecVocabularyTest, DummyVocabTest) {
 
 TEST(IR2VecVocabularyTest, StringKeyGeneration) {
   EXPECT_EQ(Vocabulary::getStringKey(0), "Ret");
-  EXPECT_EQ(Vocabulary::getStringKey(12), "Add");
+  EXPECT_EQ(Vocabulary::getStringKey(15), "Add");
 
   StringRef HalfTypeKey = Vocabulary::getStringKey(MaxOpcodes + 0);
   StringRef FloatTypeKey = Vocabulary::getStringKey(MaxOpcodes + 2);

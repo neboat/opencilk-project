@@ -695,7 +695,7 @@ public:
   }
 
   void printLeft(OutputBuffer &OB) const override {
-    View->printLeft(OB);
+    OB.printLeft(*View);
     if (View->hasArray(OB))
       OB += " ";
     if (View->hasArray(OB) || View->hasFunction(OB))
@@ -706,7 +706,7 @@ public:
   void printRight(OutputBuffer &OB) const override {
     if (View->hasArray(OB) || View->hasFunction(OB))
       OB += ")";
-    View->printRight(OB);
+    OB.printRight(*View);
   }
 };
 

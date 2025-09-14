@@ -271,6 +271,8 @@ bool CSIImpl::callsPlaceholderFunction(const Instruction &I) {
     case Intrinsic::annotation:
     case Intrinsic::assume:
     case Intrinsic::sideeffect:
+    case Intrinsic::donothing:
+    case Intrinsic::fake_use:
     case Intrinsic::invariant_start:
     case Intrinsic::invariant_end:
     case Intrinsic::launder_invariant_group:
@@ -341,8 +343,7 @@ Constant *ForensicTable::getObjectStrGV(Module &M, StringRef Str,
   Constant *Zero = ConstantInt::get(Int32Ty, 0);
   Value *GepArgs[] = {Zero, Zero};
   if (Str.empty())
-    return ConstantPointerNull::get(
-        PointerType::get(IntegerType::get(C, 8), 0));
+    return ConstantPointerNull::get(PointerType::get(C, 0));
 
   Constant *NameStrConstant = ConstantDataArray::getString(C, Str);
   GlobalVariable *GV = M.getGlobalVariable((GVName + Str).str(), true);
@@ -386,7 +387,7 @@ Value *ForensicTable::localToGlobalId(uint64_t LocalId,
   LLVMContext &C = IRB.getContext();
   Type *BaseIdTy = IRB.getInt64Ty();
   LoadInst *Base = IRB.CreateLoad(BaseIdTy, BaseId);
-  MDNode *MD = MDNode::get(C, std::nullopt);
+  MDNode *MD = MDNode::get(C, {});
   Base->setMetadata(LLVMContext::MD_invariant_load, MD);
   Value *Offset = IRB.getInt64(LocalId);
   return IRB.CreateAdd(Base, Offset);
@@ -403,7 +404,7 @@ uint64_t SizeTable::add(const BasicBlock &BB, TargetTransformInfo *TTI) {
       if (!ICost.isValid())
         IRCost += static_cast<int>(TargetTransformInfo::TCC_Basic);
       else
-        IRCost += *(ICost.getValue());
+        IRCost += ICost.getValue();
     } else {
       if (isa<PHINode>(I))
         continue;
@@ -417,7 +418,7 @@ uint64_t SizeTable::add(const BasicBlock &BB, TargetTransformInfo *TTI) {
 }
 
 PointerType *SizeTable::getPointerType(LLVMContext &C) {
-  return PointerType::get(getSizeStructType(C), 0);
+  return PointerType::get(C, 0);
 }
 
 StructType *SizeTable::getSizeStructType(LLVMContext &C) {
@@ -491,15 +492,15 @@ uint64_t FrontEndDataTable::add(const Instruction &I,
 }
 
 PointerType *FrontEndDataTable::getPointerType(LLVMContext &C) {
-  return PointerType::get(getSourceLocStructType(C), 0);
+  return PointerType::get(C, 0);
 }
 
 StructType *FrontEndDataTable::getSourceLocStructType(LLVMContext &C) {
   return StructType::get(
-      /* Name */ PointerType::get(IntegerType::get(C, 8), 0),
+      /* Name */ PointerType::get(C, 0),
       /* Line */ IntegerType::get(C, 32),
       /* Column */ IntegerType::get(C, 32),
-      /* File */ PointerType::get(IntegerType::get(C, 8), 0));
+      /* File */ PointerType::get(C, 0));
 }
 
 void FrontEndDataTable::add(uint64_t ID, const DILocation *Loc,
@@ -2140,9 +2141,8 @@ CallInst *CSIImpl::createRTUnitInitCall(IRBuilder<> &IRB) {
       getUnitSizeTableType(C, SizeTable::getPointerType(C));
 
   // Lookup __csirt_unit_init
-  SmallVector<Type *, 4> InitArgTypes({IRB.getPtrTy(),
-                                       PointerType::get(UnitFedTableType, 0),
-                                       PointerType::get(UnitSizeTableType, 0),
+  SmallVector<Type *, 4> InitArgTypes({IRB.getPtrTy(), PointerType::get(C, 0),
+                                       PointerType::get(C, 0),
                                        InitCallsiteToFunction->getType()});
   FunctionType *InitFunctionTy =
       FunctionType::get(IRB.getVoidTy(), InitArgTypes, false);

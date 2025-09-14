@@ -3614,8 +3614,6 @@ bool HyperobjectType::isNullish(Expr *E) {
     return true;
   case Expr::IntegerLiteralClass:
     return cast<IntegerLiteral>(E)->getValue().isZero();
-  case Expr::TypoExprClass:
-    return true;
   default:
     return E->getType()->containsErrors();
   }

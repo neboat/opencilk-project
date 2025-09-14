@@ -2419,7 +2419,7 @@ void llvm::TapirLoopHints::writeHintsToMetadata(ArrayRef<Hint> HintTypes) {
   SmallVector<Metadata *, 4> MDs;
 
   // Reserve first location for self reference to the LoopID metadata node.
-  TempMDTuple TempNode = MDNode::getTemporary(Context, std::nullopt);
+  TempMDTuple TempNode = MDNode::getTemporary(Context, {});
   MDs.push_back(TempNode.get());
 
   // If the loop already has metadata, then ignore the existing operands.
@@ -2456,7 +2456,7 @@ void llvm::TapirLoopHints::writeHintsToClonedMetadata(ArrayRef<Hint> HintTypes,
   SmallVector<Metadata *, 4> MDs;
 
   // Reserve first location for self reference to the LoopID metadata node.
-  TempMDTuple TempNode = MDNode::getTemporary(Context, std::nullopt);
+  TempMDTuple TempNode = MDNode::getTemporary(Context, {});
   MDs.push_back(TempNode.get());
 
   // If the loop already has metadata, then ignore the existing operands.
@@ -2496,7 +2496,7 @@ void llvm::TapirLoopHints::clearHintsMetadata() {
   SmallVector<Metadata *, 4> MDs;
 
   // Reserve first location for self reference to the LoopID metadata node.
-  TempMDTuple TempNode = MDNode::getTemporary(Context, std::nullopt);
+  TempMDTuple TempNode = MDNode::getTemporary(Context, {});
   MDs.push_back(TempNode.get());
 
   // If the loop already has metadata, then ignore the existing operands.

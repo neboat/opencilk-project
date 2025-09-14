@@ -214,7 +214,7 @@ void OpenCilkABI::prepareModule() {
   StackFrameTy = StructType::lookupOrCreate(C, StackFrameName);
   WorkerTy = StructType::lookupOrCreate(C, "struct.__cilkrts_worker");
 
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
   Type *VoidTy = Type::getVoidTy(C);
   Type *VoidPtrTy = PointerType::getUnqual(C);
   Type *BoolTy = Type::getInt1Ty(C);

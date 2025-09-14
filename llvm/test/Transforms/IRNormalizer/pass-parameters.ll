@@ -11,8 +11,8 @@
 
 ; CHECK: define i32 @0(i32 %a0, i32 %a1) {
 ; CHECK-NEXT: bb17254:
-; CHECK-NEXT: %"vl12603(%a0, %a1)" = add i32 %a0, %a1
-; CHECK-NEXT: ret i32 %"vl12603(%a0, %a1)"
+; CHECK-NEXT: %"vl11253(%a0, %a1)" = add i32 %a0, %a1
+; CHECK-NEXT: ret i32 %"vl11253(%a0, %a1)"
 ; CHECK-NEXT: }
 define i32 @0(i32, i32) {
   %3 = add i32 %0, %1

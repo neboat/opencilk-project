@@ -11,6 +11,7 @@
 #include "InputFiles.h"
 #include "SymbolTable.h"
 #include "Symbols.h"
+#include "lld/Common/Args.h"
 #include "lld/Common/ErrorHandler.h"
 #include "lld/Common/Filesystem.h"
 #include "lld/Common/Strings.h"

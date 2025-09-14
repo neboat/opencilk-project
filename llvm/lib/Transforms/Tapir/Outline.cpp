@@ -18,6 +18,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/DebugInfo.h"
+#include "llvm/IR/InstIterator.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
@@ -67,7 +68,7 @@ void llvm::CloneIntoFunction(
     SmallPtrSetImpl<BasicBlock *> *TaskResumeBlocks,
     SmallPtrSetImpl<BasicBlock *> *SharedEHEntries, ClonedCodeInfo *CodeInfo,
     ValueMapTypeRemapper *TypeMapper, OutlineMaterializer *Materializer,
-    const MetadataSetTy *IdentityMD) {
+    const MetadataPredicate *IdentityMD) {
   // Get the predecessors of the exit blocks
   SmallPtrSet<const BasicBlock *, 4> EHEntryPreds, ClonedEHEntryPreds;
   if (SharedEHEntries)
@@ -198,6 +199,53 @@ void llvm::CloneIntoFunction(
     }
 }
 
+namespace {
+void collectDebugInfoFromInstructions(const Function &F,
+                                      DebugInfoFinder &DIFinder) {
+  const Module *M = F.getParent();
+  if (M) {
+    // Inspect instructions to process e.g. DILexicalBlocks of inlined functions
+    for (const auto &I : instructions(F))
+      DIFinder.processInstruction(*M, I);
+  }
+}
+
+// Create a predicate that matches the metadata that should be identity mapped
+// during function cloning.
+MetadataPredicate createIdentityMDPredicate(const Function &F,
+                                            CloneFunctionChangeType Changes) {
+  if (Changes >= CloneFunctionChangeType::DifferentModule)
+    return [](const Metadata *MD) { return false; };
+
+  DISubprogram *SPClonedWithinModule = F.getSubprogram();
+
+  // Don't clone inlined subprograms.
+  auto ShouldKeep = [SPClonedWithinModule](const DISubprogram *SP) -> bool {
+    return SP != SPClonedWithinModule;
+  };
+
+  return [=](const Metadata *MD) {
+    // Avoid cloning types, compile units, and (other) subprograms.
+    if (isa<DICompileUnit>(MD) || isa<DIType>(MD))
+      return true;
+
+    if (auto *SP = dyn_cast<DISubprogram>(MD))
+      return ShouldKeep(SP);
+
+    // If a subprogram isn't going to be cloned skip its lexical blocks as well.
+    if (auto *LScope = dyn_cast<DILocalScope>(MD))
+      return ShouldKeep(LScope->getSubprogram());
+
+    // Avoid cloning local variables of subprograms that won't be cloned.
+    if (auto *DV = dyn_cast<DILocalVariable>(MD))
+      if (auto *S = dyn_cast_or_null<DILocalScope>(DV->getScope()))
+        return ShouldKeep(S->getSubprogram());
+
+    return false;
+  };
+}
+} // namespace
+
 /// Create a helper function whose signature is based on Inputs and
 /// Outputs as follows: f(in0, ..., inN, out0, ..., outN)
 ///
@@ -238,7 +286,7 @@ Function *llvm::CreateHelper(
   // Add the types of the output values to the function's argument list.
   for (Value *Output : Outputs) {
     LLVM_DEBUG(dbgs() << "instr used in func: " << *Output << "\n");
-    ParamTy.push_back(PointerType::getUnqual(Output->getType()));
+    ParamTy.push_back(PointerType::getUnqual(Output->getContext()));
   }
 
   LLVM_DEBUG({
@@ -302,6 +350,9 @@ Function *llvm::CreateHelper(
 
   // Copy all attributes other than those stored in the AttributeSet.  We need
   // to remap the parameter indices of the AttributeSet.
+  //
+  // NOTE: This logic is similar to CloneFunctionAttributesInto(), except for
+  // the cloning of argument attributes.
   AttributeList NewAttrs = NewFunc->getAttributes();
   NewFunc->copyAttributesFrom(OldFunc);
   NewFunc->setAttributes(NewAttrs);
@@ -330,7 +381,7 @@ Function *llvm::CreateHelper(
   SmallVector<AttributeSet, 4> NewArgAttrs(NewFunc->arg_size());
   AttributeList OldAttrs = OldFunc->getAttributes();
 
-  // Clone any argument attributes
+  // Clone any argument attributes.
   for (Argument &OldArg : OldFunc->args()) {
     // Check if we're passing this argument to the helper.  We check Inputs
     // here instead of the VMap to avoid potentially populating the VMap with
@@ -415,11 +466,7 @@ Function *llvm::CreateHelper(
     }
   }
 
-  DISubprogram *SPClonedWithinModule =
-      CollectDebugInfoForCloning(*OldFunc, Changes, DIFinder);
-
-  MetadataSetTy IdentityMD =
-      FindDebugInfoToIdentityMap(Changes, DIFinder, SPClonedWithinModule);
+  MetadataPredicate IdentityMD = createIdentityMDPredicate(*OldFunc, Changes);
 
   // If the outlined function has pointer arguments its memory effects are
   // unknown.  Otherwise it inherits the memory effects of its parent.
@@ -494,9 +541,12 @@ Function *llvm::CreateHelper(
     auto *NewModule = NewFunc->getParent();
     auto *NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
     // Avoid multiple insertions of the same DICompileUnit to NMD.
-    SmallPtrSet<const void *, 8> Visited;
-    for (auto *Operand : NMD->operands())
-      Visited.insert(Operand);
+    SmallPtrSet<const void *, 8> Visited(llvm::from_range, NMD->operands());
+
+    // Collect and clone all the compile units referenced from the instructions
+    // in the function (e.g. as instructions' scope).
+    DebugInfoFinder DIFinder;
+    collectDebugInfoFromInstructions(*OldFunc, DIFinder);
     for (auto *Unit : DIFinder.compile_units()) {
       MDNode *MappedUnit =
           MapMetadata(Unit, VMap, RF_None, TypeMapper, Materializer);

@@ -12,22 +12,22 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Tapir/OMPTaskABI.h"
-#include "llvm/IR/DataLayout.h"
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Intrinsics.h"
-#include "llvm/IRReader/IRReader.h"
-#include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/TapirTaskInfo.h"
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DebugInfo.h"
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InlineAsm.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/Support/Alignment.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -186,7 +186,7 @@ void OMPTaskABI::prepareModule() {
   const char *TaskTyName = "struct.kmp_task";
   TaskTy = StructType::lookupOrCreate(C, TaskTyName);
 
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
   Type *VoidTy = Type::getVoidTy(C);
   Type *VoidPtrTy = PointerType::getUnqual(C);
 
@@ -200,7 +200,7 @@ void OMPTaskABI::prepareModule() {
       FunctionType::get(VoidPtrTy, {VoidPtrTy, IntPtrTy}, false);
   FunctionType *SpawnFnTy =
       FunctionType::get(VoidTy,
-                        {StackFramePtrTy, PointerType::getUnqual(SpawnBodyFnTy),
+                        {StackFramePtrTy, PointerType::getUnqual(C),
                          SpawnBodyFnArgTy, SpawnBodyFnArgSizeTy, IntPtrTy},
                         false);
   FunctionType *Grainsize8FnTy = FunctionType::get(Int8Ty, {Int8Ty}, false);

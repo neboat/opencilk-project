@@ -6098,7 +6098,7 @@ LValue CodeGenFunction::EmitBinaryOperatorLValue(const BinaryOperator *E) {
 
       // Set up to perform a detach.
       assert(!IsSpawned &&
-             "_Cilk_spawn statement found in spawning environment.");
+             "cilk_spawn statement found in spawning environment.");
       IsSpawned = true;
 
       // Emit the expression.

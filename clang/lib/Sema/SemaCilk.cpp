@@ -70,7 +70,7 @@ static void SearchForReturnInStmt(Sema &Self, Stmt *S) {
 
 StmtResult
 Sema::ActOnCilkSpawnStmt(SourceLocation SpawnLoc, Stmt *SubStmt) {
-  if (!checkCilkContext(*this, SpawnLoc, "_Cilk_spawn"))
+  if (!checkCilkContext(*this, SpawnLoc, "cilk_spawn"))
     return StmtError();
 
   SearchForReturnInStmt(*this, SubStmt);
@@ -91,17 +91,14 @@ Sema::ActOnCilkSpawnStmt(SourceLocation SpawnLoc, Stmt *SubStmt) {
 
 StmtResult
 Sema::ActOnCilkSyncStmt(SourceLocation SyncLoc) {
-  if (!checkCilkContext(*this, SyncLoc, "_Cilk_sync"))
+  if (!checkCilkContext(*this, SyncLoc, "cilk_sync"))
     return StmtError();
   return new (Context) CilkSyncStmt(SyncLoc);
 }
 
 ExprResult Sema::ActOnCilkSpawnExpr(SourceLocation Loc, Expr *E) {
-  FunctionScopeInfo *CilkCtx = checkCilkContext(*this, Loc, "_Cilk_spawn");
-  if (!CilkCtx) {
-    CorrectDelayedTyposInExpr(E);
+  if (!checkCilkContext(*this, Loc, "cilk_spawn"))
     return ExprError();
-  }
 
   PushExpressionEvaluationContext(
       ExpressionEvaluationContext::PotentiallyEvaluated);
@@ -122,7 +119,7 @@ ExprResult Sema::ActOnCilkSpawnExpr(SourceLocation Loc, Expr *E) {
 
 StmtResult
 Sema::ActOnCilkScopeStmt(SourceLocation ScopeLoc, Stmt *SubStmt) {
-  if (!checkCilkContext(*this, ScopeLoc, "_Cilk_scope"))
+  if (!checkCilkContext(*this, ScopeLoc, "cilk_scope"))
     return StmtError();
 
   setFunctionHasBranchProtectedScope();

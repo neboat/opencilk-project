@@ -57,7 +57,7 @@ void CloneIntoFunction(
     ClonedCodeInfo *CodeInfo = nullptr,
     ValueMapTypeRemapper *TypeMapper = nullptr,
     OutlineMaterializer *Materializer = nullptr,
-    const MetadataSetTy *IdentityMD = nullptr);
+    const MetadataPredicate *IdentityMD = nullptr);
 
 /// Create a helper function whose signature is based on Inputs and
 /// Outputs as follows: f(in0, ..., inN, out0, ..., outN)

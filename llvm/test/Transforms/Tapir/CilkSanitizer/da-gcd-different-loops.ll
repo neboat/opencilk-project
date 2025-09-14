@@ -103,7 +103,8 @@ for.body279:                                      ; preds = %for.body279, %for.b
   %indvars.iv.next1204 = or i64 %indvars.iv1203, 1
   %7 = add nuw nsw i64 %indvars.iv.next1204, %3
   %arrayidx283.1 = getelementptr inbounds i32, i32* %0, i64 %7
-  %8 = load i32, i32* %arrayidx283.1, align 4, !tbaa !3
+  %cast.arrayidx283.1 = bitcast i32* %arrayidx283.1 to <2 x i32>*
+  %8 = load <2 x i32>, <2 x i32>* %cast.arrayidx283.1, align 4, !tbaa !3
   br label %for.body279
 
 pfor.inc312:                                      ; preds = %pfor.cond191
@@ -134,7 +135,7 @@ for.inc.us.i.8:                                   ; preds = %for.inc.us.i.7
   br i1 undef, label %getneighbors.exit, label %for.cond2.preheader.us.i, !llvm.loop !7
 }
 
-; CHECK: Src:  store <2 x i32> undef, ptr %6, align 4, !tbaa !3 --> Dst:  %8 = load i32, ptr %arrayidx283.1, align 4, !tbaa !3
+; CHECK: Src:  store <2 x i32> undef, ptr %6, align 4, !tbaa !3 --> Dst:  %8 = load <2 x i32>, ptr %cast.arrayidx283.1, align 4, !tbaa !3
 ; CHECK-NEXT: da analyze - flow [|<]!
 
 ; Function Attrs: argmemonly nofree nosync nounwind willreturn

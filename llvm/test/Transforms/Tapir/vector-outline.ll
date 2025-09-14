@@ -6,7 +6,7 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16
 target triple = "x86_64-unknown-linux-gnu"
 
 ; Function Attrs: argmemonly norecurse nounwind uwtable
-define dso_local void @_Z14vectorlooptestPjll(i32* nocapture %SA12, i64 %n1, i64 %n12) local_unnamed_addr #0 {
+define dso_local void @_Z14vectorlooptestPjll(i32* captures(none) %SA12, i64 %n1, i64 %n12) local_unnamed_addr #0 {
 entry:
   %syncreg = tail call token @llvm.syncregion.start()
   %cmp = icmp sgt i64 %n12, 0
@@ -150,7 +150,7 @@ cleanup:                                          ; preds = %pfor.cond.cleanup, 
   ret void
 }
 
-; CHECK: define dso_local void @_Z14vectorlooptestPjll(ptr nocapture %SA12, i64 %n1, i64 %n12) local_unnamed_addr [[ATTRIBUTE:#[0-9]+]] {
+; CHECK: define dso_local void @_Z14vectorlooptestPjll(ptr captures(none) %SA12, i64 %n1, i64 %n12) local_unnamed_addr [[ATTRIBUTE:#[0-9]+]] {
 ; CHECK: call {{.*}}void @_Z14vectorlooptestPjll.outline_pfor.cond.strpm.outer.ls1(
 ; CHECK: <8 x i64> %{{.+}}, ptr %{{.+}})
 

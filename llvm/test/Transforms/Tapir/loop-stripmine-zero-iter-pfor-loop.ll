@@ -17,9 +17,8 @@ entry:
   ret i64 %sub.ptr.div
 }
 
-define void @_ZN6parlay8internal13bucket_sort_rIPSt5tupleIJmmEES4_N4cpam5buildINS5_14map_full_entryIN17ConcurrentAdaptor10MapAdaptorImmE5entryEEEE4lessMUlS3_S3_E_EEEvNS_5sliceIT_SH_EENSG_IT0_SJ_EET1_bb() personality ptr null {
+define void @_ZN6parlay8internal13bucket_sort_rIPSt5tupleIJmmEES4_N4cpam5buildINS5_14map_full_entryIN17ConcurrentAdaptor10MapAdaptorImmE5entryEEEE4lessMUlS3_S3_E_EEEvNS_5sliceIT_SH_EENSG_IT0_SJ_EET1_bb(ptr %in1111) personality ptr null {
 entry:
-  %in1111 = alloca [0 x [0 x [0 x %"struct.parlay::slice.759"]]], i32 0, align 8
   %call1 = call i64 @_ZNK6parlay5sliceIPSt5tupleIJmmEES3_E4sizeEv(ptr %in1111)
   %cmp = icmp ult i64 %call1, 512
   br i1 %cmp, label %if.then, label %common.ret

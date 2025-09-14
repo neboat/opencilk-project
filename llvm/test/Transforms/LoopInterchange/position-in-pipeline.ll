@@ -6,6 +6,7 @@
 
 ; CHECK-NOT:  Running pass: LoopInterchangePass
 ; CHECK:      Running pass: ControlHeightReductionPass
+; CHECK:      Running pass: InstCombinePass
 ; CHECK-NEXT: Running pass: LoopSimplifyPass
 ; CHECK-NEXT: Running pass: LCSSAPass
 ; CHECK-NEXT: Running pass: LoopRotatePass

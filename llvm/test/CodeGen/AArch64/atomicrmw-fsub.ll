@@ -478,9 +478,8 @@ define double @test_atomicrmw_fsub_f32_seq_cst_align8(ptr %ptr, double %value) #
 ; SOFTFP-NOLSE-NEXT:    b .LBB5_2
 ; SOFTFP-NOLSE-NEXT:  .LBB5_1: // %cmpxchg.nostore
 ; SOFTFP-NOLSE-NEXT:    // in Loop: Header=BB5_2 Depth=1
-; SOFTFP-NOLSE-NEXT:    mov w8, wzr
 ; SOFTFP-NOLSE-NEXT:    clrex
-; SOFTFP-NOLSE-NEXT:    cbnz w8, .LBB5_6
+; SOFTFP-NOLSE-NEXT:    cbnz wzr, .LBB5_6
 ; SOFTFP-NOLSE-NEXT:  .LBB5_2: // %atomicrmw.start
 ; SOFTFP-NOLSE-NEXT:    // =>This Loop Header: Depth=1
 ; SOFTFP-NOLSE-NEXT:    // Child Loop BB5_3 Depth 2

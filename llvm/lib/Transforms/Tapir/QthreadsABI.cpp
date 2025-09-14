@@ -173,8 +173,8 @@ FunctionCallee QthreadsABI::get_qt_sinc_destroy() {
 QthreadsABI::QthreadsABI(Module &M) : TapirTarget(M) {
   LLVMContext &C = M.getContext();
   // Initialize any types we need for lowering.
-  QthreadFTy = PointerType::getUnqual(
-      FunctionType::get(Type::getInt64Ty(C), { PointerType::getUnqual(C) }, false));
+  // Function type: i64(void *)
+  QthreadFTy = PointerType::getUnqual(C);
 }
 
 /// Lower a call to get the grainsize of this Tapir loop.

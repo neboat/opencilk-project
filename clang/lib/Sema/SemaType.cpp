@@ -2084,7 +2084,7 @@ Expr *Sema::ValidateReducerCallback(Expr *E, unsigned NumArgs,
                                AssignmentAction::Passing)) {
     E = new (Context) CXXNullPtrLiteralExpr(Context.NullPtrTy, E->getExprLoc());
     Cast = CK_NullToPointer;
-  } else if (Mismatch == IntToPointer) {
+  } else if (Mismatch == AssignConvertType::IntToPointer) {
     Cast = CK_IntegralToPointer;
   }
 

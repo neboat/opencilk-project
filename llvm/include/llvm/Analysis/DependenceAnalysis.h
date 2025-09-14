@@ -417,9 +417,9 @@ namespace llvm {
     /// flag PossiblyLoopIndependent should be set by the caller if it appears
     /// that control flow can reach from Src to Dst without traversing a loop
     /// back edge.
-    LLVM_ABI std::unique_ptr<Dependence> depends(GeneralAccess *SrcA,
-                                                 GeneralAccess *DstA,
-                                                 bool PossiblyLoopIndependent);
+    LLVM_ABI std::unique_ptr<Dependence>
+    depends(GeneralAccess *SrcA, GeneralAccess *DstA,
+            bool UnderRuntimeAssumptions = false);
 
   private:
     AAResults *AA;

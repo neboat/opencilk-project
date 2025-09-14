@@ -15,7 +15,6 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/AssumptionCache.h"
 #include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
@@ -123,37 +122,37 @@ void CilkABI::prepareModule() {
   WorkerTy = StructType::lookupOrCreate(C, "struct.__cilkrts_worker");
 
   if (PedigreeTy->isOpaque())
-    PedigreeTy->setBody({Int64Ty, PointerType::getUnqual(PedigreeTy)});
+    PedigreeTy->setBody({Int64Ty, PointerType::getUnqual(C)});
   if (StackFrameTy->isOpaque()) {
     Type *PedigreeUnionTy = StructType::get(PedigreeTy);
-    StackFrameTy->setBody({Int32Ty,                              // flags
-                           Int32Ty,                              // size
-                           PointerType::getUnqual(StackFrameTy), // call_parent
-                           PointerType::getUnqual(WorkerTy),     // worker
-                           VoidPtrTy,                            // except_data
-                           ArrayType::get(VoidPtrTy, 5),         // ctx
-                           Int32Ty,                              // mxcsr
-                           Int16Ty,                              // fpcsr
-                           Int16Ty,                              // reserved
+    StackFrameTy->setBody({Int32Ty,                      // flags
+                           Int32Ty,                      // size
+                           PointerType::getUnqual(C),    // call_parent
+                           PointerType::getUnqual(C),    // worker
+                           VoidPtrTy,                    // except_data
+                           ArrayType::get(VoidPtrTy, 5), // ctx
+                           Int32Ty,                      // mxcsr
+                           Int16Ty,                      // fpcsr
+                           Int16Ty,                      // reserved
                            // union { spawn_helper_pedigree, parent_pedigree }
                            PedigreeUnionTy});
   }
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
   if (WorkerTy->isOpaque())
     WorkerTy->setBody({
-        PointerType::getUnqual(StackFramePtrTy), // tail
-        PointerType::getUnqual(StackFramePtrTy), // head
-        PointerType::getUnqual(StackFramePtrTy), // exc
-        PointerType::getUnqual(StackFramePtrTy), // protected_tail
-        PointerType::getUnqual(StackFramePtrTy), // ltq_limit
-        Int32Ty,                                 // self
-        VoidPtrTy,                               // g
-        VoidPtrTy,                               // l
-        VoidPtrTy,                               // reducer_map
-        StackFramePtrTy,                         // current_stack_frame
-        VoidPtrTy,                               // saved_protected_tail
-        VoidPtrTy,                               // sysdep
-        PedigreeTy                               // pedigree
+        PointerType::getUnqual(C), // tail
+        PointerType::getUnqual(C), // head
+        PointerType::getUnqual(C), // exc
+        PointerType::getUnqual(C), // protected_tail
+        PointerType::getUnqual(C), // ltq_limit
+        Int32Ty,                   // self
+        VoidPtrTy,                 // g
+        VoidPtrTy,                 // l
+        VoidPtrTy,                 // reducer_map
+        StackFramePtrTy,           // current_stack_frame
+        VoidPtrTy,                 // saved_protected_tail
+        VoidPtrTy,                 // sysdep
+        PedigreeTy                 // pedigree
     });
 }
 
@@ -193,7 +192,7 @@ FunctionCallee CilkABI::Get__cilkrts_leave_frame() {
   AttributeList AL;
   AL = AL.addFnAttribute(C, Attribute::NoUnwind);
   Type *VoidTy = Type::getVoidTy(C);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
   CilkRTSLeaveFrame = M.getOrInsertFunction("__cilkrts_leave_frame", AL, VoidTy,
                                             StackFramePtrTy);
 
@@ -206,9 +205,9 @@ FunctionCallee CilkABI::Get__cilkrts_rethrow() {
 
   LLVMContext &C = M.getContext();
   Type *VoidTy = Type::getVoidTy(C);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
-  CilkRTSRethrow = M.getOrInsertFunction("__cilkrts_rethrow", VoidTy,
-                                         StackFramePtrTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
+  CilkRTSRethrow =
+      M.getOrInsertFunction("__cilkrts_rethrow", VoidTy, StackFramePtrTy);
 
   return CilkRTSRethrow;
 }
@@ -219,9 +218,9 @@ FunctionCallee CilkABI::Get__cilkrts_sync() {
 
   LLVMContext &C = M.getContext();
   Type *VoidTy = Type::getVoidTy(C);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
-  CilkRTSSync = M.getOrInsertFunction("__cilkrts_sync", VoidTy,
-                                      StackFramePtrTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
+  CilkRTSSync =
+      M.getOrInsertFunction("__cilkrts_sync", VoidTy, StackFramePtrTy);
 
   return CilkRTSSync;
 }
@@ -231,11 +230,11 @@ FunctionCallee CilkABI::Get__cilkrts_get_tls_worker() {
     return CilkRTSGetTLSWorker;
 
   LLVMContext &C = M.getContext();
-  PointerType *WorkerPtrTy = PointerType::getUnqual(WorkerTy);
+  PointerType *WorkerPtrTy = PointerType::getUnqual(C);
   AttributeList AL;
   AL = AL.addFnAttribute(C, Attribute::NoUnwind);
-  CilkRTSGetTLSWorker = M.getOrInsertFunction("__cilkrts_get_tls_worker", AL,
-                                              WorkerPtrTy);
+  CilkRTSGetTLSWorker =
+      M.getOrInsertFunction("__cilkrts_get_tls_worker", AL, WorkerPtrTy);
 
   return CilkRTSGetTLSWorker;
 }
@@ -245,11 +244,11 @@ FunctionCallee CilkABI::Get__cilkrts_get_tls_worker_fast() {
     return CilkRTSGetTLSWorkerFast;
 
   LLVMContext &C = M.getContext();
-  PointerType *WorkerPtrTy = PointerType::getUnqual(WorkerTy);
+  PointerType *WorkerPtrTy = PointerType::getUnqual(C);
   AttributeList AL;
   AL = AL.addFnAttribute(C, Attribute::NoUnwind);
-  CilkRTSGetTLSWorkerFast = M.getOrInsertFunction(
-      "__cilkrts_get_tls_worker_fast", AL, WorkerPtrTy);
+  CilkRTSGetTLSWorkerFast =
+      M.getOrInsertFunction("__cilkrts_get_tls_worker_fast", AL, WorkerPtrTy);
 
   return CilkRTSGetTLSWorkerFast;
 }
@@ -259,11 +258,11 @@ FunctionCallee CilkABI::Get__cilkrts_bind_thread_1() {
     return CilkRTSBindThread1;
 
   LLVMContext &C = M.getContext();
-  PointerType *WorkerPtrTy = PointerType::getUnqual(WorkerTy);
+  PointerType *WorkerPtrTy = PointerType::getUnqual(C);
   AttributeList AL;
   AL = AL.addFnAttribute(C, Attribute::NoUnwind);
-  CilkRTSBindThread1 = M.getOrInsertFunction("__cilkrts_bind_thread_1", AL,
-                                             WorkerPtrTy);
+  CilkRTSBindThread1 =
+      M.getOrInsertFunction("__cilkrts_bind_thread_1", AL, WorkerPtrTy);
 
   return CilkRTSBindThread1;
 }
@@ -301,11 +300,9 @@ static Value *LoadSTyField(
 /// Emit inline assembly code to save the floating point state, for x86 only.
 void CilkABI::EmitSaveFloatingPointState(IRBuilder<> &B, Value *SF) {
   LLVMContext &C = B.getContext();
-  FunctionType *FTy =
-    FunctionType::get(Type::getVoidTy(C),
-                      {PointerType::getUnqual(Type::getInt32Ty(C)),
-                       PointerType::getUnqual(Type::getInt16Ty(C))},
-                      false);
+  FunctionType *FTy = FunctionType::get(
+      Type::getVoidTy(C),
+      {PointerType::getUnqual(C), PointerType::getUnqual(C)}, false);
 
   InlineAsm *Asm = InlineAsm::get(FTy,
                                   "stmxcsr $0\n\t"
@@ -397,7 +394,7 @@ Function *CilkABI::Get__cilkrts_pop_frame() {
   // Get or create the __cilkrts_pop_frame function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilkrts_pop_frame",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -429,8 +426,8 @@ Function *CilkABI::Get__cilkrts_pop_frame() {
 
   // sf->call_parent = nullptr;
   StoreSTyField(B, DL, StackFrameTy,
-                Constant::getNullValue(PointerType::getUnqual(StackFrameTy)),
-                SF, StackFrameFields::call_parent, /*isVolatile=*/false,
+                Constant::getNullValue(PointerType::getUnqual(Ctx)), SF,
+                StackFrameFields::call_parent, /*isVolatile=*/false,
                 AtomicOrdering::Release);
 
   B.CreateRetVoid();
@@ -468,7 +465,7 @@ Function *CilkABI::Get__cilkrts_detach() {
   // Get or create the __cilkrts_detach function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilkrts_detach",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -590,7 +587,7 @@ Function *CilkABI::GetCilkSyncFn(bool instrument) {
   // Get or create the __cilk_sync function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilk_sync",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -745,7 +742,7 @@ Function *CilkABI::GetCilkSyncNothrowFn(bool instrument) {
   // Get or create the __cilk_sync_nothrow function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilk_sync_nothrow",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -875,7 +872,7 @@ Function *CilkABI::GetCilkCatchExceptionFn(Type *ExnTy) {
   // Get or create the __cilk_catch_exception function.
   LLVMContext &Ctx = M.getContext();
 
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilk_catch_exception",
                           FunctionType::get(ExnTy,
@@ -1023,7 +1020,7 @@ Function *CilkABI::Get__cilkrts_enter_frame_1() {
   // Get or create the __cilkrts_enter_frame_1 function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilkrts_enter_frame_1",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -1041,7 +1038,7 @@ Function *CilkABI::Get__cilkrts_enter_frame_1() {
   BasicBlock *FastPath = BasicBlock::Create(Ctx, "fastpath", Fn);
   BasicBlock *Cont = BasicBlock::Create(Ctx, "cont", Fn);
 
-  PointerType *WorkerPtrTy = PointerType::getUnqual(WorkerTy);
+  PointerType *WorkerPtrTy = PointerType::getUnqual(Ctx);
   StructType *SFTy = StackFrameTy;
 
   // Block  (Entry)
@@ -1135,7 +1132,7 @@ Function *CilkABI::Get__cilkrts_enter_frame_fast_1() {
   // Get or create the __cilkrts_enter_frame_fast_1 function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilkrts_enter_frame_fast_1",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),
@@ -1206,7 +1203,7 @@ Function *CilkABI::GetCilkParentEpilogueFn(bool instrument) {
   // Get or create the __cilk_parent_epilogue function.
   LLVMContext &Ctx = M.getContext();
   Type *VoidTy = Type::getVoidTy(Ctx);
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(Ctx);
   Function *Fn = nullptr;
   if (GetOrCreateFunction(M, "__cilk_parent_epilogue",
                           FunctionType::get(VoidTy, {StackFramePtrTy}, false),

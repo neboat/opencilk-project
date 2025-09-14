@@ -11,8 +11,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "CodeGenFunction.h"
 #include "CGCleanup.h"
+#include "CGDebugInfo.h"
+#include "CodeGenFunction.h"
 #include "clang/AST/ExprCilk.h"
 #include "clang/AST/StmtCilk.h"
 
@@ -428,7 +429,7 @@ llvm::Instruction *CodeGenFunction::EmitSyncRegionStart() {
   return SRStart;
 }
 
-/// EmitCilkSyncStmt - Emit a _Cilk_sync node.
+/// EmitCilkSyncStmt - Emit a cilk_sync node.
 void CodeGenFunction::EmitCilkSyncStmt(const CilkSyncStmt &S) {
   // Check if we are generating unreachable code.
   if (!HaveInsertPoint())
@@ -490,10 +491,9 @@ void CodeGenFunction::EmitCilkScopeStmt(const CilkScopeStmt &S) {
     WithinCilkScope = false;
 }
 
-void 
-CodeGenFunction::EmitCilkForRangeStmt(const CilkForRangeStmt &S,
+void CodeGenFunction::EmitCilkForRangeStmt(const CilkForRangeStmt &S,
                                            ArrayRef<const Attr *> ForAttrs) {
-  
+
   JumpDest LoopExit = getJumpDestInCurrentScope("pfor.end");
 
   // Setup the sync region
@@ -546,10 +546,10 @@ CodeGenFunction::EmitCilkForRangeStmt(const CilkForRangeStmt &S,
                  SourceLocToDebugLoc(R.getEnd()));
 
   const Expr *Inc = S.getInc();
-  assert(Inc && "_Cilk_for range loop has no increment");
+  assert(Inc && "cilk_for range loop has no increment");
   Continue = getJumpDestInCurrentScope("pfor.inc");
 
-  // Ensure that the _Cilk_for loop iterations are synced on exit from the loop.
+  // Ensure that the cilk_for loop iterations are synced on exit from the loop.
   EHStack.pushCleanup<ImplicitSyncCleanup>(NormalCleanup, SyncRegion);
 
   // Create a cleanup scope for the condition variable cleanups.
@@ -802,7 +802,7 @@ void CodeGenFunction::EmitCilkSpawnStmt(const CilkSpawnStmt &S) {
   if (isa<CallExpr>(IgnoreImplicitAndCleanups(S.getSpawnedStmt()))) {
     // Set up to perform a detach.
     assert(!IsSpawned &&
-           "_Cilk_spawn statement found in spawning environment.");
+           "cilk_spawn statement found in spawning environment.");
     IsSpawned = true;
     PushDetachScope();
 
@@ -841,7 +841,7 @@ LValue CodeGenFunction::EmitCilkSpawnExprLValue(const CilkSpawnExpr *E) {
   assert(isa<CallExpr>(IgnoreImplicitAndCleanups(E->getSpawnedExpr())) &&
          "SpawnExprLValue does not spawn a call.");
   assert(!IsSpawned &&
-         "_Cilk_spawn statement found in spawning environment.");
+         "cilk_spawn statement found in spawning environment.");
   IsSpawned = true;
   PushDetachScope();
 
@@ -932,7 +932,7 @@ void CodeGenFunction::EmitCilkForStmt(const CilkForStmt &S,
   if (S.getEndStmt())
     EmitStmt(S.getEndStmt());
 
-  assert(S.getCond() && "_Cilk_for loop has no condition");
+  assert(S.getCond() && "cilk_for loop has no condition");
 
   // Start the loop with a block that tests the condition.  If there's an
   // increment, the continue scope will be overwritten later.
@@ -949,10 +949,10 @@ void CodeGenFunction::EmitCilkForStmt(const CilkForStmt &S,
                  checkIfLoopMustProgress(S.getCond(), hasEmptyLoopBody(S)));
 
   const Expr *Inc = S.getInc();
-  assert(Inc && "_Cilk_for loop has no increment");
+  assert(Inc && "cilk_for loop has no increment");
   Continue = getJumpDestInCurrentScope("pfor.inc");
 
-  // Ensure that the _Cilk_for loop iterations are synced on exit from the loop.
+  // Ensure that the cilk_for loop iterations are synced on exit from the loop.
   EHStack.pushCleanup<ImplicitSyncCleanup>(NormalCleanup, SyncRegion);
 
   // Create a cleanup scope for the condition variable cleanups.

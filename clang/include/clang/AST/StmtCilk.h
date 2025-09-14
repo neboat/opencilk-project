@@ -19,7 +19,7 @@
 
 namespace clang {
 
-/// CilkSpawnStmt - This represents a _Cilk_spawn.
+/// CilkSpawnStmt - This represents a cilk_spawn.
 ///
 class CilkSpawnStmt : public Stmt {
   SourceLocation SpawnLoc;
@@ -31,7 +31,7 @@ public:
   CilkSpawnStmt(SourceLocation SL, Stmt *S)
       : Stmt(CilkSpawnStmtClass), SpawnLoc(SL), SpawnedStmt(S) { }
 
-  // Build an empty _Cilk_spawn statement.
+  // Build an empty cilk_spawn statement.
   explicit CilkSpawnStmt(EmptyShell Empty) : Stmt(CilkSpawnStmtClass, Empty) {}
 
   const Stmt *getSpawnedStmt() const { return SpawnedStmt; }
@@ -60,7 +60,7 @@ public:
   }
 };
 
-/// CilkSyncStmt - This represents a _Cilk_sync.
+/// CilkSyncStmt - This represents a cilk_sync.
 ///
 class CilkSyncStmt : public Stmt {
   SourceLocation SyncLoc;
@@ -70,7 +70,7 @@ public:
     setSyncLoc(SL);
   }
 
-  // Build an empty _Cilk_sync statement.
+  // Build an empty cilk_sync statement.
   explicit CilkSyncStmt(EmptyShell Empty) : Stmt(CilkSyncStmtClass, Empty) { }
 
   SourceLocation getSyncLoc() const { return SyncLoc; }
@@ -93,8 +93,8 @@ public:
   }
 };
 
-/// CilkForRangeStmt - This represents a '_Cilk_for(range-declarator :
-/// range-expression)' or a '_Cilk_for (init-statement range-declarator :
+/// CilkForRangeStmt - This represents a 'cilk_for(range-declarator :
+/// range-expression)' or a 'cilk_for (init-statement range-declarator :
 /// range-expression)', based on a CXXForRangeStmt which is a C++0x
 /// [stmt.ranged]'s ranged for stmt
 ///
@@ -168,7 +168,7 @@ public:
   child_range children() { return child_range(&SubExprs[0], &SubExprs[END]); }
 };
 
-/// CilkForStmt - This represents a '_Cilk_for(init;cond;inc)' stmt.
+/// CilkForStmt - This represents a 'cilk_for(init;cond;inc)' stmt.
 class CilkForStmt : public Stmt {
   SourceLocation CilkForLoc;
   enum { INIT, LIMIT, INITCOND, BEGINSTMT, ENDSTMT, COND, INC, LOOPVAR,
@@ -182,7 +182,7 @@ public:
               Stmt *Body, Expr *OgCond, Expr *OgInc, SourceLocation CFL,
               SourceLocation LP, SourceLocation RP);
 
-  /// Build an empty _Cilk_for statement.
+  /// Build an empty cilk_for statement.
   explicit CilkForStmt(EmptyShell Empty) : Stmt(CilkForStmtClass, Empty) {}
 
   Stmt *getInit() { return SubExprs[INIT]; }
@@ -293,7 +293,7 @@ public:
   }
 };
 
-/// CilkScopeStmt - This represents a _Cilk_scope.
+/// CilkScopeStmt - This represents a cilk_scope.
 ///
 class CilkScopeStmt : public Stmt {
   SourceLocation ScopeLoc;
@@ -305,7 +305,7 @@ public:
   CilkScopeStmt(SourceLocation SL, Stmt *S)
       : Stmt(CilkScopeStmtClass), ScopeLoc(SL), Body(S) {}
 
-  // Build an empty _Cilk_scope statement.
+  // Build an empty cilk_scope statement.
   explicit CilkScopeStmt(EmptyShell Empty) : Stmt(CilkScopeStmtClass, Empty) {}
 
   const Stmt *getBody() const { return Body; }

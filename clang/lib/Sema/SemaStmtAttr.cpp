@@ -136,7 +136,7 @@ static Attr *handleLoopHintAttr(Sema &S, Stmt *St, const ParsedAttr &A,
       SetHints(LoopHintAttr::UnrollAndJam, LoopHintAttr::Enable);
   } else if (PragmaName == "cilk") {
     Option = llvm::StringSwitch<LoopHintAttr::OptionType>(
-                 OptionLoc->Ident->getName())
+                 OptionLoc->getIdentifierInfo()->getName())
                  .Case("grainsize", LoopHintAttr::TapirGrainsize)
                  .Default(LoopHintAttr::TapirGrainsize);
     if (Option == LoopHintAttr::TapirGrainsize) {

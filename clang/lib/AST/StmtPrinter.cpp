@@ -487,14 +487,14 @@ void StmtPrinter::VisitBreakStmt(BreakStmt *Node) {
 }
 
 void StmtPrinter::VisitCilkSpawnStmt(CilkSpawnStmt *Node) {
-  Indent() << "_Cilk_spawn ";
+  Indent() << "cilk_spawn ";
   PrintStmt(Node->getSpawnedStmt());
   OS << ";";
   if (Policy.IncludeNewlines) OS << "\n";
 }
 
 void StmtPrinter::VisitCilkSpawnExpr(CilkSpawnExpr *Node) {
-  Indent() << "_Cilk_spawn ";
+  Indent() << "cilk_spawn ";
   PrintExpr(Node->getSpawnedExpr());
 }
 
@@ -2950,12 +2950,12 @@ void StmtPrinter::VisitHLSLOutArgExpr(HLSLOutArgExpr *Node) {
 }
 
 void StmtPrinter::VisitCilkSyncStmt(CilkSyncStmt *) {
-  Indent() << "_Cilk_sync;";
+  Indent() << "cilk_sync;";
   if (Policy.IncludeNewlines) OS << "\n";
 }
 
 void StmtPrinter::VisitCilkForStmt(CilkForStmt *Node) {
-  Indent() << "_Cilk_for (";
+  Indent() << "cilk_for (";
   if (Node->getInit()) {
     if (DeclStmt *DS = dyn_cast<DeclStmt>(Node->getInit()))
       PrintRawDeclStmt(DS);
@@ -2992,7 +2992,7 @@ void StmtPrinter::VisitCilkForStmt(CilkForStmt *Node) {
 }
 
 void StmtPrinter::VisitCilkScopeStmt(CilkScopeStmt *Node) {
-  Indent() << "_Cilk_scope ";
+  Indent() << "cilk_scope ";
 
   if (CompoundStmt *CS = dyn_cast<CompoundStmt>(Node->getBody())) {
     PrintRawCompoundStmt(CS);
@@ -3004,7 +3004,7 @@ void StmtPrinter::VisitCilkScopeStmt(CilkScopeStmt *Node) {
 }
 
 void StmtPrinter::VisitCilkForRangeStmt(CilkForRangeStmt *Node) {
-  Indent() << "_Cilk_for (";
+  Indent() << "cilk_for (";
 
   if (Node->getCXXForRangeStmt()->getInit())
     PrintInitStmt(Node->getCXXForRangeStmt()->getInit(), 5);

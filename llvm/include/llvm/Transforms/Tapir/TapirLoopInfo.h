@@ -190,10 +190,11 @@ public:
   /// used for the location of the remark.  \return the remark object that can
   /// be streamed to.
   ///
-  /// Based on createMissedAnalysis in the LoopVectorize pass.
+  /// Based on createLVAnalysis in the LoopVectorize pass.
   static OptimizationRemarkAnalysis
   createMissedAnalysis(const char *PassName, StringRef RemarkName,
-                       const Loop *TheLoop, Instruction *I = nullptr);
+                       const Loop *TheLoop, Instruction *I = nullptr,
+                       DebugLoc DL = {});
 
 private:
   /// The loop that we evaluate.

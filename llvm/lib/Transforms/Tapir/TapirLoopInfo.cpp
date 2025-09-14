@@ -36,21 +36,18 @@ using namespace llvm;
 /// Based on createMissedAnalysis in the LoopVectorize pass.
 OptimizationRemarkAnalysis
 TapirLoopInfo::createMissedAnalysis(const char *PassName, StringRef RemarkName,
-                                    const Loop *TheLoop, Instruction *I) {
-  const Value *CodeRegion = TheLoop->getHeader();
-  DebugLoc DL = TheLoop->getStartLoc();
+                                    const Loop *TheLoop, Instruction *I,
+                                    DebugLoc DL) {
+  BasicBlock *CodeRegion = I ? I->getParent() : TheLoop->getHeader();
+  // If debug location is attached to the instruction, use it. Otherwise if DL
+  // was not provided, use the loop's.
+  if (I && I->getDebugLoc())
+    DL = I->getDebugLoc();
+  else if (!DL)
+    DL = TheLoop->getStartLoc();
 
-  if (I) {
-    CodeRegion = I->getParent();
-    // If there is no debug location attached to the instruction, revert back to
-    // using the loop's.
-    if (I->getDebugLoc())
-      DL = I->getDebugLoc();
-  }
-
-  OptimizationRemarkAnalysis R(PassName, RemarkName, DL, CodeRegion);
-  R << "Tapir loop not transformed: ";
-  return R;
+  return OptimizationRemarkAnalysis(PassName, RemarkName, DL, CodeRegion)
+         << "Tapir loop not transformed: ";
 }
 
 /// Update information on this Tapir loop based on its metadata.

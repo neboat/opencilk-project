@@ -5190,7 +5190,7 @@ Value *ScalarExprEmitter::VisitBinAssign(const BinaryOperator *E) {
   case Qualifiers::OCL_None:
     if (isa<CilkSpawnExpr>(E->getRHS()->IgnoreImplicit())) {
       assert(!CGF.IsSpawned &&
-             "_Cilk_spawn statement found in spawning environment.");
+             "cilk_spawn statement found in spawning environment.");
 
       // Compute the address to store into.
       LHS = EmitCheckedLValue(E->getLHS(), CodeGenFunction::TCK_Store);

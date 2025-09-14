@@ -3149,7 +3149,8 @@ bool GVNPass::performScalarPRE(Instruction *CurInst) {
 #endif
       PREInstr->deleteValue();
       return false;
-    } else if (isa<DetachInst>(PREPred->getTerminator())) {
+    }
+    if (isa<DetachInst>(PREPred->getTerminator())) {
       for (auto RV : Reattaches) {
         ReattachInst *RI = RV.second;
         for (auto DV : Detaches) {
@@ -3160,7 +3161,7 @@ bool GVNPass::performScalarPRE(Instruction *CurInst) {
             if (DI->getParent() == PREPred) {
               assert(nullptr == DV.first &&
                      "Detach predecessor already had a value.");
-              predMap.push_back(std::make_pair(PREInstr, RI->getParent()));
+              PredMap.push_back(std::make_pair(PREInstr, RI->getParent()));
             }
           }
         }

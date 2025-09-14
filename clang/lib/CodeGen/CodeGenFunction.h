@@ -1368,7 +1368,7 @@ public:
   };
 
   // Flag indicating whether CodeGen is currently emitting within a some
-  // _Cilk_scope.
+  // cilk_scope.
   bool WithinCilkScope = false;
 
   /// Cleanup to ensure a tapir.runtime.end intrinsic is inserted.
@@ -1410,7 +1410,7 @@ public:
   /// A sync region is a collection of spawned tasks and syncs such that syncs
   /// in the collection may wait on the spawned tasks in the same collection
   /// (control-flow permitting).  In Cilk, certain constructs, such as functions
-  /// _Cilk_spawn bodies, or _Cilk_for loop bodies, use a separate sync region
+  /// cilk_spawn bodies, or cilk_for loop bodies, use a separate sync region
   /// to handle spawning and syncing of tasks within that construct.
   class SyncRegion {
     CodeGenFunction &CGF;
@@ -4182,10 +4182,9 @@ public:
   void EmitCilkScopeStmt(const CilkScopeStmt &S);
   void EmitCilkSpawnStmt(const CilkSpawnStmt &S);
   void EmitCilkSyncStmt(const CilkSyncStmt &S);
-  void EmitCilkForStmt(const CilkForStmt &S,
-                       ArrayRef<const Attr *> Attrs = std::nullopt);
+  void EmitCilkForStmt(const CilkForStmt &S, ArrayRef<const Attr *> Attrs = {});
   void EmitCilkForRangeStmt(const CilkForRangeStmt &S,
-                       ArrayRef<const Attr *> Attrs = std::nullopt);
+                            ArrayRef<const Attr *> Attrs = {});
   LValue EmitCilkSpawnExprLValue(const CilkSpawnExpr *E);
 
   void EmitObjCForCollectionStmt(const ObjCForCollectionStmt &S);

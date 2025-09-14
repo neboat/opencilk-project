@@ -16,7 +16,7 @@ public:
 
 int bar(int n);
 
-int x = _Cilk_spawn 0; // expected-error{{'_Cilk_spawn' cannot be used outside a function}}
+int x = _Cilk_spawn 0; // expected-error{{'cilk_spawn' cannot be used outside a function}}
 
 int illegal_spawn_uses(int n) {
   // FIXME: Fails an assertion during codegen.

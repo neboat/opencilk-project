@@ -47,12 +47,10 @@ FunctionCallee RuntimeCilkFor::Get__cilkrts_cilk_for_32() {
   Type *VoidTy = Type::getVoidTy(C);
   Type *VoidPtrTy = PointerType::getUnqual(C);
   Type *CountTy = Type::getInt32Ty(C);
-  FunctionType *BodyTy = FunctionType::get(VoidTy,
-                                           {VoidPtrTy, CountTy, CountTy},
-                                           false);
+  // Function type: void(void*, i32, i32)
   FunctionType *FTy =
     FunctionType::get(VoidTy,
-                      {PointerType::getUnqual(BodyTy), VoidPtrTy, CountTy,
+                      {PointerType::getUnqual(C), VoidPtrTy, CountTy,
                        Type::getInt32Ty(C)}, false);
   CilkRTSCilkFor32 = M.getOrInsertFunction("__cilkrts_cilk_for_32", FTy);
 
@@ -67,12 +65,10 @@ FunctionCallee RuntimeCilkFor::Get__cilkrts_cilk_for_64() {
   Type *VoidTy = Type::getVoidTy(C);
   Type *VoidPtrTy = PointerType::getUnqual(C);
   Type *CountTy = Type::getInt64Ty(C);
-  FunctionType *BodyTy = FunctionType::get(VoidTy,
-                                           {VoidPtrTy, CountTy, CountTy},
-                                           false);
+  // Function type: void(void*, i64, i64)
   FunctionType *FTy =
     FunctionType::get(VoidTy,
-                      {PointerType::getUnqual(BodyTy), VoidPtrTy, CountTy,
+                      {PointerType::getUnqual(C), VoidPtrTy, CountTy,
                        Type::getInt32Ty(C)}, false);
   CilkRTSCilkFor64 = M.getOrInsertFunction("__cilkrts_cilk_for_64", FTy);
 
@@ -88,8 +84,8 @@ void RuntimeCilkFor::setupLoopOutlineArgs(
   HelperInputs.push_back(TLInputsFixed[0]);
 
   // Add the loop-control inputs.
-  auto LCArgsIter = LCArgs.begin();
-  auto LCInputsIter = LCInputs.begin();
+  auto *LCArgsIter = LCArgs.begin();
+  auto *LCInputsIter = LCInputs.begin();
   // First, add the start iteration.
   HelperArgs.insert(*LCArgsIter);
   HelperInputs.push_back(*LCInputsIter);
@@ -174,10 +170,8 @@ void RuntimeCilkFor::processOutlinedLoopCall(TapirLoopInfo &TL,
   // Insert a call or invoke to the cilk_for ABI method.
   LLVM_DEBUG(dbgs() << "RuntimeCilkFor: Adding call to __cilkrts_cilk_for\n");
   IRBuilder<> B(ReplCall);
-  Type *FPtrTy = PointerType::getUnqual(
-      FunctionType::get(Type::getVoidTy(C),
-                        { PointerType::getUnqual(C), PrimaryIVTy, PrimaryIVTy },
-                        false));
+  // Function type: void(void *, PrimaryIVTy, PrimaryIVTy)
+  Type *FPtrTy = PointerType::getUnqual(C);
   Value *OutlinedFnPtr = B.CreatePointerBitCastOrAddrSpaceCast(Outlined,
                                                                FPtrTy);
   AllocaInst *ArgStruct = cast<AllocaInst>(CB->getArgOperand(0));

@@ -66,25 +66,21 @@ static cl::opt<bool> RequireParallelEpilog(
 /// instruction that prevents vectorization.  Otherwise \p TheLoop is used for
 /// the location of the remark.  \return the remark object that can be streamed
 /// to.
-static OptimizationRemarkAnalysis
-createMissedAnalysis(StringRef RemarkName, const Loop *TheLoop,
-                     Instruction *I = nullptr) {
-  const Value *CodeRegion = TheLoop->getHeader();
-  DebugLoc DL = TheLoop->getStartLoc();
+static OptimizationRemarkAnalysis createMissedAnalysis(StringRef RemarkName,
+                                                       const Loop *TheLoop,
+                                                       Instruction *I = nullptr,
+                                                       DebugLoc DL = {}) {
+  BasicBlock *CodeRegion = I ? I->getParent() : TheLoop->getHeader();
+  // If debug location is attached to the instruction, use it. Otherwise if DL
+  // was not provided, use the loop's.
+  if (I && I->getDebugLoc())
+    DL = I->getDebugLoc();
+  else if (!DL)
+    DL = TheLoop->getStartLoc();
 
-  if (I) {
-    CodeRegion = I->getParent();
-    // If there is no debug location attached to the instruction, revert back to
-    // using the loop's.
-    if (I->getDebugLoc())
-      DL = I->getDebugLoc();
-  }
-
-  OptimizationRemarkAnalysis R(DEBUG_TYPE, RemarkName, DL, CodeRegion);
-  R << "loop not stripmined: ";
-  return R;
+  return OptimizationRemarkAnalysis(DEBUG_TYPE, RemarkName, DL, CodeRegion)
+         << "loop not stripmined: ";
 }
-
 
 /// Approximate the work of the body of the loop L.  Returns several relevant
 /// properties of loop L via by-reference arguments.

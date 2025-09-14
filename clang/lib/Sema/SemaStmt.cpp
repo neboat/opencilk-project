@@ -235,7 +235,7 @@ namespace {
 void DiagnoseUnused(Sema &S, const Expr *E, std::optional<unsigned> DiagID) {
   bool NoDiscardOnly = !DiagID.has_value();
 
-  // Ignore _Cilk_spawn when diagnosing unused expression.
+  // Ignore cilk_spawn when diagnosing unused expression.
   if (const CilkSpawnExpr *CSE = dyn_cast<CilkSpawnExpr>(E))
     E = CSE->getSpawnedExpr()->IgnoreImplicit();
 
@@ -2265,7 +2265,7 @@ namespace {
     }
 
     void VisitCilkForStmt(const CilkForStmt *S) {
-      // Only visit the init statement of a _Cilk_for loop; the body
+      // Only visit the init statement of a cilk_for loop; the body
       // has a different break/continue scope.
       if (const Stmt *Init = S->getInit())
         Visit(Init);
@@ -3424,7 +3424,7 @@ Sema::ActOnBreakStmt(SourceLocation BreakLoc, Scope *CurScope) {
   return new (Context) BreakStmt(BreakLoc);
 }
 
-/// Return the stride expression from the increment portion of a _Cilk_for loop
+/// Return the stride expression from the increment portion of a cilk_for loop
 /// that satisfies one of the following formats:
 ///
 ///   var += <expr not using var>
@@ -3458,7 +3458,7 @@ GetCilkForStride(Sema &S, llvm::SmallPtrSetImpl<VarDecl *> &Decls,
   return Invalid;
 }
 
-// Check the _Cilk_for initialization statement.  Returns true on error.
+// Check the cilk_for initialization statement.  Returns true on error.
 static bool CheckCilkForInit(Sema &S, SourceLocation &CilkForLoc, Stmt *First) {
   if (!First) {
     S.Diag(CilkForLoc, diag::err_cilk_for_initializer_expected_decl);
@@ -3471,15 +3471,15 @@ static bool CheckCilkForInit(Sema &S, SourceLocation &CilkForLoc, Stmt *First) {
   return false;
 }
 
-/// Rewrite the loop control of simple _Cilk_for loops into a form that LLVM
+/// Rewrite the loop control of simple cilk_for loops into a form that LLVM
 /// will have an easier time analyzing.  The transformation looks as follows:
 ///
-///   _Cilk_for (loop-var = init-expr;
+///   cilk_for (loop-var = init-expr;
 ///              loop-var relation-compare end-expr;
 ///              loop-var compound-assign stride-expr)
 ///     body-stmt
 ///   =>
-///   _Cilk_for (__begin = 0, __end = modified-end-expr;
+///   cilk_for (__begin = 0, __end = modified-end-expr;
 ///              __begin relation-compare __end;
 ///              __begin-update-expr)
 ///   { loop-var = __begin * stride-expr;  body-stmt }
@@ -3493,7 +3493,7 @@ static bool CheckCilkForInit(Sema &S, SourceLocation &CilkForLoc, Stmt *First) {
 ///   range-expr := end-expr - init-expr - 1   if relation-compare is LT or GT
 ///   range-expr := end-expr - init-expr       if relation-cpmpare is LE or GE
 ///
-/// Essentially, we treat simple _Cilk_for loops as syntactic sugar for slightly
+/// Essentially, we treat simple cilk_for loops as syntactic sugar for slightly
 /// more complex loops that often match the programmer's intuition as to how the
 /// loop should behave.
 StmtResult Sema::HandleSimpleCilkForStmt(SourceLocation CilkForLoc,
@@ -3628,7 +3628,7 @@ StmtResult Sema::HandleSimpleCilkForStmt(SourceLocation CilkForLoc,
   if (LimitDecl.isInvalid())
     return StmtError();
 
-  // Compute a check that this _Cilk_for loop executes at all.
+  // Compute a check that this cilk_for loop executes at all.
   SourceLocation CondLoc = Cond->getExprLoc();
   ExprResult InitCond;
   if (DeclUseInLHS) {
@@ -3653,7 +3653,7 @@ StmtResult Sema::HandleSimpleCilkForStmt(SourceLocation CilkForLoc,
     return StmtError();
   }
 
-  // Compute the range of this _Cilk_for loop.
+  // Compute the range of this cilk_for loop.
   ExprResult Range;
   {
     ExprResult InitRef =
@@ -3671,7 +3671,7 @@ StmtResult Sema::HandleSimpleCilkForStmt(SourceLocation CilkForLoc,
   if (Range.isInvalid())
     return StmtError();
 
-  // At this point, we have confirmed that this loop is a simple _Cilk_for loop.
+  // At this point, we have confirmed that this loop is a simple cilk_for loop.
   // Now rewrite the loop control.
 
   // If the comparison is not inclusive, reduce the Range by 1.
@@ -3799,15 +3799,15 @@ StmtResult Sema::HandleSimpleCilkForStmt(SourceLocation CilkForLoc,
       CilkForLoc, LParenLoc, RParenLoc);
 }
 
-/// Examine the condition of the _Cilk_for loop to lift the evaluation of the
-/// end condition of a _Cilk_for loop out of the loop.  Intuitively, this
-/// routine transforms _Cilk_for loops as follows:
+/// Examine the condition of the cilk_for loop to lift the evaluation of the
+/// end condition of a cilk_for loop out of the loop.  Intuitively, this
+/// routine transforms cilk_for loops as follows:
 ///
-///   _Cilk_for(loop-var-decl;
-///             loop-var-expr comparison-op end-expr;
+///   cilk_for(loop-var-decl;
+///            loop-var-expr comparison-op end-expr;
 ///   =>
-///   _Cilk_for(loop-var-decl, __end = end-expr;
-///             loop-var-expr comparison-op __end;
+///   cilk_for(loop-var-decl, __end = end-expr;
+///            loop-var-expr comparison-op __end;
 ///
 /// Here, loop-var-expr can use variables declared in loop-var-decl, while
 /// end-expr must not use any such variables.  In general, the loop condition
@@ -3942,7 +3942,7 @@ Sema::ActOnCilkForStmt(SourceLocation CilkForLoc, SourceLocation LParenLoc,
   CheckBreakContinueBinding(Second.get().second);
   CheckBreakContinueBinding(Third.get());
 
-  // Check the condition of the _Cilk_for
+  // Check the condition of the cilk_for
   Expr* Condition = Second.get().second;
   if (!Condition)
     return StmtError(Diag(CilkForLoc, diag::err_cilk_for_invalid_cond_expr));
@@ -3984,7 +3984,7 @@ Sema::ActOnCilkForStmt(SourceLocation CilkForLoc, SourceLocation LParenLoc,
         First, Limit, InitCond.get().second, Begin, End, Condition, Increment,
         LoopVar, Body, OgCond, OgInc, CilkForLoc, LParenLoc, RParenLoc);
 
-  // Attempt to process this loop as a simple _Cilk_for loop.
+  // Attempt to process this loop as a simple cilk_for loop.
   StmtResult SimpleCilkFor =
     HandleSimpleCilkForStmt(CilkForLoc, LParenLoc, First, Condition, Increment,
                             RParenLoc, Body);
@@ -4073,16 +4073,16 @@ StmtResult Sema::FinishCilkForRangeStmt(Stmt *S, Stmt *B) {
   return CilkForRange;
 }
 
-StmtResult Sema::ActOnCilkForRangeStmt(Scope *S, SourceLocation ForLoc,
-                                       Stmt *InitStmt, Stmt *First,
-                                       SourceLocation ColonLoc, Expr *Range,
-                                       SourceLocation RParenLoc,
-                                       BuildForRangeKind Kind) {
+StmtResult Sema::ActOnCilkForRangeStmt(
+    Scope *S, SourceLocation ForLoc, Stmt *InitStmt, Stmt *First,
+    SourceLocation ColonLoc, Expr *Range, SourceLocation RParenLoc,
+    BuildForRangeKind Kind,
+    ArrayRef<MaterializeTemporaryExpr *> LifetimeExtendTemps) {
   // We wrap the CXXForRange, in an attempt to reduce code copying.
   SourceLocation EmptyCoawaitLoc;
   StmtResult ForRangeStmt =
       ActOnCXXForRangeStmt(S, ForLoc, EmptyCoawaitLoc, InitStmt, First,
-                           ColonLoc, Range, RParenLoc, Kind);
+                           ColonLoc, Range, RParenLoc, Kind, LifetimeExtendTemps);
 
   if (ForRangeStmt.isInvalid())
     return ForRangeStmt;

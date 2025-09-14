@@ -1386,7 +1386,7 @@ LValue ComplexExprEmitter::EmitBinAssignLValue(const BinaryOperator *E,
 
   if (isa<CilkSpawnExpr>(E->getRHS()->IgnoreImplicit())) {
     assert(!CGF.IsSpawned &&
-           "_Cilk_spawn statement found in spawning environment.");
+           "cilk_spawn statement found in spawning environment.");
 
     // Compute the address to store into.
     LValue LHS = CGF.EmitLValue(E->getLHS());

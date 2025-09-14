@@ -2594,7 +2594,6 @@ bool Sema::DiagnoseEmptyLookup(Scope *S, CXXScopeSpec &SS, LookupResult &R,
                                ArrayRef<Expr *> Args, DeclContext *LookupCtx) {
   DeclarationName Name = R.getLookupName();
   SourceRange NameRange = R.getLookupNameInfo().getSourceRange();
-
   unsigned diagnostic = diag::err_undeclared_var_use;
   unsigned diagnostic_suggest = diag::err_undeclared_var_use_suggest;
   if (Name.getNameKind() == DeclarationName::CXXOperatorName ||
@@ -15132,7 +15131,7 @@ ExprResult Sema::CreateBuiltinBinOp(SourceLocation OpLoc,
   checkTypeSupport(RHSExpr->getType(), OpLoc, /*ValueDecl*/ nullptr);
 
   // Check for illegal spawns
-  // TODO: Add support for _Cilk_spawn on the RHS of a compound-assignment
+  // TODO: Add support for cilk_spawn on the RHS of a compound-assignment
   // operator.
   if (!BinaryOperator::isAssignmentOp(Opc) ||
       BinaryOperator::isCompoundAssignmentOp(Opc))

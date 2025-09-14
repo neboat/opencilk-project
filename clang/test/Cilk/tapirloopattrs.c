@@ -32,9 +32,7 @@ void parfor_unroll_vec(double *restrict y, double *restrict x, double a, int n) 
 // CHECK: [[NOVEC]] = !{!"llvm.loop.vectorize.width", i32 1}
 
 // CHECK: [[LOOPID2]] = distinct !{[[LOOPID2]], [[MUSTPROGRESS]], [[VECATTRS:!.+]], [[VECFOLLOWALL1:![0-9]+]]}
-// CHECK: [[VECFOLLOWALL1]] = !{!"llvm.loop.vectorize.followup_all", [[VECFOLLOW1:![0-9]+]]}
-// CHECK: [[VECFOLLOW1]] = distinct !{[[VECFOLLOW1]], [[MUSTPROGRESS]], [[VECFOLLOWATTRS:!.+]]}
+// CHECK: [[VECFOLLOWALL1]] = !{!"llvm.loop.vectorize.followup_all", [[MUSTPROGRESS]], [[VECFOLLOWATTRS:!.+]]}
 
 // CHECK: [[LOOPID3]] = distinct !{[[LOOPID3]], [[MUSTPROGRESS]], [[TAPIR_SPAWN_STRATEGY]], [[VECATTRS]], [[VECFOLLOWALL2:![0-9]+]]}
-// CHECK: [[VECFOLLOWALL2]] = !{!"llvm.loop.vectorize.followup_all", [[VECFOLLOW2:![0-9]+]]}
-// CHECK: [[VECFOLLOW2]] = distinct !{[[VECFOLLOW2]], [[MUSTPROGRESS]], [[TAPIR_SPAWN_STRATEGY]], [[VECFOLLOWATTRS]]}
+// CHECK: [[VECFOLLOWALL2]] = !{!"llvm.loop.vectorize.followup_all", [[MUSTPROGRESS]], [[TAPIR_SPAWN_STRATEGY]], [[VECFOLLOWATTRS]]}

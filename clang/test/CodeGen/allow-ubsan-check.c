@@ -15,13 +15,13 @@
 // CHECK-NEXT:    [[TMP2:%.*]] = icmp ne i32 [[Y]], -1, !nosanitize [[META2]]
 // CHECK-NEXT:    [[OR:%.*]] = or i1 [[TMP1]], [[TMP2]], !nosanitize [[META2]]
 //
-//                                                                       27 == SO_IntegerDivideByZero
-// CHECK-NEXT:    [[TMP3:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 27), !nosanitize [[META2]]
+//                                                                       28 == SO_IntegerDivideByZero
+// CHECK-NEXT:    [[TMP3:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 28), !nosanitize [[META2]]
 // CHECK-NEXT:    [[TMP4:%.*]] = xor i1 [[TMP3]], true, !nosanitize [[META2]]
 // CHECK-NEXT:    [[TMP5:%.*]] = or i1 [[TMP0]], [[TMP4]], !nosanitize [[META2]]
 //
-//                                                                       41 == SO_SignedIntegerOverflow
-// CHECK-NEXT:    [[TMP6:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 41), !nosanitize [[META2]]
+//                                                                       42 == SO_SignedIntegerOverflow
+// CHECK-NEXT:    [[TMP6:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 42), !nosanitize [[META2]]
 // CHECK-NEXT:    [[TMP7:%.*]] = xor i1 [[TMP6]], true, !nosanitize [[META2]]
 // CHECK-NEXT:    [[TMP8:%.*]] = or i1 [[OR]], [[TMP7]], !nosanitize [[META2]]
 // CHECK-NEXT:    [[TMP9:%.*]] = and i1 [[TMP5]], [[TMP8]], !nosanitize [[META2]]
@@ -42,10 +42,10 @@
 // TR-NEXT:    [[TMP1:%.*]] = icmp ne i32 [[X]], -2147483648, !nosanitize [[META2]]
 // TR-NEXT:    [[TMP2:%.*]] = icmp ne i32 [[Y]], -1, !nosanitize [[META2]]
 // TR-NEXT:    [[OR:%.*]] = or i1 [[TMP1]], [[TMP2]], !nosanitize [[META2]]
-// TR-NEXT:    [[TMP3:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 27), !nosanitize [[META2]]
+// TR-NEXT:    [[TMP3:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 28), !nosanitize [[META2]]
 // TR-NEXT:    [[TMP4:%.*]] = xor i1 [[TMP3]], true, !nosanitize [[META2]]
 // TR-NEXT:    [[TMP5:%.*]] = or i1 [[TMP0]], [[TMP4]], !nosanitize [[META2]]
-// TR-NEXT:    [[TMP6:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 41), !nosanitize [[META2]]
+// TR-NEXT:    [[TMP6:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 42), !nosanitize [[META2]]
 // TR-NEXT:    [[TMP7:%.*]] = xor i1 [[TMP6]], true, !nosanitize [[META2]]
 // TR-NEXT:    [[TMP8:%.*]] = or i1 [[OR]], [[TMP7]], !nosanitize [[META2]]
 // TR-NEXT:    [[TMP9:%.*]] = and i1 [[TMP5]], [[TMP8]], !nosanitize [[META2]]
@@ -64,10 +64,10 @@
 // REC-NEXT:    [[TMP1:%.*]] = icmp ne i32 [[X]], -2147483648, !nosanitize [[META2]]
 // REC-NEXT:    [[TMP2:%.*]] = icmp ne i32 [[Y]], -1, !nosanitize [[META2]]
 // REC-NEXT:    [[OR:%.*]] = or i1 [[TMP1]], [[TMP2]], !nosanitize [[META2]]
-// REC-NEXT:    [[TMP3:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 27), !nosanitize [[META2]]
+// REC-NEXT:    [[TMP3:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 28), !nosanitize [[META2]]
 // REC-NEXT:    [[TMP4:%.*]] = xor i1 [[TMP3]], true, !nosanitize [[META2]]
 // REC-NEXT:    [[TMP5:%.*]] = or i1 [[TMP0]], [[TMP4]], !nosanitize [[META2]]
-// REC-NEXT:    [[TMP6:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 41), !nosanitize [[META2]]
+// REC-NEXT:    [[TMP6:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 42), !nosanitize [[META2]]
 // REC-NEXT:    [[TMP7:%.*]] = xor i1 [[TMP6]], true, !nosanitize [[META2]]
 // REC-NEXT:    [[TMP8:%.*]] = or i1 [[OR]], [[TMP7]], !nosanitize [[META2]]
 // REC-NEXT:    [[TMP9:%.*]] = and i1 [[TMP5]], [[TMP8]], !nosanitize [[META2]]
@@ -90,8 +90,8 @@ int div(int x, int y) {
 // CHECK-NEXT:  [[ENTRY:.*:]]
 // CHECK-NEXT:    [[TMP0:%.*]] = icmp eq ptr [[X]], null, !nosanitize [[META2]]
 //
-//                                                                       29 == SO_Null
-// CHECK-NEXT:    [[TMP1:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 29), !nosanitize [[META2]]
+//                                                                       30 == SO_Null
+// CHECK-NEXT:    [[TMP1:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 30), !nosanitize [[META2]]
 // CHECK-NEXT:    [[DOTNOT1:%.*]] = and i1 [[TMP0]], [[TMP1]]
 // CHECK-NEXT:    br i1 [[DOTNOT1]], label %[[HANDLER_TYPE_MISMATCH:.*]], label %[[CONT:.*]], !prof [[PROF4:![0-9]+]], !nosanitize [[META2]]
 // CHECK:       [[HANDLER_TYPE_MISMATCH]]:
@@ -105,7 +105,7 @@ int div(int x, int y) {
 // TR-SAME: ptr noundef readonly captures(address_is_null) [[X:%.*]]) local_unnamed_addr #[[ATTR0]] {
 // TR-NEXT:  [[ENTRY:.*:]]
 // TR-NEXT:    [[TMP0:%.*]] = icmp eq ptr [[X]], null, !nosanitize [[META2]]
-// TR-NEXT:    [[TMP1:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 29), !nosanitize [[META2]]
+// TR-NEXT:    [[TMP1:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 30), !nosanitize [[META2]]
 // TR-NEXT:    [[DOTNOT1:%.*]] = and i1 [[TMP0]], [[TMP1]]
 // TR-NEXT:    br i1 [[DOTNOT1]], label %[[TRAP:.*]], label %[[CONT:.*]], !prof [[PROF4:![0-9]+]], !nosanitize [[META2]]
 // TR:       [[TRAP]]:
@@ -119,7 +119,7 @@ int div(int x, int y) {
 // REC-SAME: ptr noundef readonly captures(address_is_null) [[X:%.*]]) local_unnamed_addr #[[ATTR0]] {
 // REC-NEXT:  [[ENTRY:.*:]]
 // REC-NEXT:    [[TMP0:%.*]] = icmp eq ptr [[X]], null, !nosanitize [[META2]]
-// REC-NEXT:    [[TMP1:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 29), !nosanitize [[META2]]
+// REC-NEXT:    [[TMP1:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 30), !nosanitize [[META2]]
 // REC-NEXT:    [[DOTNOT1:%.*]] = and i1 [[TMP0]], [[TMP1]]
 // REC-NEXT:    br i1 [[DOTNOT1]], label %[[HANDLER_TYPE_MISMATCH:.*]], label %[[CONT:.*]], !prof [[PROF4:![0-9]+]], !nosanitize [[META2]]
 // REC:       [[HANDLER_TYPE_MISMATCH]]:
@@ -139,8 +139,8 @@ int null(int* x) {
 // CHECK-NEXT:    [[TMP0:%.*]] = tail call { i32, i1 } @llvm.sadd.with.overflow.i32(i32 [[X]], i32 [[Y]]), !nosanitize [[META2]]
 // CHECK-NEXT:    [[TMP1:%.*]] = extractvalue { i32, i1 } [[TMP0]], 1, !nosanitize [[META2]]
 //
-//                                                                       41 == SO_SignedIntegerOverflow
-// CHECK-NEXT:    [[TMP2:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 41), !nosanitize [[META2]]
+//                                                                       42 == SO_SignedIntegerOverflow
+// CHECK-NEXT:    [[TMP2:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 42), !nosanitize [[META2]]
 // CHECK-NEXT:    [[DOTDEMORGAN:%.*]] = and i1 [[TMP1]], [[TMP2]]
 // CHECK-NEXT:    br i1 [[DOTDEMORGAN]], label %[[HANDLER_ADD_OVERFLOW:.*]], label %[[CONT:.*]], !prof [[PROF4]], !nosanitize [[META2]]
 // CHECK:       [[HANDLER_ADD_OVERFLOW]]:
@@ -157,7 +157,7 @@ int null(int* x) {
 // TR-NEXT:  [[ENTRY:.*:]]
 // TR-NEXT:    [[TMP0:%.*]] = tail call { i32, i1 } @llvm.sadd.with.overflow.i32(i32 [[X]], i32 [[Y]]), !nosanitize [[META2]]
 // TR-NEXT:    [[TMP1:%.*]] = extractvalue { i32, i1 } [[TMP0]], 1, !nosanitize [[META2]]
-// TR-NEXT:    [[TMP2:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 41), !nosanitize [[META2]]
+// TR-NEXT:    [[TMP2:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 42), !nosanitize [[META2]]
 // TR-NEXT:    [[DOTDEMORGAN:%.*]] = and i1 [[TMP1]], [[TMP2]]
 // TR-NEXT:    br i1 [[DOTDEMORGAN]], label %[[TRAP:.*]], label %[[CONT:.*]], !prof [[PROF4]], !nosanitize [[META2]]
 // TR:       [[TRAP]]:
@@ -172,7 +172,7 @@ int null(int* x) {
 // REC-NEXT:  [[ENTRY:.*:]]
 // REC-NEXT:    [[TMP0:%.*]] = tail call { i32, i1 } @llvm.sadd.with.overflow.i32(i32 [[X]], i32 [[Y]]), !nosanitize [[META2]]
 // REC-NEXT:    [[TMP1:%.*]] = extractvalue { i32, i1 } [[TMP0]], 1, !nosanitize [[META2]]
-// REC-NEXT:    [[TMP2:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 41), !nosanitize [[META2]]
+// REC-NEXT:    [[TMP2:%.*]] = tail call i1 @llvm.allow.ubsan.check(i8 42), !nosanitize [[META2]]
 // REC-NEXT:    [[DOTDEMORGAN:%.*]] = and i1 [[TMP1]], [[TMP2]]
 // REC-NEXT:    br i1 [[DOTDEMORGAN]], label %[[HANDLER_ADD_OVERFLOW:.*]], label %[[CONT:.*]], !prof [[PROF4]], !nosanitize [[META2]]
 // REC:       [[HANDLER_ADD_OVERFLOW]]:

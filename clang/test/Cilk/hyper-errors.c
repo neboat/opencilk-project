@@ -34,7 +34,8 @@ void function() {
   // expected-error@-1{{use of undeclared identifier 'typo1'}}
   int _Hyperobject(typo2, typo3) var2 = 0;
   // expected-error@-1{{use of undeclared identifier 'typo2'}}
-  // expected-error@-2{{use of undeclared identifier 'typo3'}}
+  // NOTE: LLVM 21 removed delayed typo checks: https://github.com/llvm/llvm-project/pull/143423
+  // no-expected-error@-2{{use of undeclared identifier 'typo3'}}
   int _Hyperobject(0, typo4) var3 = 0;
   // expected-error@-1{{use of undeclared identifier 'typo4'}}
   const int _Hyperobject(identity, reduce) var4 = 0;

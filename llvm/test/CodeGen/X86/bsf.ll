@@ -278,31 +278,32 @@ define i128 @cmov_bsf128(i128 %x, i128 %y) nounwind {
 ; X86-NEXT:    movl %ecx, %edx
 ; X86-NEXT:    orl %edi, %edx
 ; X86-NEXT:    orl %eax, %edx
-; X86-NEXT:    je .LBB8_1
-; X86-NEXT:  # %bb.2: # %cond.false
+; X86-NEXT:    je .LBB8_5
+; X86-NEXT:  # %bb.1: # %cond.false
 ; X86-NEXT:    testl %ecx, %ecx
-; X86-NEXT:    jne .LBB8_3
-; X86-NEXT:  # %bb.4: # %cond.false
+; X86-NEXT:    jne .LBB8_6
+; X86-NEXT:  # %bb.2: # %cond.false
 ; X86-NEXT:    rep bsfl %esi, %eax
 ; X86-NEXT:    addl $32, %eax
-; X86-NEXT:    jmp .LBB8_5
-; X86-NEXT:  .LBB8_1:
+; X86-NEXT:    movl %eax, {{[-0-9]+}}(%e{{[sb]}}p) # 4-byte Spill
+; X86-NEXT:    testl %edi, %edi
+; X86-NEXT:    je .LBB8_7
+; X86-NEXT:  .LBB8_4:
+; X86-NEXT:    rep bsfl %edi, %edx
+; X86-NEXT:    jmp .LBB8_8
+; X86-NEXT:  .LBB8_5:
 ; X86-NEXT:    movl %ebx, %eax
 ; X86-NEXT:    xorl %edi, %edi
 ; X86-NEXT:    movl $128, {{[-0-9]+}}(%e{{[sb]}}p) # 4-byte Folded Spill
 ; X86-NEXT:    jmp .LBB8_11
-; X86-NEXT:  .LBB8_3:
+; X86-NEXT:  .LBB8_6:
 ; X86-NEXT:    rep bsfl %ecx, %eax
-; X86-NEXT:  .LBB8_5: # %cond.false
 ; X86-NEXT:    movl %eax, {{[-0-9]+}}(%e{{[sb]}}p) # 4-byte Spill
 ; X86-NEXT:    testl %edi, %edi
-; X86-NEXT:    jne .LBB8_6
-; X86-NEXT:  # %bb.7: # %cond.false
+; X86-NEXT:    jne .LBB8_4
+; X86-NEXT:  .LBB8_7: # %cond.false
 ; X86-NEXT:    rep bsfl %ebx, %edx
 ; X86-NEXT:    addl $32, %edx
-; X86-NEXT:    jmp .LBB8_8
-; X86-NEXT:  .LBB8_6:
-; X86-NEXT:    rep bsfl %edi, %edx
 ; X86-NEXT:  .LBB8_8: # %cond.false
 ; X86-NEXT:    movl %ebx, %eax
 ; X86-NEXT:    movl %ecx, %edi
@@ -319,11 +320,11 @@ define i128 @cmov_bsf128(i128 %x, i128 %y) nounwind {
 ; X86-NEXT:    orl 32(%ebp), %ecx
 ; X86-NEXT:    orl %eax, %esi
 ; X86-NEXT:    orl %ecx, %esi
-; X86-NEXT:    je .LBB8_12
-; X86-NEXT:  # %bb.13: # %cond.end
+; X86-NEXT:    je .LBB8_13
+; X86-NEXT:  # %bb.12: # %cond.end
 ; X86-NEXT:    movl {{[-0-9]+}}(%e{{[sb]}}p), %ecx # 4-byte Reload
 ; X86-NEXT:    jmp .LBB8_14
-; X86-NEXT:  .LBB8_12:
+; X86-NEXT:  .LBB8_13:
 ; X86-NEXT:    movl 52(%ebp), %ebx
 ; X86-NEXT:    movl 48(%ebp), %edx
 ; X86-NEXT:    movl 44(%ebp), %edi

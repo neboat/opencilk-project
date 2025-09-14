@@ -180,7 +180,7 @@ void LambdaABI::prepareModule() {
   const char *StackFrameName = "struct.__rts_stack_frame";
   StackFrameTy = StructType::lookupOrCreate(C, StackFrameName);
 
-  PointerType *StackFramePtrTy = PointerType::getUnqual(StackFrameTy);
+  PointerType *StackFramePtrTy = PointerType::getUnqual(C);
   Type *VoidTy = Type::getVoidTy(C);
   Type *VoidPtrTy = PointerType::getUnqual(C);
 
@@ -192,7 +192,7 @@ void LambdaABI::prepareModule() {
   SpawnBodyFnTy = FunctionType::get(VoidTy, {SpawnBodyFnArgTy}, false);
   FunctionType *SpawnFnTy =
       FunctionType::get(VoidTy,
-                        {StackFramePtrTy, PointerType::getUnqual(SpawnBodyFnTy),
+                        {StackFramePtrTy, PointerType::getUnqual(C),
                          SpawnBodyFnArgTy, SpawnBodyFnArgSizeTy, IntPtrTy},
                         false);
   FunctionType *Grainsize8FnTy = FunctionType::get(Int8Ty, {Int8Ty}, false);
@@ -555,7 +555,7 @@ void LambdaABI::processSubTaskCall(TaskOutlineInfo &TOI, DominatorTree &DT) {
 
   IRBuilder<> B(ReplCall);
   Value *FnCast = B.CreateBitCast(ReplCall->getCalledFunction(),
-                                  PointerType::getUnqual(SpawnBodyFnTy));
+                                  PointerType::getUnqual(F.getContext()));
   Value *ArgCast =
       B.CreateBitOrPointerCast(ReplCall->getArgOperand(0), SpawnBodyFnArgTy);
   auto ArgSize =

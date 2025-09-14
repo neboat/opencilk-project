@@ -11110,11 +11110,11 @@ public:
                               SourceLocation RParenLoc, Stmt *Body,
                               DeclStmt *LoopVar = nullptr,
                               Expr *OgCond = nullptr, Expr *OgInc = nullptr);
-  StmtResult ActOnCilkForRangeStmt(Scope *S, SourceLocation ForLoc,
-                                   Stmt *InitStmt, Stmt *First,
-                                   SourceLocation ColonLoc, Expr *Range,
-                                   SourceLocation RParenLoc,
-                                   BuildForRangeKind Kind);
+  StmtResult ActOnCilkForRangeStmt(
+      Scope *S, SourceLocation ForLoc, Stmt *InitStmt, Stmt *First,
+      SourceLocation ColonLoc, Expr *Range, SourceLocation RParenLoc,
+      BuildForRangeKind Kind,
+      ArrayRef<MaterializeTemporaryExpr *> LifetimeExtendTemps = {});
   StmtResult BuildCilkForRangeStmt(CXXForRangeStmt *S);
   StmtResult FinishCilkForRangeStmt(Stmt *S, Stmt *B);
   StmtResult BuildCilkForStmt(SourceLocation CilkForLoc,

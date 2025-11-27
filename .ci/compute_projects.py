@@ -329,4 +329,4 @@ if __name__ == "__main__":
         current_platform = sys.argv[1]
     env_variables = get_env_variables(sys.stdin.readlines(), current_platform)
     for env_variable in env_variables:
-        print(f"{env_variable}='{env_variables[env_variable]}'")
+        print(f"{env_variable}={env_variables[env_variable]}")

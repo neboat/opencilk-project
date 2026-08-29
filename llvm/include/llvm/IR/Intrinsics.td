@@ -1916,6 +1916,21 @@ def int_hyper_lookup_0
                  NonNull<RetIndex>, NonNull<ArgIndex<0>>
                 ]>;
 
+def int_hyper_lookup_0s
+    : Intrinsic<[llvm_ptr_ty],
+                [llvm_ptr_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty], [
+                 IntrWillReturn, IntrReadMem, IntrInaccessibleMemOnly,
+                 IntrStrandPure, IntrHyperView, IntrInjective,
+                 NonNull<RetIndex>, NonNull<ArgIndex<0>>
+                ]>;
+// def int_hyper_lookup_0s
+//     : Intrinsic<[llvm_ptr_ty],
+//                 [llvm_ptr_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty, llvm_i64_ty], [
+//                  IntrWillReturn, IntrReadMem, IntrInaccessibleMemOnly,
+//                  IntrStrandPure, IntrHyperView, IntrInjective,
+//                  NonNull<RetIndex>, NonNull<ArgIndex<0>>
+//                 ]>;
+
 def int_hyper_lookup_1
     : Intrinsic<[llvm_ptr_ty],
                 [llvm_ptr_ty, llvm_ptr_ty], [
@@ -1938,6 +1953,12 @@ def int_reducer_register
                  IntrWillReturn, IntrInaccessibleMemOnly,
                  IntrReducerRegister, ImmArg<ArgIndex<0>>,
                  NonNull<ArgIndex<1>>
+                ]>;
+
+def int_reducer_register_0
+    : Intrinsic<[], [llvm_ptr_ty, llvm_i64_ty, llvm_i64_ty], [
+                 IntrWillReturn, IntrInaccessibleMemOnly,
+                 IntrReducerRegister, NonNull<ArgIndex<0>>
                 ]>;
 
 def int_reducer_unregister

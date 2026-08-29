@@ -8067,7 +8067,8 @@ class HyperobjectType final : public Type, public llvm::FoldingSetNode {
   HyperobjectType(QualType Element, QualType CanonicalPtr,
                   Expr *i, const FunctionDecl *ifn,
                   Expr *r, const FunctionDecl *rfn);
-
+  HyperobjectType(QualType Element, QualType CanonicalPtr,
+                  Expr *r, const FunctionDecl *rfn);
 public:
   QualType getElementType() const { return ElementType; }
 
@@ -8089,6 +8090,8 @@ public:
                       const ValueDecl *C);
   static void Profile(llvm::FoldingSetNodeID &ID, QualType Pointee,
                       const FunctionDecl *I,
+                      const FunctionDecl *R);
+  static void Profile(llvm::FoldingSetNodeID &ID, QualType Pointee,
                       const FunctionDecl *R);
 
   static bool classof(const Type *T) {

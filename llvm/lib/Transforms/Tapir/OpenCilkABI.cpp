@@ -26,8 +26,10 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/EHPersonalities.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Verifier.h"
@@ -239,13 +241,18 @@ void OpenCilkABI::prepareModule() {
       FunctionType::get(Int32Ty, {Int32Ty, Int32Ty}, false);
   FunctionType *Grainsize64FnTy =
       FunctionType::get(Int64Ty, {Int64Ty, Int64Ty}, false);
-  FunctionType *Lookup0Ty = FunctionType::get(PtrTy, {PtrTy}, false);
+  // FunctionType *Lookup0Ty = FunctionType::get(PtrTy, {PtrTy}, false);
+  FunctionType *Lookup0sTy = FunctionType::get(
+      PtrTy, {PtrTy, Int64Ty, Int64Ty, Int64Ty, Int64Ty, PtrTy}, false);
+  // FunctionType *Lookup0sTy = FunctionType::get(
+  //     PtrTy, {PtrTy, Int64Ty, Int64Ty, Int64Ty, Int64Ty, Int64Ty}, false);
   FunctionType *Lookup1Ty = FunctionType::get(PtrTy, {PtrTy, PtrTy}, false);
   FunctionType *Lookup2Ty =
       FunctionType::get(PtrTy, {PtrTy, Int64Ty, PtrTy, PtrTy}, false);
   FunctionType *UnregTy = FunctionType::get(VoidTy, {PtrTy}, false);
-  FunctionType *Reg1Ty = FunctionType::get(VoidTy, {PtrTy}, false);
+  // FunctionType *Reg1Ty = FunctionType::get(VoidTy, {PtrTy}, false);
   FunctionType *Reg2Ty = FunctionType::get(VoidTy, {PtrTy, PtrTy}, false);
+  FunctionType *Reg0Ty = FunctionType::get(VoidTy, {PtrTy, Int64Ty, Int64Ty}, false);
 
   // Create an array of CilkRTS functions, with their associated types and
   // FunctionCallee member variables in the OpenCilkABI class.
@@ -273,10 +280,12 @@ void OpenCilkABI::prepareModule() {
        CilkRTSCilkForGrainsize32},
       {"__cilkrts_cilk_for_grainsize_64", Grainsize64FnTy,
        CilkRTSCilkForGrainsize64},
-      {"__cilkrts_reducer_lookup_0", Lookup0Ty, CilkRTSReducerLookup0},
+      // {"__cilkrts_reducer_lookup_0", Lookup0Ty, CilkRTSReducerLookup0},
+      {"__cilkrts_reducer_lookup_0", Lookup0sTy, CilkRTSReducerLookup0},
       {"__cilkrts_reducer_lookup_1", Lookup1Ty, CilkRTSReducerLookup1},
       {"__cilkrts_reducer_lookup_2", Lookup2Ty, CilkRTSReducerLookup2},
-      {"__cilkrts_reducer_register_0", Reg1Ty, CilkRTSReducerRegister0},
+      // {"__cilkrts_reducer_register_0", Reg1Ty, CilkRTSReducerRegister0},
+      {"__cilkrts_reducer_register_0", Reg0Ty, CilkRTSReducerRegister0},
       {"__cilkrts_reducer_register_1", Reg2Ty, CilkRTSReducerRegister1},
       {"__cilkrts_reducer_register_2", Reg2Ty, CilkRTSReducerRegister2},
       {"__cilkrts_reducer_unregister", UnregTy, CilkRTSReducerUnregister},
@@ -351,6 +360,11 @@ void OpenCilkABI::prepareModule() {
       Fn->removeFnAttr(Attribute::NoUnwind);
     else
       Fn->setDoesNotThrow();
+
+    if ("__cilkrts_reducer_lookup_0" == FnDesc.FnName) {
+      Fn->addParamAttr(
+          5, Attribute::getWithByValType(C, StructType::get(Int64Ty, Int64Ty)));
+    }
   }
 }
 
@@ -1211,10 +1225,47 @@ void OpenCilkABI::lowerReducerOperation(CallBase *CI) {
   switch (ID) {
   default:
     llvm_unreachable("unexpected reducer intrinsic");
-  case Intrinsic::hyper_lookup_0:
+  // case Intrinsic::hyper_lookup_0:
+  //   Fn = Get__cilkrts_reducer_lookup_0();
+  //   // TODO: error if null
+  //   break;
+  case Intrinsic::hyper_lookup_0s: {
     Fn = Get__cilkrts_reducer_lookup_0();
     // TODO: error if null
-    break;
+
+    // The ABI of the runtime function requires a byval argument.
+    LLVMContext &C = M.getContext();
+    Type *Int64Ty = Type::getInt64Ty(C);
+    StructType *ByValTy = StructType::get(Int64Ty, Int64Ty);
+    Function *F = CI->getFunction();
+    AllocaInst *ReduceArg = nullptr;
+    IRBuilder<> Builder(&*F->getEntryBlock().getFirstNonPHIOrDbgOrAlloca());
+    if (Value *Arg = ReduceArgAlloca.lookup(F)) {
+      ReduceArg = cast<AllocaInst>(Arg);
+    } else {
+      // Create a byval argument for the reduce function.
+      ReduceArg = Builder.CreateAlloca(ByValTy);
+      ReduceArgAlloca[F] = ReduceArg;
+    }
+    Builder.SetInsertPoint(CI);
+
+    Builder.CreateLifetimeStart(ReduceArg);
+    Builder.CreateStore(CI->getArgOperand(5),
+                        Builder.CreateStructGEP(ByValTy, ReduceArg, 0));
+    Builder.CreateStore(CI->getArgOperand(6),
+                        Builder.CreateStructGEP(ByValTy, ReduceArg, 1));
+
+    CallInst *ReducerABICall = Builder.CreateCall(
+        Fn, {CI->getArgOperand(0), CI->getArgOperand(1), CI->getArgOperand(2),
+             CI->getArgOperand(3), CI->getArgOperand(4), ReduceArg});
+    ReducerABICall->addParamAttr(5, Attribute::getWithByValType(C, ByValTy));
+    // CallInst *ReducerABICall = Builder.CreateCall(
+    //     Fn, {CI->getArgOperand(0), CI->getArgOperand(1), CI->getArgOperand(2),
+    //          CI->getArgOperand(3), CI->getArgOperand(4), CI->getArgOperand(5)});
+    CI->replaceAllUsesWith(ReducerABICall);
+    Builder.CreateLifetimeEnd(ReduceArg);
+    return;
+  }
   case Intrinsic::hyper_lookup_1:
     Fn = Get__cilkrts_reducer_lookup_1();
     // TODO: error if null
@@ -1251,6 +1302,10 @@ void OpenCilkABI::lowerReducerOperation(CallBase *CI) {
     default:
       llvm_unreachable("invalid reducer register variant");
     }
+    break;
+  }
+  case Intrinsic::reducer_register_0: {
+    Fn = Get__cilkrts_reducer_register_0();
     break;
   }
   case Intrinsic::reducer_unregister:

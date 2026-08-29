@@ -5174,6 +5174,17 @@ def HyperLookupClass : LibBuiltin<"cilk/reducer"> {
   let Prototype = "void*(void const*)";
 }
 
+def HyperLookupClassStatic : LibBuiltin<"cilk/reducer"> {
+  let Spellings = ["__hyper_lookup_class_static"];
+  let Attributes = [NoThrow, Pure, IgnoreSignature, RequireDeclaration];
+  let Prototype = "void*(void const*, 3, 4, 5)";
+}
+// def HyperLookupClassStatic : LibBuiltin<"cilk/reducer"> {
+//   let Spellings = ["__hyper_lookup_class_static"];
+//   let Attributes = [NoThrow, Pure, IgnoreSignature, RequireDeclaration];
+//   let Prototype = "void*(void const*, size_t, 4, 5)";
+// }
+
 // Leftmost view, size, callback class with polymorphic type.
 def HyperLookupFunctional : LibBuiltin<"cilk/reducer"> {
   let Spellings = ["__hyper_lookup_internal_1"];

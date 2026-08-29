@@ -17,6 +17,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/Transforms/Tapir/LoweringUtils.h"
+#include "llvm/Transforms/Utils/ValueMapper.h"
 
 namespace llvm {
 class Value;
@@ -29,6 +30,7 @@ class OpenCilkABI final : public TapirTarget {
   using CallVector = SmallVector<IntrinsicInst *, 4>;
   DenseMap<BasicBlock *, CallVector> TapirRTCalls;
   ValueToValueMapTy DefaultSyncLandingpad;
+  ValueToValueMapTy ReduceArgAlloca;
 
   StringRef RuntimeBCPath = "";
 

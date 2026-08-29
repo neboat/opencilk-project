@@ -2150,10 +2150,37 @@ QualType Sema::BuildHyperobjectType(QualType Element,
           !Element->containsErrors()) {
         Diag(Loc, diag::err_view_must_be_class) << Element;
       } else {
+        if (CXXRecordDecl *D = Element->getAsCXXRecordDecl()) {
+          ExprResult ReduceExpr;
+          DeclarationNameInfo ReduceNameInfo(
+              &SemaRef.PP.getIdentifierTable().get("reduce"), Loc);
+          LookupResult ReduceMemberLookup(SemaRef, ReduceNameInfo,
+                                          Sema::LookupMemberName);
+
+          LookupQualifiedName(ReduceMemberLookup, D);
+          if (ReduceMemberLookup.isAmbiguous()) {
+            Diag(Loc, diag::note_in_reducer_register)
+                << Loc << ReduceNameInfo.getName() << Element;
+          }
+          IdentifierInfo &RBReduceFnNameInfo(
+              PP.getIdentifierTable().get("rb_reduce_fn"));
+          CXXScopeSpec SS;
+          auto Result = BuildHyperobjectCastedMemberRef(
+              Loc, ReduceNameInfo, ReduceMemberLookup, RBReduceFnNameInfo, SS,
+              ReduceExpr);
+          if (Result != Sema::HLS_Success) {
+            if (Result == Sema::HLS_DiagnosticIssued) {
+              Diag(Loc, diag::note_in_reducer_register)
+                  << Loc << ReduceNameInfo.getName() << Element;
+            }
+          }
+
+          Reduce = ReduceExpr.get();
+        }
         Expr *Fake =
           new (Context) OpaqueValueExpr(Loc, Context.getPointerType(Element),
                                         VK_LValue);
-        ConvertForHyperobject(Builtin::BI__hyper_lookup_class, 0, Loc, Fake,
+        ConvertForHyperobject(Builtin::BI__hyper_lookup_class_static, 0, Loc, Fake,
                               false, false);
         // TODO: To avoid cascading errors if ConvertForHyperobject fails
         // the hyperobject should be marked as containing an error.
@@ -5682,8 +5709,47 @@ static TypeSourceInfo *GetFullTypeForDeclarator(TypeProcessingState &state,
       else if (DeclType.Hyper.Arg[0])
         T = S.BuildHyperobjectType(T, DeclType.Hyper.Arg[0], None, None,
                                    DeclType.Loc);
-      else
-        T = S.BuildHyperobjectType(T, None, None, None, DeclType.Loc);
+      else {
+        if (!T->getAsCXXRecordDecl()) {
+          T = S.BuildHyperobjectType(T, None, None, None, DeclType.Loc);
+          break;
+        }
+        ExprResult ReduceExpr;
+        DeclarationNameInfo ReduceNameInfo(
+            &S.PP.getIdentifierTable().get("reduce"), DeclType.Loc);
+        LookupResult ReduceMemberLookup(S, ReduceNameInfo,
+                                        Sema::LookupMemberName);
+
+        CXXRecordDecl *D = T->getAsCXXRecordDecl();
+        if (isa<TagDecl>(D) && !cast<TagDecl>(D)->isCompleteDefinition()) {
+          T = S.BuildHyperobjectType(T, None, None, None, DeclType.Loc);
+          break;
+        }
+        S.LookupQualifiedName(ReduceMemberLookup, D);
+        if (ReduceMemberLookup.isAmbiguous()) {
+          S.Diag(DeclType.Loc, diag::note_in_reducer_register)
+              << DeclType.Loc << ReduceNameInfo.getName() << T;
+          T = S.BuildHyperobjectType(T, None, None, None, DeclType.Loc);
+          break;
+        }
+
+        IdentifierInfo &RBReduceFnNameInfo(
+            S.PP.getIdentifierTable().get("rb_reduce_fn"));
+        CXXScopeSpec SS;
+        auto Result = S.BuildHyperobjectCastedMemberRef(
+            DeclType.Loc, ReduceNameInfo, ReduceMemberLookup,
+            RBReduceFnNameInfo, SS, ReduceExpr);
+        if (Result != Sema::HLS_Success) {
+          if (Result == Sema::HLS_DiagnosticIssued) {
+            S.Diag(DeclType.Loc, diag::note_in_reducer_register)
+                << DeclType.Loc << ReduceNameInfo.getName() << T;
+          }
+          T = S.BuildHyperobjectType(T, None, None, None, DeclType.Loc);
+          break;
+        }
+        T = S.BuildHyperobjectType(T, None, None, ReduceExpr.get(),
+                                   DeclType.Loc);
+      }
       break;
     }
     }

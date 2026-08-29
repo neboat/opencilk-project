@@ -4020,11 +4020,25 @@ QualType ASTContext::getHyperobjectType(QualType T,
   } else {
     // No callbacks.  Type depends only on view type.
     llvm::FoldingSetNodeID ID;
-    HyperobjectType::Profile(ID, T);
-    if (HyperobjectType * HT =
-        HyperobjectTypes.FindNodeOrInsertPos(ID, InsertPos))
-      return QualType(HT, 0);
-    New = new (*this, TypeAlignment) HyperobjectType(T, Canonical);
+
+    if (Reduce) {
+      Expr *RE = Reduce.value();
+      const FunctionDecl *RF = getFunction(RE);
+
+      HyperobjectType::Profile(ID, T, RF);
+      if (HyperobjectType *HT =
+              HyperobjectTypes.FindNodeOrInsertPos(ID, InsertPos))
+        return QualType(HT, 0);
+
+      New = new (*this, TypeAlignment) HyperobjectType(T, Canonical, RE, RF);
+    } else {
+      HyperobjectType::Profile(ID, T);
+      if (HyperobjectType *HT =
+              HyperobjectTypes.FindNodeOrInsertPos(ID, InsertPos))
+        return QualType(HT, 0);
+
+      New = new (*this, TypeAlignment) HyperobjectType(T, Canonical);
+    }
   }
   // As FoldingSetBase::FindNodeOrInsertPos is currently implemented
   // InsertPos is non-null if and only if FindNodeOrInsertPos returned null.
@@ -12716,9 +12730,9 @@ static QualType DecodeTypeFromStr(const char *&Str, const ASTContext &Context,
     break;
   case 'm':
     Type = Context.MFloat8Ty;
-    // The next two are for use with hyperobjects.  They should be
-    // generalized if additional builtins take function pointers.
     break;
+    // The next three cases are for use with hyperobjects.  They should be
+    // generalized if additional builtins take function pointers.
   case '1':
     Type =
       Context.getPointerType
@@ -12731,6 +12745,22 @@ static QualType DecodeTypeFromStr(const char *&Str, const ASTContext &Context,
       (Context.getFunctionType(Context.VoidTy,
                                { Context.VoidPtrTy, Context.VoidPtrTy },
                                FunctionProtoType::ExtProtoInfo()));
+    break;
+  case '3':
+    Type = Context.getPointerType(Context.getFunctionType(
+        Context.getSizeType(), {Context.VoidPtrTy.withConst()},
+        FunctionProtoType::ExtProtoInfo()));
+    break;
+  case '4':
+    Type = Context.getPointerType(Context.getFunctionType(
+        Context.VoidPtrTy, {Context.VoidPtrTy, Context.VoidPtrTy},
+        FunctionProtoType::ExtProtoInfo()));
+    break;
+  case '5':
+    Type = Context.getPointerType(Context.getFunctionType(
+        Context.VoidTy,
+        {Context.VoidPtrTy, Context.VoidPtrTy, Context.VoidPtrTy},
+        FunctionProtoType::ExtProtoInfo()));
     break;
   }
 

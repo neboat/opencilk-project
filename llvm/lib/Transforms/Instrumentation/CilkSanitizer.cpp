@@ -3896,6 +3896,98 @@ bool CilkSanitizerImpl::instrumentIntrinsicCall(
     });
     return true;
   }
+  case Intrinsic::hyper_lookup_0s: {
+    // We need to allocate byval structures for the reducer functions.
+
+    // Save the stack pointer, if we haven't already
+    if (!SavedStack)
+      SavedStack = IRB.CreateStackSave();
+
+    Type *Int64Ty = Type::getInt64Ty(Ctx);
+    StructType *ByValTy = StructType::get(Int64Ty, Int64Ty);
+    AllocaInst *SizeFnArg = IRB.CreateAlloca(ByValTy);
+    AllocaInst *IdentArg = IRB.CreateAlloca(ByValTy);
+    AllocaInst *ReduceArg = IRB.CreateAlloca(ByValTy);
+    IRB.CreateStore(CB->getArgOperand(1),
+                    IRB.CreateStructGEP(ByValTy, SizeFnArg, 0));
+    IRB.CreateStore(CB->getArgOperand(2),
+                    IRB.CreateStructGEP(ByValTy, SizeFnArg, 1));
+    IRB.CreateStore(CB->getArgOperand(3),
+                    IRB.CreateStructGEP(ByValTy, IdentArg, 0));
+    IRB.CreateStore(CB->getArgOperand(4),
+                    IRB.CreateStructGEP(ByValTy, IdentArg, 1));
+    IRB.CreateStore(CB->getArgOperand(5),
+                    IRB.CreateStructGEP(ByValTy, ReduceArg, 0));
+    IRB.CreateStore(CB->getArgOperand(6),
+                    IRB.CreateStructGEP(ByValTy, ReduceArg, 1));
+    AfterHookParamTys.pop_back_n(6);
+    AfterHookParamTys.push_back(SizeFnArg->getType());
+    AfterHookParamTys.push_back(IdentArg->getType());
+    AfterHookParamTys.push_back(ReduceArg->getType());
+    AfterHookParamVals.pop_back_n(6);
+    AfterHookParamVals.push_back(SizeFnArg);
+    AfterHookParamVals.push_back(IdentArg);
+    AfterHookParamVals.push_back(ReduceArg);
+
+    FunctionType *AfterHookTy = FunctionType::get(
+        IRB.getPtrTy(), AfterHookParamTys, Called->isVarArg());
+    FunctionCallee AfterIntrinCallHook = getOrInsertSynthesizedHook(
+        ("__csan_" + Buf).str(), AfterHookTy, ReturnParam);
+
+    // Insert the hook call
+    CallInst *HookCall =
+        insertHookCall(&*Iter, AfterIntrinCallHook, AfterHookParamVals);
+
+    HookCall->addParamAttr(AfterHookParamTys.size() - 3,
+                           Attribute::getWithByValType(Ctx, ByValTy));
+    HookCall->addParamAttr(AfterHookParamTys.size() - 2,
+                           Attribute::getWithByValType(Ctx, ByValTy));
+    HookCall->addParamAttr(AfterHookParamTys.size() - 1,
+                           Attribute::getWithByValType(Ctx, ByValTy));
+
+    II->replaceUsesWithIf(HookCall, [HookCall](Use &U) {
+      return cast<Instruction>(U.getUser()) != HookCall;
+    });
+
+    IRB.CreateStackRestore(SavedStack);
+
+    return true;
+  }
+  case Intrinsic::reducer_register_0: {
+    // We need to allocate a byval structure for the reduce function.
+
+    // Save the stack pointer, if we haven't already
+    if (!SavedStack)
+      SavedStack = IRB.CreateStackSave();
+
+    Type *Int64Ty = Type::getInt64Ty(Ctx);
+    StructType *ByValTy = StructType::get(Int64Ty, Int64Ty);
+    AllocaInst *ReduceArg = IRB.CreateAlloca(ByValTy);
+    IRB.CreateStore(CB->getArgOperand(1),
+                    IRB.CreateStructGEP(ByValTy, ReduceArg, 0));
+    IRB.CreateStore(CB->getArgOperand(2),
+                    IRB.CreateStructGEP(ByValTy, ReduceArg, 1));
+    AfterHookParamTys.pop_back_n(2);
+    AfterHookParamTys.push_back(ReduceArg->getType());
+    AfterHookParamVals.pop_back_n(2);
+    AfterHookParamVals.push_back(ReduceArg);
+
+    FunctionType *AfterHookTy = FunctionType::get(
+        IRB.getVoidTy(), AfterHookParamTys, Called->isVarArg());
+    FunctionCallee AfterIntrinCallHook = getOrInsertSynthesizedHook(
+        ("__csan_" + Buf).str(), AfterHookTy, ReturnParam);
+
+    // Insert the hook call
+    CallInst *HookCall =
+        insertHookCall(&*Iter, AfterIntrinCallHook, AfterHookParamVals);
+
+    HookCall->addParamAttr(AfterHookParamTys.size() - 1,
+                           Attribute::getWithByValType(Ctx, ByValTy));
+
+    IRB.CreateStackRestore(SavedStack);
+
+    return true;
+  }
   }
 
   FunctionType *AfterHookTy =

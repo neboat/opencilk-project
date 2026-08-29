@@ -11754,6 +11754,16 @@ def err_hyperobject_cast : Error<"cast to hyperobject">;
 def err_hyperobject_struct_assign : Error<
     "unimplemented assignment to structure with hyperobject member">;
 
+def err_hyperobject_lookup_class_invalid: Error<
+  "invalid hyperobject lookup from view type %0; no viable '%select{view_size|identity|reduce}1' "
+  "function available">;
+def note_in_hyperobject_lookup: Note<
+  "when looking up %0 function for hyperobject lookup of type %1">;
+def note_in_reducer_register: Note<
+  "when looking up %0 function for reducer registration of type %1">;
+def note_for_hyperobject_member_size_identity_reduce_ignored : Note<
+  "member is not a candidate because hyperobject view type %0 has no '%select{view_size|identity|reduce}1' member">;
+
 def no_reducer_array : Warning<
     "array of reducer not implemented">,
     InGroup<CilkIgnored>;

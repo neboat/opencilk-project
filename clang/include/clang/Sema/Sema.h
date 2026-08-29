@@ -7185,10 +7185,26 @@ public:
                    SourceLocation TemplateKWLoc = SourceLocation(),
                    const TemplateArgumentListInfo *TemplateArgs = nullptr);
 
+  // An enum used to represent the different possible results of building a
+  // hyperobject lookup.
+  enum HyperLookupStatus {
+    HLS_Success,
+    HLS_NoViableFunction,
+    HLS_DiagnosticIssued
+  };
+
   ExprResult
   ConvertForHyperobject(Builtin::ID Builtin, unsigned Argument,
                         SourceLocation Loc, Expr *Value,
                         bool Perform, bool Warn);
+  HyperLookupStatus BuildHyperobjectMemberRef(SourceLocation Loc,
+                                              DeclarationNameInfo &NameInfo,
+                                              LookupResult &MemberLookup,
+                                              ExprResult &MemberPtr);
+  HyperLookupStatus BuildHyperobjectCastedMemberRef(
+      SourceLocation Loc, DeclarationNameInfo &NameInfo,
+      LookupResult &MemberLookup, IdentifierInfo &TypeNameInfo,
+      CXXScopeSpec &SS, ExprResult &MemberPtr);
   Expr *BuildHyperobjectLookupBase(Expr *);
   Expr *BuildHyperobjectLookup(Expr *);
 

@@ -3641,9 +3641,21 @@ HyperobjectType::HyperobjectType(QualType Element, QualType CanonicalPtr,
   addDependence(toTypeDependence(r->getDependence()));
 }
 
+HyperobjectType::HyperobjectType(QualType Element, QualType CanonicalPtr,
+                                 Expr *r, const FunctionDecl *rfn)
+    : Type(Hyperobject, CanonicalPtr, Element->getDependence()),
+      ElementType(Element), Reduce(r), ReduceID(rfn) {
+  if (Element->isIncompleteType()) // diagnosed in caller
+    addDependence(TypeDependence::Error);
+  addDependence(Element->getDependence());
+  addDependence(toTypeDependence(r->getDependence()));
+}
+
 void HyperobjectType::Profile(llvm::FoldingSetNodeID &ID) const {
   if (IdentityID && ReduceID) {
     Profile(ID, getElementType(), IdentityID, ReduceID);
+  } else if (ReduceID) {
+    Profile(ID, getElementType(), ReduceID);
   } else if (Callbacks) {
     const UnaryOperator *U = cast<UnaryOperator>(Callbacks.value());
     const DeclRefExpr *D = cast<DeclRefExpr>(U->getSubExpr());
@@ -3667,6 +3679,12 @@ void HyperobjectType::Profile(llvm::FoldingSetNodeID &ID, QualType Pointee,
                               const FunctionDecl *I, const FunctionDecl *R) {
   ID.AddPointer(Pointee.getAsOpaquePtr());
   ID.AddPointer(I);
+  ID.AddPointer(R);
+}
+
+void HyperobjectType::Profile(llvm::FoldingSetNodeID &ID, QualType Pointee,
+                              const FunctionDecl *R) {
+  ID.AddPointer(Pointee.getAsOpaquePtr());
   ID.AddPointer(R);
 }
 

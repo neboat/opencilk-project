@@ -360,6 +360,9 @@ private:
                                .Case("wchar_t", "w")
                                .Case("1", "1")
                                .Case("2", "2")
+                               .Case("3", "3")
+                               .Case("4", "4")
+                               .Case("5", "5")
                                .Case("...", ".")
                                .Default("error");
       if (ReturnTypeVal == "error")

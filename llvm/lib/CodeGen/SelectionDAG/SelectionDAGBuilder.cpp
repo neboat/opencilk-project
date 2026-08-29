@@ -8381,6 +8381,7 @@ void SelectionDAGBuilder::visitIntrinsicCall(const CallInst &I,
     // Discard any tapir.runtime.ends.
     return;
   case Intrinsic::reducer_register:
+  case Intrinsic::reducer_register_0:
   case Intrinsic::reducer_unregister:
     // Discard any reducer.register and reducer.unregister calls.
     return;

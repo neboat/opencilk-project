@@ -1959,6 +1959,13 @@ void CodeGenFunction::EmitReducerInit(const DeclaratorDecl *D,
     Arg = EmitLValue(*Callbacks).getPointer(*this);
     Variant = 1;
   } else if (std::optional<Expr *> Reduce = H->getReduce()) {
+    if (!H->getIdentity()) {
+      Arg = EmitScalarExpr(*Reduce);
+      Builder.CreateCall(CGM.getIntrinsic(llvm::Intrinsic::reducer_register_0),
+                         {Addr, Builder.CreateExtractValue(Arg, {0}),
+                          Builder.CreateExtractValue(Arg, {1})});
+      return;
+    }
     Arg = EmitScalarExpr(*Reduce);
     Variant = 2;
   } else {

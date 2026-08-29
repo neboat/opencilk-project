@@ -20,8 +20,11 @@
 #include "clang/AST/ASTMutationListener.h"
 #include "clang/AST/CXXInheritance.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclBase.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
 #include "clang/AST/DeclTemplate.h"
+#include "clang/AST/DeclarationName.h"
 #include "clang/AST/DynamicRecursiveASTVisitor.h"
 #include "clang/AST/EvaluatedExprVisitor.h"
 #include "clang/AST/Expr.h"
@@ -34,9 +37,11 @@
 #include "clang/Basic/Builtins.h"
 #include "clang/Basic/DiagnosticSema.h"
 #include "clang/Basic/PartialDiagnostic.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/Specifiers.h"
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Basic/TypeTraits.h"
 #include "clang/Lex/LiteralSupport.h"
 #include "clang/Lex/Preprocessor.h"
@@ -51,6 +56,7 @@
 #include "clang/Sema/ParsedTemplate.h"
 #include "clang/Sema/Scope.h"
 #include "clang/Sema/ScopeInfo.h"
+#include "clang/Sema/Sema.h"
 #include "clang/Sema/SemaARM.h"
 #include "clang/Sema/SemaCUDA.h"
 #include "clang/Sema/SemaFixItUtils.h"
@@ -2408,6 +2414,239 @@ Expr *Sema::BuildHyperobjectLookupBase(Expr *E) {
                                CurFPFeatureOverrides());
 }
 
+namespace {
+// An enum to represent whether something is dealing with a call to
+// view_size(), identity(), or reduce() in a hyperobject lookup.
+enum SizeIdentityReduceFunction {
+  SIRF_size,
+  SIRF_identity,
+  SIRF_reduce
+};
+} // namespace
+
+Sema::HyperLookupStatus Sema::BuildHyperobjectMemberRef(
+    SourceLocation Loc, DeclarationNameInfo &NameInfo,
+    LookupResult &MemberLookup, ExprResult &MemberPtr) {
+  CXXRecordDecl *MemberClass = MemberLookup.getNamingClass();
+  if (!LookupQualifiedName(MemberLookup, MemberClass, true)) {
+    MemberPtr = ExprError();
+    return Sema::HLS_DiagnosticIssued;
+  }
+
+  auto *MethodDecl = cast<CXXMethodDecl>(MemberLookup.getFoundDecl());
+
+  ASTContext &Context = getASTContext();
+  CXXScopeSpec SS;
+  QualType MemberClassType = Context.getTypeDeclType(MemberClass);
+  TypeLocBuilder TLB;
+  TLB.pushTrivial(Context, MemberClassType, Loc);
+  SS.Extend(Context, TLB.getTypeLocInContext(Context, MemberClassType), Loc);
+
+  ExprResult MemberRef =
+      BuildDeclRefExpr(MethodDecl, MethodDecl->getType(), VK_PRValue, Loc, &SS);
+
+  MemberPtr = CreateBuiltinUnaryOp(Loc, UO_AddrOf, MemberRef.get());
+
+  if (MemberPtr.isInvalid()) {
+    MemberPtr = ExprError();
+    return Sema::HLS_DiagnosticIssued;
+  }
+
+  return Sema::HLS_Success;
+}
+
+Sema::HyperLookupStatus Sema::BuildHyperobjectCastedMemberRef(
+    SourceLocation Loc, DeclarationNameInfo &NameInfo,
+    LookupResult &MemberLookup, IdentifierInfo &TypeNameInfo, CXXScopeSpec &SS,
+    ExprResult &MemberPtr) {
+  auto Result =
+      BuildHyperobjectMemberRef(Loc, NameInfo, MemberLookup, MemberPtr);
+  if (Result != Sema::HLS_Success)
+    return Result;
+
+  ASTContext &Context = getASTContext();
+  if (SS.isEmpty()) {
+    // Build a CXXScopeSpec for the cilk namespace, in which to find the
+    // view_size_fn, rb_identity_fn, and rb_reduce_fn types.
+    IdentifierInfo &CilkNamespaceII =
+        Context.Idents.get("cilk", tok::TokenKind::identifier);
+    LookupResult Result(SemaRef, &CilkNamespaceII, SourceLocation(),
+                        Sema::LookupNamespaceName);
+    LookupQualifiedName(Result, Context.getTranslationUnitDecl());
+    NamespaceDecl *CilkNamespace = cast<NamespaceDecl>(Result.getFoundDecl());
+    SS.Extend(Context, CilkNamespace, Result.getNameLoc(), SourceLocation());
+  }
+
+  ParsedType PT = getTypeName(TypeNameInfo, Loc, nullptr, &SS);
+  if (!PT.getAsOpaquePtr() || PT.get().isNull()) {
+    MemberPtr = ExprError();
+    return Sema::HLS_DiagnosticIssued;
+  }
+
+  MemberPtr = BuildCXXNamedCast(
+      Loc, tok::kw_static_cast, Context.getTrivialTypeSourceInfo(PT.get()),
+      MemberPtr.get(), SourceRange(Loc, Loc), SourceRange(Loc, Loc));
+  if (MemberPtr.isInvalid()) {
+    MemberPtr = ExprError();
+    return Sema::HLS_DiagnosticIssued;
+  }
+
+  return Sema::HLS_Success;
+}
+
+static Sema::HyperLookupStatus BuildHyperobjectLookupMemberRefs(
+    Sema &SemaRef, Expr *E, QualType ViewType, ExprResult &ViewSizeExpr,
+    ExprResult &IdentityExpr, ExprResult &ReduceExpr,
+    SizeIdentityReduceFunction &SIR) {
+  SourceLocation Loc = E->getExprLoc();
+  DeclarationNameInfo ViewSizeNameInfo(
+      &SemaRef.PP.getIdentifierTable().get("view_size"), Loc);
+  DeclarationNameInfo IdentityNameInfo(
+      &SemaRef.PP.getIdentifierTable().get("identity"), Loc);
+  DeclarationNameInfo ReduceNameInfo(
+      &SemaRef.PP.getIdentifierTable().get("reduce"), Loc);
+
+  LookupResult ViewSizeMemberLookup(SemaRef, ViewSizeNameInfo,
+                                    Sema::LookupMemberName);
+  LookupResult IdentityMemberLookup(SemaRef, IdentityNameInfo,
+                                    Sema::LookupMemberName);
+  LookupResult ReduceMemberLookup(SemaRef, ReduceNameInfo,
+                                  Sema::LookupMemberName);
+
+  IdentifierInfo &ViewSizeFnNameInfo(
+      SemaRef.PP.getIdentifierTable().get("view_size_fn"));
+  IdentifierInfo &RBIdentityFnNameInfo(
+      SemaRef.PP.getIdentifierTable().get("rb_identity_fn"));
+  IdentifierInfo &RBReduceFnNameInfo(
+      SemaRef.PP.getIdentifierTable().get("rb_reduce_fn"));
+
+  CXXScopeSpec SS;
+
+  auto BuildViewSize = [&] {
+    SIR = SIRF_size;
+    auto Result = SemaRef.BuildHyperobjectCastedMemberRef(
+        Loc, ViewSizeNameInfo, ViewSizeMemberLookup, ViewSizeFnNameInfo, SS,
+        ViewSizeExpr);
+    if (Result != Sema::HLS_Success) {
+      if (Result == Sema::HLS_DiagnosticIssued) {
+        SemaRef.Diag(E->getBeginLoc(), diag::note_in_hyperobject_lookup)
+            << E->getBeginLoc() << ViewSizeNameInfo.getName() << E->getType();
+      }
+    }
+    return Result;
+  };
+  auto BuildIdentity = [&] {
+    SIR = SIRF_identity;
+    auto Result = SemaRef.BuildHyperobjectCastedMemberRef(
+        Loc, IdentityNameInfo, IdentityMemberLookup, RBIdentityFnNameInfo, SS,
+        IdentityExpr);
+    if (Result != Sema::HLS_Success) {
+      if (Result == Sema::HLS_DiagnosticIssued) {
+        SemaRef.Diag(E->getBeginLoc(), diag::note_in_hyperobject_lookup)
+            << E->getBeginLoc() << IdentityNameInfo.getName() << E->getType();
+      }
+    }
+    return Result;
+  };
+  auto BuildReduce = [&] {
+    SIR = SIRF_reduce;
+    auto Result = SemaRef.BuildHyperobjectCastedMemberRef(
+        Loc, ReduceNameInfo, ReduceMemberLookup, RBReduceFnNameInfo, SS,
+        ReduceExpr);
+    if (Result != Sema::HLS_Success) {
+      if (Result == Sema::HLS_DiagnosticIssued) {
+        SemaRef.Diag(E->getBeginLoc(), diag::note_in_hyperobject_lookup)
+            << E->getBeginLoc() << ReduceNameInfo.getName() << E->getType();
+      }
+    }
+    return Result;
+  };
+
+  if (CXXRecordDecl *D = ViewType->getAsCXXRecordDecl()) {
+    SemaRef.LookupQualifiedName(ViewSizeMemberLookup, D);
+    if (ViewSizeMemberLookup.isAmbiguous())
+      return Sema::HLS_DiagnosticIssued;
+
+    SemaRef.LookupQualifiedName(IdentityMemberLookup, D);
+    if (IdentityMemberLookup.isAmbiguous())
+      return Sema::HLS_DiagnosticIssued;
+
+    SemaRef.LookupQualifiedName(ReduceMemberLookup, D);
+    if (ReduceMemberLookup.isAmbiguous())
+      return Sema::HLS_DiagnosticIssued;
+
+    if (ViewSizeMemberLookup.empty() != IdentityMemberLookup.empty() ||
+        IdentityMemberLookup.empty() != ReduceMemberLookup.empty()) {
+      // Look up the non-member form of the member we didn't find, first.
+      auto BuildNonmember =
+          [&](SizeIdentityReduceFunction SIRFFound1,
+              SizeIdentityReduceFunction SIRFFound2, LookupResult &Found1, LookupResult &Found2,
+              llvm::function_ref<Sema::HyperLookupStatus()> BuildFound1,
+              llvm::function_ref<Sema::HyperLookupStatus()> BuildFound2,
+              llvm::function_ref<Sema::HyperLookupStatus()> BuildNotFound) {
+            LookupResult OldFound1 = std::move(Found1);
+            Found1.clear();
+            LookupResult OldFound2 = std::move(Found2);
+            Found2.clear();
+
+            if (Sema::HyperLookupStatus Result = BuildNotFound())
+              return Result;
+
+            Sema::HyperLookupStatus Result = Sema::HLS_Success;
+            switch (BuildFound1()) {
+            case Sema::HLS_Success:
+              break;
+
+            case Sema::HLS_NoViableFunction:
+            case Sema::HLS_DiagnosticIssued:
+              for (NamedDecl *D : OldFound1) {
+                SemaRef.Diag(
+                    D->getLocation(),
+                    diag::
+                        note_for_hyperobject_member_size_identity_reduce_ignored)
+                    << ViewType << SIRFFound1;
+              }
+              Result = Sema::HLS_DiagnosticIssued;
+            }
+            llvm_unreachable("unexpected HyperLookupStatus");
+
+            switch (BuildFound2()) {
+            case Sema::HLS_Success:
+              return Result;
+
+            case Sema::HLS_NoViableFunction:
+            case Sema::HLS_DiagnosticIssued:
+              for (NamedDecl *D : OldFound2) {
+                SemaRef.Diag(
+                    D->getLocation(),
+                    diag::
+                        note_for_hyperobject_member_size_identity_reduce_ignored)
+                    << ViewType << SIRFFound2;
+              }
+              return Sema::HLS_DiagnosticIssued;
+            }
+            llvm_unreachable("unexpected HyperLookupStatus");
+          };
+      if (ViewSizeMemberLookup.empty())
+        return BuildNonmember(SIRF_identity, SIRF_reduce, IdentityMemberLookup,
+                              ReduceMemberLookup, BuildIdentity, BuildReduce,
+                              BuildViewSize);
+      if (IdentityMemberLookup.empty())
+        return BuildNonmember(SIRF_size, SIRF_reduce, ViewSizeMemberLookup,
+                              ReduceMemberLookup, BuildViewSize, BuildReduce,
+                              BuildIdentity);
+      return BuildNonmember(SIRF_size, SIRF_identity, ViewSizeMemberLookup,
+                            IdentityMemberLookup, BuildViewSize, BuildIdentity,
+                            BuildReduce);
+    }
+  }
+  if (Sema::HyperLookupStatus Result = BuildViewSize())
+    return Result;
+  if (Sema::HyperLookupStatus Result = BuildIdentity())
+    return Result;
+  return BuildReduce();
+}
+
 // Resolve a hyperobject used in an lvalue context.
 Expr *Sema::BuildHyperobjectLookup(Expr *E) {
   if (!E->isGLValue())
@@ -2477,24 +2716,47 @@ Expr *Sema::BuildHyperobjectLookup(Expr *E) {
   assert(ViewType->isRecordType());
 
   assert(!HT->getElementType()->isDependentType()); // checked above
+
+  ExprResult ViewSizeExpr;
+  ExprResult IdentityExpr;
+  ExprResult ReduceExpr;
+
+  SizeIdentityReduceFunction SIRFFailure;
+  HyperLookupStatus Status = BuildHyperobjectLookupMemberRefs(
+      *this, E, ViewType, ViewSizeExpr, IdentityExpr, ReduceExpr, SIRFFailure);
+  if (Status != HLS_Success) {
+    Diag(Loc, diag::err_hyperobject_lookup_class_invalid)
+        << Loc << ViewType << SIRFFailure;
+    return E;
+  }
+
   Expr *VarAddr = UnaryOperator::Create(Context, E, UO_AddrOf, Ptr, VK_PRValue,
                                         OK_Ordinary, E->getExprLoc(), false,
                                         CurFPFeatureOverrides());
 
-  ExprResult Converted =
-    ConvertForHyperobject(Builtin::BI__hyper_lookup_class, 0, Loc, VarAddr,
-                          true, false);
+  ExprResult Converted = ConvertForHyperobject(Builtin::BI__hyper_lookup_class_static,
+                                               0, Loc, VarAddr, true, false);
+  // ExprResult Converted =
+  //   ConvertForHyperobject(Builtin::BI__hyper_lookup_class, 0, Loc, VarAddr,
+  //                         true, false);
   Expr *Call = nullptr;
   // Remember the root the view type hiearchy.  If it is a virtual
   // base class of the view type a dynamic cast must be used below.
   const CXXRecordDecl *BaseRecord = nullptr;
-  if (!Converted.isInvalid()) {
+  if (!Converted.isInvalid() && !CurContext->isDependentContext()) {
     if (const PointerType *BP =
         Converted.get()->getType()->getAs<PointerType>())
       BaseRecord = BP->getPointeeType()->getAsCXXRecordDecl();
-    Expr *CallArgs[] = { Converted.get() };
+    // Expr *CallArgs[] = { Converted.get() };
+    // Call =
+    //   BuildBuiltinCallExpr(Loc, Builtin::BI__hyper_lookup_class,
+    //                        CallArgs, true);
+    Expr *CallArgs[] = {Converted.get(), ViewSizeExpr.get(),
+                        IdentityExpr.get(), ReduceExpr.get()};
+    // Expr *CallArgs[] = {Converted.get(), SizeExpr.get(),
+    //                     IdentityExpr.get(), ReduceExpr.get()};
     Call =
-      BuildBuiltinCallExpr(Loc, Builtin::BI__hyper_lookup_class,
+      BuildBuiltinCallExpr(Loc, Builtin::BI__hyper_lookup_class_static,
                            CallArgs, true);
   }
   if (!Call)

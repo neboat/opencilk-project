@@ -58,6 +58,7 @@ bool llvm::isTapirHyperobjectIntrinsic(const Instruction *I) {
     if (const Function *Called = CB->getCalledFunction())
       switch (Called->getIntrinsicID()) {
       case Intrinsic::hyper_lookup_0:
+      case Intrinsic::hyper_lookup_0s:
       case Intrinsic::hyper_lookup_1:
       case Intrinsic::hyper_lookup_2:
         return true;

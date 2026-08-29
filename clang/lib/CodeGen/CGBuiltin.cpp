@@ -6450,6 +6450,25 @@ RValue CodeGenFunction::EmitBuiltinExpr(const GlobalDecl GD, unsigned BuiltinID,
     llvm::Value *Ptr = EmitScalarExpr(E->getArg(0));
     return RValue::get(Builder.CreateCall(F, {Ptr}));
   }
+  case Builtin::BI__hyper_lookup_class_static: {
+    Function *F = CGM.getIntrinsic(Intrinsic::hyper_lookup_0s);
+    llvm::Value *Ptr = EmitScalarExpr(E->getArg(0));
+    llvm::Value *Size = EmitScalarExpr(E->getArg(1));
+    llvm::Value *Identity = EmitScalarExpr(E->getArg(2));
+    llvm::Value *Reduce = EmitScalarExpr(E->getArg(3));
+    return RValue::get(
+        Builder.CreateCall(F, {Ptr, Builder.CreateExtractValue(Size, {0}),
+                               Builder.CreateExtractValue(Size, {1}),
+                               Builder.CreateExtractValue(Identity, {0}),
+                               Builder.CreateExtractValue(Identity, {1}),
+                               Builder.CreateExtractValue(Reduce, {0}),
+                               Builder.CreateExtractValue(Reduce, {1})}));
+    // return RValue::get(Builder.CreateCall(
+    //     F, {Ptr, Size, Builder.CreateExtractValue(Identity, {0}),
+    //         Builder.CreateExtractValue(Identity, {1}),
+    //         Builder.CreateExtractValue(Reduce, {0}),
+    //         Builder.CreateExtractValue(Reduce, {1})}));
+  }
   case Builtin::BI__hyper_lookup_internal_1: {
     Function *F = CGM.getIntrinsic(Intrinsic::hyper_lookup_1);
     llvm::Value *Ptr = EmitLValue(E->getArg(0)).getPointer(*this);

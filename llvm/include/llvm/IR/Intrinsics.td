@@ -2988,6 +2988,11 @@ def int_experimental_convergence_loop
   : DefaultAttrsIntrinsic<[llvm_token_ty], [], [IntrNoMem, IntrConvergent]>;
 
 //===----------------------------------------------------------------------===//
+// Kitsune-specific intrinsics
+//===----------------------------------------------------------------------===//
+include "llvm/IR/IntrinsicsKitsune.td"
+
+//===----------------------------------------------------------------------===//
 // Target-specific intrinsics
 //===----------------------------------------------------------------------===//
 

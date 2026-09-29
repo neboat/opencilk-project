@@ -1,0 +1,47 @@
+#
+# Copyright (c) 2021 Triad National Security, LLC
+#                         All rights reserved.
+#
+# This file is part of the Kitsune project.  It is released under the LLVM
+# license.
+#
+
+# include(GetClangResourceDir)
+
+# get_clang_resource_dir(CLANG_RESOURCE_INCDIR
+#   PREFIX ${LLVM_LIBRARY_OUTPUT_INTDIR}/..
+#   SUBDIR include
+# )
+
+# set(out_files)
+# function(copy_header_to_resource_dir file)
+#   set(src ${CMAKE_CURRENT_SOURCE_DIR}/${file})
+#   set(dst ${CLANG_RESOURCE_INCDIR}/${file})
+#   add_custom_command(OUTPUT ${dst}
+#     DEPENDS ${src}
+#     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${src} ${dst}
+#     COMMENT "Copying ${file}...")
+#   list(APPEND out_files ${dst})
+#   set(out_files ${out_files} PARENT_SCOPE)
+# endfunction(copy_header_to_resource_dir)
+
+# copy_header_to_resource_dir(kitsune.h)
+
+# add_custom_target("kitsune-resource-headers" ALL DEPENDS ${out_files})
+
+# Kitsune is registered as a project and will show up as a "tool" alongside
+# clang. But we actually want this configuration file in a place where clang
+# will pick it up.
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/Config/config.h.cmake
+  ${CMAKE_BINARY_DIR}/include/kitsune/Config/config.h
+  @ONLY)
+
+# install(DIRECTORY
+#   ${CMAKE_BINARY_DIR}/include/
+#   DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+# )
+
+# install(FILES kitsune.h
+#   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/clang/${LLVM_VERSION_MAJOR}/include
+#   COMPONENT "kitsune-resource-headers")

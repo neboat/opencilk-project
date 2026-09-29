@@ -1,0 +1,8 @@
+module KIT_Analysis {
+  requires cplusplus
+  umbrella "kitsune/Analysis"
+  module * { export * }
+
+  // This is intended for (repeated) textual inclusion.
+  textual header "kitsune/Analysis/TapirTargetFuncs.def"
+}

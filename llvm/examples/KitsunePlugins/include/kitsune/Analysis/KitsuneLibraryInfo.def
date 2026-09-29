@@ -1,0 +1,402 @@
+//===-- TargetLibraryInfo.def - Library information -------------*- C++ -*-===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
+// This .def file will either fill in the enum definition or fill in the
+// string representation array definition for TargetLibraryInfo.
+// Which is defined depends on whether TLI_DEFINE_ENUM is defined or
+// TLI_DEFINE_STRING is defined. Only one should be defined at a time.
+
+// NOTE: The nofree attribute is added to Libfuncs which are not
+// listed as free or realloc functions in MemoryBuiltins.cpp
+//
+// When adding a function which frees memory include the LibFunc
+// in lib/Analysis/MemoryBuiltins.cpp "isLibFreeFunction".
+//
+// When adding a LibFunc which reallocates memory include the LibFunc
+// in lib/Analysis/MemoryBuiltins.cpp "AllocationFnData[]".
+
+#if (defined(TLI_DEFINE_ENUM) +                 \
+     defined(TLI_DEFINE_STRING) +               \
+     defined(TLI_DEFINE_SIG) != 1)
+#error "Must define exactly one of TLI_DEFINE_ENUM, TLI_DEFINE_STRING, or TLI_DEFINE_SIG for TLI .def."
+#else
+// Exactly one of TLI_DEFINE_ENUM/STRING/SIG is defined.
+
+#if defined(TLI_DEFINE_ENUM)
+#define TLI_DEFINE_ENUM_INTERNAL(enum_variant) KitFunc_##enum_variant,
+#define TLI_DEFINE_STRING_INTERNAL(string_repr)
+#define TLI_DEFINE_SIG_INTERNAL(...)
+#elif defined(TLI_DEFINE_STRING)
+#define TLI_DEFINE_ENUM_INTERNAL(enum_variant)
+#define TLI_DEFINE_STRING_INTERNAL(string_repr) string_repr,
+#define TLI_DEFINE_SIG_INTERNAL(...)
+#else
+#define TLI_DEFINE_ENUM_INTERNAL(enum_variant)
+#define TLI_DEFINE_STRING_INTERNAL(string_repr)
+#define TLI_DEFINE_SIG_INTERNAL(...) { __VA_ARGS__ },
+#endif
+
+// ----------------------------------------------------------------------------
+// Kitsune runtime library functions
+//
+// NOTE: Unlike the other library functions declared here, the enum names and
+// the names of the actual runtime library function do not necessarily match.
+// This is intentional in order to keep the enum name consistent with the name
+// of the corresponding kitsune intrinsic.
+// ----------------------------------------------------------------------------
+
+/// @{
+// Runtime library functions common to all tapir targets
+
+/// void __kitrt_enable_verbose_mode();
+TLI_DEFINE_ENUM_INTERNAL(kitrt_enable_verbose)
+TLI_DEFINE_STRING_INTERNAL("__kitrt_enable_verbose_mode")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// @}
+
+/// @{
+/// Runtime library functions for the pthreads tapir target
+
+/// void __kitpthr_finalize(void);
+TLI_DEFINE_ENUM_INTERNAL(kitpthr_finalize)
+TLI_DEFINE_STRING_INTERNAL("__kitpthr_finalize")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void __kitpthr_initialize(void);
+TLI_DEFINE_ENUM_INTERNAL(kitpthr_initialize)
+TLI_DEFINE_STRING_INTERNAL("__kitpthr_initialize")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void* __kitpthr_launch(void(*thread_f)(int64_t, int64_t, void*),
+///                        int64_t start,
+///                        int64_t end,
+///                        int64_t grainSize,
+///                        void* args);
+TLI_DEFINE_ENUM_INTERNAL(kitpthr_launch)
+TLI_DEFINE_STRING_INTERNAL("__kitpthr_launch")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Int64, Int64, Int64, Ptr)
+
+/// void __kitpthr_sync(const void* pthrCtxt);
+TLI_DEFINE_ENUM_INTERNAL(kitpthr_sync)
+TLI_DEFINE_STRING_INTERNAL("__kitpthr_sync")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// @}
+
+/// @{
+/// Runtime library functions for the cuda tapir target
+
+/// void __kitcuda_enable_launch_refinement(bool enable);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_enable_refine_launches)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_enable_launch_refinement")
+TLI_DEFINE_SIG_INTERNAL(Void, Bool)
+
+/// void __kitcuda_destroy()
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_finalize)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_destroy")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void* __kitcuda_get_thread_stream()
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_get_thread_stream)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_get_thread_stream")
+TLI_DEFINE_SIG_INTERNAL(Ptr)
+
+/// void __kitcuda_initialize();
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_initialize)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_initialize")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void* __kitcuda_launch_kernel(void* fat_binary,
+///                               const char* kernel_name,
+///                               void* args[],
+///                               int64_t trip_count,
+///                               int32_t threads_per_block,
+///                               size_t shmem_per_thread,
+///                               InstrMixInfo* instr_mix_info,
+///                               void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_launch_kernel)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_launch_kernel")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr, Ptr, Int64, Int32, Int64, Ptr, Ptr)
+
+/// void __kitcuda_mem_free(void*)
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_managed_free)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_mem_free")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// void* __kitcuda_mem_alloc_managed(size_t)
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_managed_malloc)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_mem_alloc_managed")
+TLI_DEFINE_SIG_INTERNAL(Ptr, SizeT)
+
+/// void* __kitcuda_mem_realloc_managed(void*, size_t)
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_managed_realloc)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_mem_realloc_managed")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, SizeT)
+
+/// void __kitcuda_managed_memcpy(void*, void*, size_t)
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_managed_memcpy)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_managed_memcpy")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, SizeT)
+
+/// void __kitcuda_mem_host_prefetch(void* ptr, void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_prefetch_dtoh)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_mem_host_prefetch")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr)
+
+/// void* __kitcuda_mem_gpu_prefetch(void* ptr, void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_prefetch_htod)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_mem_gpu_prefetch")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr)
+
+/// void __kitcuda_set_default_threads_per_blk(int32_t threads_per_block);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_set_fixed_tpb)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_set_default_threads_per_blk")
+TLI_DEFINE_SIG_INTERNAL(Void, Int32)
+
+/// void __kitcuda_set_max_threads_per_blk(int32_t threads_per_block);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_set_max_tpb)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_set_max_threads_per_blk")
+TLI_DEFINE_SIG_INTERNAL(Void, Int32)
+
+/// void* __kitcuda_get_global_symbol(void* fat_binary,
+///                                   const char* name);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_symbol_device_ptr)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_get_global_symbol")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr)
+
+/// void __kitcuda_memcpy_sym_to_host(void* host_ptr,
+///                                   void* device_ptr,
+///                                   int64_t bytes);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_symbol_memcpy_dtoh)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_memcpy_sym_to_host")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, Int64)
+
+/// void __kitcuda_memcpy_sym_to_device(void* device_ptr,
+///                                     void* host_ptr,
+///                                     int64_t bytes);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_symbol_memcpy_htod)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_memcpy_sym_to_device")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, Int64)
+
+/// void __kitcuda_sync_thread_stream(void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kitcuda_sync_stream)
+TLI_DEFINE_STRING_INTERNAL("__kitcuda_sync_thread_stream")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// @}
+
+/// @{
+/// Runtime library functions for the hip tapir target
+
+/// void __kithip_enable_xnack();
+TLI_DEFINE_ENUM_INTERNAL(kithip_enable_xnack)
+TLI_DEFINE_STRING_INTERNAL("__kithip_enable_xnack")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void __kithip_enable_ylaunch();
+TLI_DEFINE_ENUM_INTERNAL(kithip_enable_y_axis_launches)
+TLI_DEFINE_STRING_INTERNAL("__kithip_enable_ylaunch")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void __kithip_destroy()
+TLI_DEFINE_ENUM_INTERNAL(kithip_finalize)
+TLI_DEFINE_STRING_INTERNAL("__kithip_destroy")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void* __kithip_get_thread_stream()
+TLI_DEFINE_ENUM_INTERNAL(kithip_get_thread_stream)
+TLI_DEFINE_STRING_INTERNAL("__kithip_get_thread_stream")
+TLI_DEFINE_SIG_INTERNAL(Ptr)
+
+/// void __kithip_initialize();
+TLI_DEFINE_ENUM_INTERNAL(kithip_initialize)
+TLI_DEFINE_STRING_INTERNAL("__kithip_initialize")
+TLI_DEFINE_SIG_INTERNAL(Void)
+
+/// void* __kithip_launch_kernel(void* fat_binary,
+///                              const char* kernel_name,
+///                              void* args[],
+///                              int64_t trip_count,
+///                              int32_t threads_per_block,
+///                              InstrMixInfo* instr_mix_info,
+///                              void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kithip_launch_kernel)
+TLI_DEFINE_STRING_INTERNAL("__kithip_launch_kernel")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr, Ptr, Int64, Int32, Ptr, Ptr)
+
+/// void __kithip_mem_free(void*)
+TLI_DEFINE_ENUM_INTERNAL(kithip_managed_free)
+TLI_DEFINE_STRING_INTERNAL("__kithip_mem_free")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// void* __kithip_mem_alloc_managed(size_t)
+TLI_DEFINE_ENUM_INTERNAL(kithip_managed_malloc)
+TLI_DEFINE_STRING_INTERNAL("__kithip_mem_alloc_managed")
+TLI_DEFINE_SIG_INTERNAL(Ptr, SizeT)
+
+/// void* __kithip_mem_realloc_managed(void*, size_t)
+TLI_DEFINE_ENUM_INTERNAL(kithip_managed_realloc)
+TLI_DEFINE_STRING_INTERNAL("__kithip_mem_realloc_managed")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, SizeT)
+
+/// void __kithip_managed_memcpy(void*, void*, size_t)
+TLI_DEFINE_ENUM_INTERNAL(kithip_managed_memcpy)
+TLI_DEFINE_STRING_INTERNAL("__kithip_managed_memcpy")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, SizeT)
+
+/// void __kithip_mem_host_prefetch(void* ptr, void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kithip_prefetch_dtoh)
+TLI_DEFINE_STRING_INTERNAL("__kithip_mem_host_prefetch")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr)
+
+/// void* __kithip_mem_gpu_prefetch(void* ptr, void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kithip_prefetch_htod)
+TLI_DEFINE_STRING_INTERNAL("__kithip_mem_gpu_prefetch")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr)
+
+/// void __kithip_set_default_threads_per_blk(int32_t threads_per_block);
+TLI_DEFINE_ENUM_INTERNAL(kithip_set_fixed_tpb)
+TLI_DEFINE_STRING_INTERNAL("__kithip_set_default_threads_per_blk")
+TLI_DEFINE_SIG_INTERNAL(Void, Int32)
+
+/// void __kithip_set_max_threads_per_blk(int32_t threads_per_block);
+TLI_DEFINE_ENUM_INTERNAL(kithip_set_max_tpb)
+TLI_DEFINE_STRING_INTERNAL("__kithip_set_max_threads_per_blk")
+TLI_DEFINE_SIG_INTERNAL(Void, Int32)
+
+/// void* __kithip_get_global_symbol(void* fat_binary,
+///                                  const char* name);
+TLI_DEFINE_ENUM_INTERNAL(kithip_symbol_device_ptr)
+TLI_DEFINE_STRING_INTERNAL("__kithip_get_global_symbol")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr, Ptr)
+
+/// void __kithip_memcpy_sym_to_host(void* host_ptr,
+///                                  void* device_ptr,
+///                                  int64_t bytes);
+TLI_DEFINE_ENUM_INTERNAL(kithip_symbol_memcpy_dtoh)
+TLI_DEFINE_STRING_INTERNAL("__kithip_memcpy_sym_to_host")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, SizeT)
+
+/// void __kithip_memcpy_sym_to_device(void* device_ptr,
+///                                    void* host_ptr,
+///                                    int64_t bytes);
+TLI_DEFINE_ENUM_INTERNAL(kithip_symbol_memcpy_htod)
+TLI_DEFINE_STRING_INTERNAL("__kithip_memcpy_sym_to_device")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, SizeT)
+
+/// void __kithip_sync_thread_stream(void* stream);
+TLI_DEFINE_ENUM_INTERNAL(kithip_sync_stream)
+TLI_DEFINE_STRING_INTERNAL("__kithip_sync_thread_stream")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// @}
+
+// ----------------------------------------------------------------------------
+// cuda runtime library functions
+//
+// These are functions from libcudart and/or libcuda. These are used by
+// Kitsune's cuda tapir target
+// ----------------------------------------------------------------------------
+
+/// void* __cudaRegisterFatBinary(void* fatCubin)
+TLI_DEFINE_ENUM_INTERNAL(cuda_register_fat_binary)
+TLI_DEFINE_STRING_INTERNAL("__cudaRegisterFatBinary")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr)
+
+/// void __cudaRegisterFatBinaryEnd(void** fatBinHandle)
+TLI_DEFINE_ENUM_INTERNAL(cuda_register_fat_binary_end)
+TLI_DEFINE_STRING_INTERNAL("__cudaRegisterFatBinaryEnd")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// void
+/// __cudaRegisterManagedVar(void**      fatBinHandle,
+///                          void**      hostVarPtrAddress,
+///                          char*       deviceAddress,
+///                          const char* deviceName,
+///                          int         ext,
+///                          size_t      size,
+///                          int         constant,
+///                          int         global);
+TLI_DEFINE_ENUM_INTERNAL(cuda_register_managed_var)
+TLI_DEFINE_STRING_INTERNAL("__cudaRegisterManagedVar")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, Ptr, Ptr, Int, SizeT, Int, Int)
+
+/// void
+/// __cudaRegisterVar(void**      fatBinHandle,
+///                   char*       hostVar,
+///                   char*       deviceAddress,
+///                   const char* deviceName,
+///                   int         ext,
+///                   size_t      size,
+///                   int         constant,
+///                   int         global);
+TLI_DEFINE_ENUM_INTERNAL(cuda_register_var)
+TLI_DEFINE_STRING_INTERNAL("__cudaRegisterVar")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, Ptr, Ptr, Int, SizeT, Int, Int)
+
+/// void __cudaUnregisterFatBinary(void** fatBinHandle)
+TLI_DEFINE_ENUM_INTERNAL(cuda_unregister_fat_binary)
+TLI_DEFINE_STRING_INTERNAL("__cudaUnregisterFatBinary")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+/// @}
+
+// ----------------------------------------------------------------------------
+// hip runtime library functions
+//
+// These are functions from libamdhip64 and other AMD Hip runtim libraries that
+// kitsune links to. These are used by Kitsune's hip tapir target
+// ----------------------------------------------------------------------------
+
+/// void* __hipRegisterFatBinary(void*)
+TLI_DEFINE_ENUM_INTERNAL(hip_register_fat_binary)
+TLI_DEFINE_STRING_INTERNAL("__hipRegisterFatBinary")
+TLI_DEFINE_SIG_INTERNAL(Ptr, Ptr)
+
+/// void
+/// __hipRegisterManagedVar(
+///     void* hipModule,  // Pointer returned by __hipRegisterFatbinary()
+///     void** pointer,   // Pointer to a chunk of managed memory with size
+///                       // \p size and alignment \p align. The runtime
+///                       // allocates this managed memory and assigns it to
+///                       // \p pointer
+///     void* init_value, // Initial value to be copied into \p pointer
+///     const char* name, // Name of the variable in code object
+///     size_t size,      // Size in bytes of the variable
+///     unsigned align);  // The variable's alignment
+TLI_DEFINE_ENUM_INTERNAL(hip_register_managed_var)
+TLI_DEFINE_STRING_INTERNAL("__hipRegisterManagedVar")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, Ptr, Ptr, SizeT, Int)
+
+/// void
+/// __hipRegisterVar(void** fatbinHandle,
+///                  void*  var,           // The shadow variable in host code
+///                  char*  hostVar,       // Variable name in host code
+///                  char*  deviceVar,     // Variable name in device code
+///                  int    ext,           // Whether this variable is external
+///                  size_t size,          // Size of the variable
+///                  int    constant,      // Whether this variable is constant
+///                  int    global);       // Unknown, always 0
+TLI_DEFINE_ENUM_INTERNAL(hip_register_var)
+TLI_DEFINE_STRING_INTERNAL("__hipRegisterVar")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr, Ptr, Ptr, Ptr, Int, SizeT, Int, Int)
+
+/// void __hipUnregisterFatBinary(void**)
+TLI_DEFINE_ENUM_INTERNAL(hip_unregister_fat_binary)
+TLI_DEFINE_STRING_INTERNAL("__hipUnregisterFatBinary")
+TLI_DEFINE_SIG_INTERNAL(Void, Ptr)
+
+#undef TLI_DEFINE_ENUM_INTERNAL
+#undef TLI_DEFINE_STRING_INTERNAL
+#undef TLI_DEFINE_SIG_INTERNAL
+#endif  // One of TLI_DEFINE_ENUM/STRING are defined.
+
+#undef TLI_DEFINE_ENUM
+#undef TLI_DEFINE_STRING
+#undef TLI_DEFINE_SIG

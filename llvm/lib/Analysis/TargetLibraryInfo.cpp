@@ -19,6 +19,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 using namespace llvm;
 
 static cl::opt<TargetLibraryInfoImpl::VectorLibrary> ClVectorLibrary(
@@ -102,13 +103,14 @@ static const FuncProtoTy Signatures[] = {
 static_assert(sizeof Signatures / sizeof *Signatures == LibFunc::NumLibFuncs,
               "Missing library function signatures");
 
-TapirTargetOptions *TapirTargetOptions::clone() const {
+TapirTargetOptions *TapirTargetOptions::clone() {
   TapirTargetOptions *New = nullptr;
-  switch (getKind()) {
+  switch (getID()) {
   default:
     llvm_unreachable("Unhandled TapirTargetOption.");
-  case TTO_OpenCilk:
+  case TapirTargetID::OpenCilk:
     New = cast<OpenCilkABIOptions>(this)->cloneImpl();
+    break;
   }
   return New;
 }

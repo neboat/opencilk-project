@@ -68,15 +68,15 @@ your program as you would an ordinary C/C++ program using OpenCilk's
 
 For example, on Linux, the following command will build an optimized Cilk
 executable `fib` from `fib.c` using OpenCilk, assuming that OpenCilk is
-installed at `/opt/opencilk-2`:
+installed at `/opt/opencilk`:
 ```console
-/opt/opencilk-2/bin/clang fib.c -o fib -O3 -fopencilk
+/opt/opencilk/bin/clang fib.c -o fib -O3 -fopencilk
 ```
 On macOS, you will need XCode or Command Line Tools installed, to provide
 the necessary system headers and libraries, and to preface your compile
 and link commands with `xcrun`:
 ```console
-xcrun /opt/opencilk-2/bin/clang fib.c -o fib -O3 -fopencilk
+xcrun /opt/opencilk/bin/clang fib.c -o fib -O3 -fopencilk
 ```
 
 To run your Cilk program, simply run the resulting executable.
@@ -114,8 +114,6 @@ For example, the following Cilk program shows how one can
 parallelize the simple exponential-time algorithm to compute the nth
 Fibonacci number using `cilk_spawn` and `cilk_scope`.
 ```c
-#include <cilk/cilk.h>
-
 int fib(int n) {
   if (n < 2)
     return n;
@@ -135,7 +133,6 @@ One can also spawn functions that do not return a value, as in the
 following example:
 ```cpp
 #include <algorithm>
-#include <cilk/cilk.h>
 
 constexpr std::ptrdiff_t BASE_CASE_LENGTH = 32;
 
@@ -172,8 +169,6 @@ iterations of the loop are allowed to execute simultaneously.  In Cilk,
 `cilk_for` loops are safe and efficient to nest, as the following example
 shows:
 ```c
-#include <cilk/cilk.h>
-
 void square_matmul(double *C, const double *A, const double *B, size_t n) {
   cilk_for (size_t i = 0; i < n; ++i) {
     cilk_for (size_t j = 0; j < n; ++j) {
@@ -306,11 +301,13 @@ regions of the program.  To measure a particular region in a Cilk program:
    // Region to measure
    wsp_t end = wsp_getworkspan();
    ```
-3. Compute the difference between these probes and output the result, using
-   the `wsp_sub()` method (or using the `-` operator on the `wsp_t` type in C++)
-   and the `wsp_dump()` method.  For example:
+3. Compute the difference between these probes using the `wsp_sub()` method
+   (or using the `-` operator on the `wsp_t` type in C++).  For example:
    ```c
    wsp_t elapsed = wsp_sub(end, start);
+   ```
+4. Output the result using the the `wsp_dump()` method.  For example:
+   ```c
    wsp_dump(dump, "my region tag");
    ```
 
@@ -358,8 +355,6 @@ that sets the identity value, and `R` defines the binary reduction.  For
 example, the following code defines the `sum` variable to be a reducer
 by adding `cilk_reducer(zero_i, plus_i)` to its type:
 ```c
-#include <cilk/cilk.h>
-
 void zero_i(void *v) { *(int *)v = 0; }
 void plus_i(void *l, void *r) { *(int *)l += *(int *)r; }
 
@@ -399,7 +394,6 @@ implement a parallel Monte Carlo algorithm for estimating pi:
 ```cpp
 #include <cstdint>
 #include <limits>
-#include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 
 template <typename T> void zero(void *v) {

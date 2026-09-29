@@ -57,7 +57,7 @@ public:
       delete Target;
   }
 
-  bool run();
+  bool run(ModuleAnalysisManager &AM);
 
 private:
   bool processFunction(Function &F, SmallVectorImpl<Function *> &NewHelpers);
@@ -433,7 +433,7 @@ bool TapirToTargetImpl::processFunction(
   return Changed || !NewHelpers.empty();
 }
 
-bool TapirToTargetImpl::run() {
+bool TapirToTargetImpl::run(ModuleAnalysisManager &AM) {
   // Add functions that detach to the work list.
   SmallVector<Function *, 4> WorkList;
   {
@@ -446,7 +446,8 @@ bool TapirToTargetImpl::run() {
     // TODO: Use per-function Tapir targets?
     if (!Target) {
       TargetLibraryInfo &TLI = GetTLI(F);
-      Target = getTapirTargetFromID(M, TLI.getTapirTarget());
+      Target = getTapirTargetFromID(M, TLI.getTapirTarget(),
+                                    TLI.getTapirTargetOptions(), AM);
       if (TapirTargetOptions *Options = TLI.getTapirTargetOptions())
         Target->setOptions(*Options);
     }
@@ -504,7 +505,8 @@ PreservedAnalyses TapirToTargetPass::run(Module &M, ModuleAnalysisManager &AM) {
     return FAM.getResult<TargetLibraryAnalysis>(F);
   };
 
-  bool Changed = TapirToTargetImpl(M, GetAA, GetDT, GetTI, GetAC, GetTLI).run();
+  bool Changed =
+      TapirToTargetImpl(M, GetAA, GetDT, GetTI, GetAC, GetTLI).run(AM);
 
   if (Changed)
     return PreservedAnalyses::none();

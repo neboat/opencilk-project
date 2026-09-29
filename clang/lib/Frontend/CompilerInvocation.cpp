@@ -1504,9 +1504,10 @@ parseCSIExtensionPoint(StringRef FlagName, ArgList &Args,
     if (ParsedExt == LangOptions::CSI_None) {
       Diags.Report(diag::err_drv_invalid_value) << FlagName << Val;
       return LangOptions::CSI_None;
-    } else
-      return ParsedExt;
-  } else if (Args.hasArg(OPT_fcsi))
+    }
+    return ParsedExt;
+  }
+  if (Args.hasArg(OPT_fcsi))
     // Use TapirLate extension point by default, for backwards compatability.
     return LangOptions::CSI_TapirLate;
   return LangOptions::CSI_None;

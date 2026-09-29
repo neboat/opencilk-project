@@ -1621,6 +1621,10 @@ TaskOutlineMapTy LoopSpawningImpl::outlineAllTapirLoops() {
     LoopArgStarts[L] = ArgStart;
 
     ValueToValueMapTy VMap;
+
+    // Run target-specific preprocessing step before creating the helper function.
+    OutlineProcessors[TL]->preProcessTapirLoop(*TL, VMap);
+
     // Create the helper function.
     Function *Outline = createHelperForTapirLoop(
         TL, LoopArgs[L], OutlineProcessors[TL]->getIVArgIndex(F, LoopArgs[L]),
@@ -1776,13 +1780,24 @@ PreservedAnalyses LoopSpawningPass::run(Module &M, ModuleAnalysisManager &AM) {
   }
 
   // Now process each loop.
+  bool ModulePreprocessed = false;
+  std::unique_ptr<TapirTarget> Target;
   for (Function *F : WorkList) {
-    TapirTargetID TargetID = GetTLI(*F).getTapirTarget();
-    std::unique_ptr<TapirTarget> Target(getTapirTargetFromID(M, TargetID));
+    auto &TLI = GetTLI(*F);
+    if (!Target)
+      Target.reset(getTapirTargetFromID(M, TLI.getTapirTarget(),
+                                        TLI.getTapirTargetOptions(), AM));
+    if (!ModulePreprocessed) {
+      Target->preProcessModule();
+      ModulePreprocessed = true;
+    }
     Changed |= LoopSpawningImpl(*F, GetDT(*F), GetLI(*F), GetTI(*F), GetSE(*F),
                                 GetAC(*F), GetTTI(*F), Target.get(), GetORE(*F))
                    .run();
   }
+  if (Target)
+    Target->postProcessModule();
+
   if (Changed)
     return PreservedAnalyses::none();
   return PreservedAnalyses::all();

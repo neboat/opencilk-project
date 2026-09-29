@@ -1238,7 +1238,7 @@ static bool needPhiInTaskContinue(
   return false;
 }
 
-/// Check if a alloca AI is promotable based on uses in subtasks.
+/// Check if alloca AI is promotable based on uses in subtasks.
 bool TaskInfo::isAllocaParallelPromotable(const AllocaInst *AIP) const {
   if (getTaskFor(AIP->getParent())->isSerial()) return true;
 

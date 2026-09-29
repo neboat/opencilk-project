@@ -16,7 +16,6 @@
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Option/Arg.h"
 #include "llvm/Option/ArgList.h"
-#include "llvm/Transforms/Tapir/TapirTargetIDs.h"
 
 using namespace clang::driver;
 using namespace clang;

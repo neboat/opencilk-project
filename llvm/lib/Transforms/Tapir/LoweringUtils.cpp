@@ -16,6 +16,7 @@
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Transforms/IPO/FunctionAttrs.h"
 #include "llvm/Transforms/Tapir/CilkPlusABI.h"
@@ -26,6 +27,7 @@
 #include "llvm/Transforms/Tapir/QthreadsABI.h"
 #include "llvm/Transforms/Tapir/SerialABI.h"
 #include "llvm/Transforms/Tapir/TapirLoopInfo.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/Local.h"
@@ -38,7 +40,9 @@ using namespace llvm;
 static const char TimerGroupName[] = DEBUG_TYPE;
 static const char TimerGroupDescription[] = "Tapir lowering";
 
-TapirTarget *llvm::getTapirTargetFromID(Module &M, TapirTargetID ID) {
+TapirTarget *llvm::getTapirTargetFromID(Module &M, TapirTargetID ID,
+                                        const TapirTargetOptions *TTOptions,
+                                        ModuleAnalysisManager &MAM) {
   switch (ID) {
   case TapirTargetID::None:
     return nullptr;

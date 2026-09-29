@@ -1587,6 +1587,6 @@ void printTask(Task &T, raw_ostream &OS, const std::string &Banner = "");
 /// Returns the Task that encodes the loop body if so, or nullptr if not.
 Task *getTaskIfTapirLoopStructure(const Loop *L, TaskInfo *TI);
 
-} // End llvm namespace
+} // namespace llvm
 
 #endif

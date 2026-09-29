@@ -18,6 +18,7 @@
 #include "llvm/Support/Compiler.h"
 #include "llvm/TargetParser/Triple.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 #include <bitset>
 #include <optional>
 
@@ -283,19 +284,15 @@ public:
   LLVM_ABI static bool isCallingConvCCompatible(Function *Callee);
 
   /// Set the target for Tapir lowering.
-  void setTapirTarget(TapirTargetID TargetID) {
-    TapirTarget = TargetID;
-  }
+  void setTapirTarget(TapirTargetID TargetID) { TapirTarget = TargetID; }
 
   /// Return the ID of the target for Tapir lowering.
-  TapirTargetID getTapirTarget() const {
-    return TapirTarget;
-  }
+  TapirTargetID getTapirTarget() const { return TapirTarget; }
 
   /// Return true if we have a nontrivial target for Tapir lowering.
   bool hasTapirTarget() const {
     return (TapirTarget != TapirTargetID::Last_TapirTargetID) &&
-      (TapirTarget != TapirTargetID::None);
+           (TapirTarget != TapirTargetID::None);
   }
 
   /// Set options for Tapir lowering.
@@ -304,9 +301,7 @@ public:
   }
 
   /// Return any options for Tapir lowering.
-  TapirTargetOptions *getTapirTargetOptions() const {
-    return TTOptions.get();
-  }
+  TapirTargetOptions *getTapirTargetOptions() const { return TTOptions.get(); }
 
   /// Records known library functions associated with the specified Tapir
   /// target.

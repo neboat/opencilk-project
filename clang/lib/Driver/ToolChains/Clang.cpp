@@ -6664,7 +6664,6 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     if (!Triple.isOSLinux() && !Triple.isOSFreeBSD() && !Triple.isMacOSX())
       D.Diag(diag::err_drv_cilk_unsupported);
 
-    /* JFC: Is it possible to confuse with with -fno-opencilk? */
     bool OpenCilk = Args.hasArgNoClaim(options::OPT_fopencilk);
     bool Cheetah = false;
     bool CustomTarget = false;

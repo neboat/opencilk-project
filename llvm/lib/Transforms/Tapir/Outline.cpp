@@ -18,6 +18,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/DebugInfo.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
@@ -438,13 +439,6 @@ Function *llvm::CreateHelper(
     }
   }
 
-  // When we remap instructions within the same module, we want to avoid
-  // duplicating inlined DISubprograms, so record all subprograms we find as we
-  // duplicate instructions and then freeze them in the MD map. We also record
-  // information about dbg.value and dbg.declare to avoid duplicating the
-  // types.
-  DebugInfoFinder DIFinder;
-
   // Track the subprogram attachment that needs to be cloned to fine-tune the
   // mapping within the same module.
   if (Changes < CloneFunctionChangeType::DifferentModule) {
@@ -524,35 +518,30 @@ Function *llvm::CreateHelper(
                     SharedEHEntries, CodeInfo, TypeMapper, Materializer,
                     &IdentityMD);
 
-  // Only update !llvm.dbg.cu for DifferentModule (not CloneModule). In the
-  // same module, the compile unit will already be listed (or not). When
-  // cloning a module, CloneModule() will handle creating the named metadata.
-  if (Changes != CloneFunctionChangeType::DifferentModule) {
-    // Update !llvm.dbg.cu with compile units added to the new module if this
-    // function is being cloned in isolation.
-    //
-    // FIXME: This is making global / module-level changes, which doesn't seem
-    // like the right encapsulation  Consider dropping the requirement to update
-    // !llvm.dbg.cu (either obsoleting the node, or restricting it to
-    // non-discardable compile units) instead of discovering compile units by
-    // visiting the metadata attached to global values, which would allow this
-    // code to be deleted. Alternatively, perhaps give responsibility for this
-    // update to CloneFunctionInto's callers.
-    auto *NewModule = NewFunc->getParent();
-    auto *NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
-    // Avoid multiple insertions of the same DICompileUnit to NMD.
-    SmallPtrSet<const void *, 8> Visited(llvm::from_range, NMD->operands());
+  // Update !llvm.dbg.cu with compile units added to the new module if this
+  // function is being cloned in isolation.
+  //
+  // FIXME: This is making global / module-level changes, which doesn't seem
+  // like the right encapsulation  Consider dropping the requirement to update
+  // !llvm.dbg.cu (either obsoleting the node, or restricting it to
+  // non-discardable compile units) instead of discovering compile units by
+  // visiting the metadata attached to global values, which would allow this
+  // code to be deleted. Alternatively, perhaps give responsibility for this
+  // update to CloneFunctionInto's callers.
+  auto *NewModule = NewFunc->getParent();
+  auto *NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
+  // Avoid multiple insertions of the same DICompileUnit to NMD.
+  SmallPtrSet<const void *, 8> Visited(llvm::from_range, NMD->operands());
 
-    // Collect and clone all the compile units referenced from the instructions
-    // in the function (e.g. as instructions' scope).
-    DebugInfoFinder DIFinder;
-    collectDebugInfoFromInstructions(*OldFunc, DIFinder);
-    for (auto *Unit : DIFinder.compile_units()) {
-      MDNode *MappedUnit =
-          MapMetadata(Unit, VMap, RF_None, TypeMapper, Materializer);
-      if (Visited.insert(MappedUnit).second)
-        NMD->addOperand(MappedUnit);
-    }
+  // Collect and clone all the compile units referenced from the instructions
+  // in the function (e.g. as instructions' scope).
+  DebugInfoFinder DIFinder;
+  collectDebugInfoFromInstructions(*OldFunc, DIFinder);
+  for (auto *Unit : DIFinder.compile_units()) {
+    MDNode *MappedUnit =
+        MapMetadata(Unit, VMap, RF_None, TypeMapper, Materializer);
+    if (Visited.insert(MappedUnit).second)
+      NMD->addOperand(MappedUnit);
   }
 
   // Add a branch in the new function to the cloned Header.

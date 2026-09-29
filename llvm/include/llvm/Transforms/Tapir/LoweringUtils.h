@@ -18,7 +18,9 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
@@ -151,63 +153,65 @@ using TFOutlineMapTy = DenseMap<const Spindle *, TaskOutlineInfo>;
 ///
 /// The majority of the Tapir-lowering infrastructure focuses on outlining Tapir
 /// tasks into separate functions, which is a common lowering step for many
-/// different back-ends.  Most of the heavy-lifting for this outlining process
-/// is handled by the lowering infrastructure itself, implemented in
-/// TapirToTarget and LoweringUtils.  The TapirTarget class defines several
+/// different back-ends.  The lowering infrastructure itself, implemented in
+/// TapirToTarget and LoweringUtils handles most of the heavy-lifting for this
+/// outlining process.  The TapirTarget class defines several
 /// callbacks to tailor this lowering process for a particular back-end.
 ///
 /// The high-level Tapir-lowering algorithm, including the TapirTarget
 /// callbacks, operates as follows:
 ///
-/// 1) For each Function F in the Module, call
+/// 0. Call TapirTarget::PrepareModule()
+///
+/// 1. For each Function F in the Module, call
 /// TapirTarget::shouldProcessFunction(F) to decide whether to enqueue F for
 /// processing.
 ///
-/// 2) Process each enqueued Function F as follows:
+/// 2. For each enqueued Function F:
 ///
-///   a) Run TapirTarget::preProcessFunction(F).
+///   a. Run TapirTarget::preProcessFunction(F).
 ///
-///   b) If TapirTarget::shouldDoOutlining(F) returns false, skip the subsequent
+///   b. If TapirTarget::shouldDoOutlining(F) returns false, skip the subsequent
 ///   outlining steps, and only process grainsize calls, task-frameaddress
 ///   calls, and sync instructions in F.
 ///
-///   c) For each Tapir task T in F in post-order:
+///   c. For each Tapir task T in F in post-order:
 ///
-///     i) Prepare the set of inputs to a helper function for T, using the
+///     i. Prepare the set of inputs to a helper function for T, using the
 ///     return value of OutlineProcessor::getArgStructMode() to guide this
 ///     preparation.  For example, if getArgStructMode() != None, insert code to
 ///     allocate a structure and marshal the inputs in that structure.
 ///
-///     ii) Outline T into a new Function Helper, using the set of inputs
+///     ii. Outline T into a new Function Helper, using the set of inputs
 ///     prepared in step 2ci and a constant NULL return value of type
 ///     TapirTarget::getReturnType().
 ///
-///     iii) Run TapirTarget::addHelperAttributes(Helper).
+///     iii. Run TapirTarget::addHelperAttributes(Helper).
 ///
-///   d) Let Helper[T] denote the outlined Function for a task T.
+///   d. Let Helper[T] denote the outlined Function for a task T.
 ///
-///   e) For each Tapir task T in F in post-order:
+///   e. For each Tapir task T in F in post-order:
 ///
-///     i) Run TapirTarget::preProcessOutlinedTask(Helper[T]).
+///     i. Run TapirTarget::preProcessOutlinedTask(Helper[T]).
 ///
-///     ii) For each subtask SubT spawned by Helper[T], run
+///     ii. For each subtask SubT spawned by Helper[T], run
 ///       TapirTarget::processSubTaskCall(Helper[SubT])
 ///
-///     iii) Run TapirTarget::postProcessOutlinedTask(Helper[T]).
+///     iii. Run TapirTarget::postProcessOutlinedTask(Helper[T]).
 ///
-///     iv) Process the grainsize calls, task-frameaddress calls, and sync
+///     iv. Process the grainsize calls, task-frameaddress calls, and sync
 ///     instructions in Helper[T].
 ///
-///   e) If F spawns tasks, run TapirTarget::preProcessRootSpawner(F); then, for
+///   e. If F spawns tasks, run TapirTarget::preProcessRootSpawner(F); then, for
 ///   each child task T of F, run TapirTarget::processSubTaskCall(Helper[T]);
 ///   and finally run TapirTarget::postProcessRootSpawner(F).
 ///
-///   f) Process the grainsize calls, task-frameaddress calls, and sync
+///   f. Process the grainsize calls, task-frameaddress calls, and sync
 ///   instructions in F.
 ///
-///   g) Run TapirTarget::postProcessFunction(F).
+///   g. Run TapirTarget::postProcessFunction(F).
 ///
-///   h) For each generated helper Function Helper, run
+///   h. For each generated helper Function Helper, run
 ///   TapirTarget::postProcessHelper(Helper).
 class TapirTarget {
 protected:
@@ -230,6 +234,8 @@ public:
   };
 
   TapirTarget(Module &M)
+      : M(M), DestM(M), Changes(CloneFunctionChangeType::LocalChangesOnly) {}
+  TapirTarget(Module &M, ModuleAnalysisManager &AM)
       : M(M), DestM(M), Changes(CloneFunctionChangeType::LocalChangesOnly) {}
   virtual ~TapirTarget() {}
 
@@ -337,6 +343,14 @@ public:
   virtual void postProcessFunction(Function &F,
                                    bool ProcessingTapirLoops = false) = 0;
 
+  /// Process a host module before any lowering is performed. Unlike
+  /// prepareModule(), this is called in LoopSpawningTI.
+  virtual void preProcessModule() {}
+
+  /// Process a host module at the end of lowering all functions within the
+  /// module.
+  virtual void postProcessModule() {}
+
   /// Process a generated helper Function \p F produced via outlining, at the
   /// end of the lowering process.
   virtual void postProcessHelper(Function &F) = 0;
@@ -358,34 +372,34 @@ public:
 /// The LoopSpawningTI pass outlines Tapir loops by examining each Function F in
 /// a Module and performing the following algorithm:
 ///
-/// 1) Analyze all loops in Function F to discover Tapir loops that are amenable
+/// 1. Analyze all loops in Function F to discover Tapir loops that are amenable
 /// to LoopSpawningTI.
 ///
-/// 2) Run TapirTarget::preProcessFunction(F, OutliningTapirLoops = true).
+/// 2. Run TapirTarget::preProcessFunction(F, OutliningTapirLoops = true).
 ///
-/// 3) Process each Tapir loop L as follows:
+/// 3. Process each Tapir loop L as follows:
 ///
-///   a) Prepare the set of inputs to the helper function derived from the Tapir
+///   a. Prepare the set of inputs to the helper function derived from the Tapir
 ///   task in L, using the return value of OutlineProcessor::getArgStructMode()
 ///   to guide this preparation.  For example, if getArgStructMode() != None,
 ///   insert code to allocate a structure and marshal the inputs in that
 ///   structure.
 ///
-///   b) Run OutlineProcessor::setupLoopOutlineArgs() to get the complete set
+///   b. Run OutlineProcessor::setupLoopOutlineArgs() to get the complete set
 ///   of inputs for the outlined helper function for L.
 ///
-///   c) Outline L into a Function Helper, whose inputs are the prepared set of
+///   c. Outline L into a Function Helper, whose inputs are the prepared set of
 ///   inputs produced in step 2b and whose return type is void.  This outlining
 ///   step uses OutlineProcessor::getIVArgIndex() and
 ///   OutlineProcessor::getLimitArgIndex() to identify the helper input
 ///   parameters that specify the starting and ending iterations, respectively.
 ///
-///   d) Call OutlineProcessor::postProcessOutline(Helper).
+///   d. Call OutlineProcessor::postProcessOutline(Helper).
 ///
-/// 4) For each Tapir loop L in F in post-order, run
+/// 4. For each Tapir loop L in F in post-order, run
 /// OutlineProcessor::processOutlinedLoopCall().
 ///
-/// 5) Run TapirTarget::postProcessFunction(F, OutliningTapirLoops = true).
+/// 5. Run TapirTarget::postProcessFunction(F, OutliningTapirLoops = true).
 ///
 /// Two generic loop-outline processors are provided with LoopSpawningTI.  The
 /// default loop-outline processor performs no special modifications to outlined
@@ -449,6 +463,13 @@ public:
     return getIVArgIndex(F, Args) + 1;
   }
 
+  /// Process the TapirLoop before it is outlined -- just prior to when the
+  /// outlining occurs.  This allows the VMap and related details to be
+  /// customized prior to outlining related operations (e.g., cloning of
+  /// LLVM constructs).
+  virtual void preProcessTapirLoop(TapirLoopInfo &TL, ValueToValueMapTy &VMap) {
+  }
+
   /// Processes an outlined Function Helper for a Tapir loop, just after the
   /// function has been outlined.
   virtual void postProcessOutline(TapirLoopInfo &TL, TaskOutlineInfo &Out,
@@ -476,7 +497,9 @@ public:
 };
 
 /// Generate a TapirTarget object for the specified TapirTargetID.
-TapirTarget *getTapirTargetFromID(Module &M, TapirTargetID TargetID);
+TapirTarget *getTapirTargetFromID(Module &M, TapirTargetID TargetID,
+                                  const TapirTargetOptions *TTOptions,
+                                  ModuleAnalysisManager &MAM);
 
 /// Find all inputs to tasks within a function \p F, including nested tasks.
 TaskValueSetMap findAllTaskInputs(Function &F, const DominatorTree &DT,

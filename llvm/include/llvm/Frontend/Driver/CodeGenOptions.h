@@ -20,6 +20,7 @@
 namespace llvm {
 class Triple;
 class TargetLibraryInfoImpl;
+class TapirTargetOptions;
 } // namespace llvm
 
 namespace llvm::driver {
@@ -53,7 +54,7 @@ enum class VectorLibrary {
 LLVM_ABI TargetLibraryInfoImpl *createTLII(const llvm::Triple &TargetTriple,
                                            VectorLibrary Veclib,
                                            TapirTargetID TapirTarget,
-                                           std::string OpenCilkABIBitcodeFile);
+                                           TapirTargetOptions *TTOptions);
 
 enum ProfileInstrKind {
   ProfileNone,       // Profile instrumentation is turned off.

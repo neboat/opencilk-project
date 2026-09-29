@@ -47,6 +47,7 @@
 #include "llvm/TargetParser/RISCVISAInfo.h"
 #include "llvm/TargetParser/TargetParser.h"
 #include "llvm/TargetParser/Triple.h"
+#include "llvm/Transforms/Tapir/TapirTargetPlugin.h"
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -2148,5 +2149,17 @@ void ToolChain::AddTapirRuntimeLibArgs(const ArgList &Args,
     break;
   default:
     break;
+  }
+}
+
+void ToolChain::AddTapirPlugin(const ArgList &Args, ArgStringList &CmdArgs) const {
+  if (Args.hasArg(options::OPT_tapir_plugin_EQ)) {
+    const Arg *A = Args.getLastArg(options::OPT_tapir_plugin_EQ);
+    SmallString<128> P(A->getValue());
+    if (!getVFS().exists(P)) {
+      getDriver().Diag(diag::err_drv_tapir_plugin_missing)
+          << A->getAsString(Args);
+    }
+    CmdArgs.push_back(Args.MakeArgString("--tapir-plugin=" + P));
   }
 }

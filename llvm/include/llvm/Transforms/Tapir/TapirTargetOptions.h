@@ -14,6 +14,7 @@
 #define TAPIR_TARGET_OPTIONS_H_
 
 #include "llvm/Transforms/Tapir/TapirTargetIDs.h"
+#include "llvm/Transforms/Tapir/TapirTargetPlugin.h"
 #include <optional>
 
 namespace llvm {
@@ -57,6 +58,31 @@ protected:
 
   OpenCilkABIOptions *cloneImpl() const {
     return new OpenCilkABIOptions(RuntimeBCPath);
+  }
+};
+
+// Options for Custom Tapir target.
+class TapirTargetPluginOptions : public TapirTargetOptions {
+  std::optional<TapirTargetPlugin> TTPlugin = std::nullopt;
+
+  TapirTargetPluginOptions(const std::optional<TapirTargetPlugin> &TTPlugin)
+      : TapirTargetOptions(TapirTargetID::Custom), TTPlugin(TTPlugin) {}
+
+public:
+  TapirTargetPluginOptions(TapirTargetPlugin &&TTPlugin)
+      : TapirTargetOptions(TapirTargetID::Custom), TTPlugin(TTPlugin) {}
+
+  std::optional<TapirTargetPlugin> getPlugin() const { return TTPlugin; }
+
+  static bool classof(const TapirTargetOptions *TTO) {
+    return TTO->getID() == TapirTargetID::Custom;
+  }
+
+protected:
+  friend TapirTargetOptions;
+
+  TapirTargetPluginOptions *cloneImpl() {
+    return new TapirTargetPluginOptions(TTPlugin);
   }
 };
 } // namespace llvm

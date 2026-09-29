@@ -20,6 +20,7 @@ enum class TapirTargetID {
   Serial,   // Lower to serial projection
   Cheetah,  // Lower to the Cheetah ABI
   CilkPlus, // Lower to the Cilk Plus ABI
+  Custom,   // Lower to custom ABI, provided by a plugin
   Lambda,   // Lower to generic Lambda ABI
   OMPTask,  // Lower to OpenMP task ABI
   OpenCilk, // Lower to OpenCilk ABI

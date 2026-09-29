@@ -362,6 +362,8 @@ def err_drv_opencilk_resource_dir_missing_include: Error<
   "no include directory in OpenCilk resource directory: %0">;
 def err_drv_opencilk_resource_dir_missing_lib: Error<
   "no lib directory in OpenCilk resource directory: %0">;
+def err_drv_tapir_plugin_missing: Error<
+  "missing --tapir-plugin argument">;
 def err_drv_emit_llvm_link : Error<
    "-emit-llvm cannot be used when linking">;
 def err_drv_optimization_remark_pattern : Error<

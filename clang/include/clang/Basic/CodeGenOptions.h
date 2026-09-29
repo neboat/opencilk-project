@@ -486,6 +486,9 @@ public:
   // Path to OpenCilk runtime bitcode file.
   std::string OpenCilkABIBitcodeFile;
 
+  // Dynamic shared object file to be loaded as a Tapir target plugin.
+  std::string TapirPlugin;
+
   /// Executable and command-line used to create a given CompilerInvocation.
   /// Most of the time this will be the full -cc1 command.
   const char *Argv0 = nullptr;

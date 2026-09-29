@@ -288,6 +288,10 @@ static cl::list<std::string>
     PassPlugins("load-pass-plugin",
                 cl::desc("Load passes from plugin library"));
 
+static cl::list<std::string>
+    TapirPlugins("load-tapir-plugin",
+                cl::desc("Load Tapir target from plugin library"));
+
 //===----------------------------------------------------------------------===//
 // CodeGen-related helper functions.
 //

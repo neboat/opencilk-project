@@ -39,6 +39,7 @@ TapirTargetID clang::parseTapirTarget(const ArgList &Args) {
       .Case("serial", TapirTargetID::Serial)
       .Case("cheetah", TapirTargetID::Cheetah)
       .Case("cilkplus", TapirTargetID::CilkPlus)
+      .Case("custom", TapirTargetID::Custom)
       .Case("lambda", TapirTargetID::Lambda)
       .Case("omptask", TapirTargetID::OMPTask)
       .Case("opencilk", TapirTargetID::OpenCilk)
@@ -63,6 +64,9 @@ clang::serializeTapirTarget(TapirTargetID Target) {
     break;
   case TapirTargetID::CilkPlus:
     TapirTargetStr = "cilkplus";
+    break;
+  case TapirTargetID::Custom:
+    TapirTargetStr = "custom";
     break;
   case TapirTargetID::Lambda:
     TapirTargetStr = "lambda";

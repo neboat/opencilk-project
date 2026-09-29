@@ -13,6 +13,7 @@ add_llvm_component_library(LLVMTapirOpts
   QthreadsABI.cpp
   SerialABI.cpp
   SerializeSmallTasks.cpp
+  TapirTargetPlugin.cpp
   TapirToTarget.cpp
   TapirLoopInfo.cpp
 

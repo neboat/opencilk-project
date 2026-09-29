@@ -3500,7 +3500,7 @@ def fno_knr_functions : Flag<["-"], "fno-knr-functions">, Group<f_Group>,
 def ftapir_EQ : Joined<["-"], "ftapir=">, Group<f_Group>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Choose the backend parallel runtime for Tapir instructions">,
-  Values<"none,serial,cilkplus,cheetah,lambda,omptask,opencilk,qthreads">;
+  Values<"none,serial,cilkplus,cheetah,custom,lambda,omptask,opencilk,qthreads">;
 def fcilkplus : Flag<["-"], "fcilkplus">, Group<f_Group>,
   Visibility<[ClangOption, CC1Option]>,
   HelpText<"Enable Cilk Plus extensions">;
@@ -3518,6 +3518,11 @@ def opencilk_abi_bitcode_EQ : Joined<["--"], "opencilk-abi-bitcode=">,
 def fopencilk_enable_pedigrees : Flag<["-"], "fopencilk-enable-pedigrees">,
   Group<f_Group>, Visibility<[ClangOption, CC1Option]>,
   HelpText<"Enable OpenCilk pedigrees">;
+def tapir_plugin_EQ : Joined<["--"], "tapir-plugin=">,
+  Visibility<[ClangOption, CC1Option, FlangOption, FC1Option]>,
+  MetaVarName<"<dsopath>">, Flags<[NoArgumentUnused]>,
+  HelpText<"Load a plugin containing a custom tapir target from a shared object file">,
+  MarshallingInfoString<CodeGenOpts<"TapirPlugin">>;
 
 def fmudflapth : Flag<["-"], "fmudflapth">, Group<f_Group>;
 def fmudflap : Flag<["-"], "fmudflap">, Group<f_Group>;

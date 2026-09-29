@@ -51,6 +51,7 @@ static cl::opt<TapirTargetID> ClTapirTarget(
                clEnumValN(TapirTargetID::Serial, "serial", "Serial code"),
                clEnumValN(TapirTargetID::CilkPlus, "cilkplus", "Cilk Plus"),
                clEnumValN(TapirTargetID::Cheetah, "cheetah", "Cheetah"),
+               clEnumValN(TapirTargetID::Custom, "custom", "Custom"),
                clEnumValN(TapirTargetID::OpenCilk, "opencilk", "OpenCilk"),
                clEnumValN(TapirTargetID::Lambda, "lambda", "Lambda"),
                clEnumValN(TapirTargetID::OMPTask, "omptask", "OMPTask")));
@@ -108,6 +109,9 @@ TapirTargetOptions *TapirTargetOptions::clone() {
   switch (getID()) {
   default:
     llvm_unreachable("Unhandled TapirTargetOption.");
+  case TapirTargetID::Custom:
+    New = cast<TapirTargetPluginOptions>(this)->cloneImpl();
+    break;
   case TapirTargetID::OpenCilk:
     New = cast<OpenCilkABIOptions>(this)->cloneImpl();
     break;
@@ -1484,6 +1488,7 @@ void TargetLibraryInfoImpl::addTapirTargetLibraryFunctions(
   case TapirTargetID::None:
   case TapirTargetID::Serial:
   case TapirTargetID::Cheetah:
+  case TapirTargetID::Custom:
   case TapirTargetID::Lambda:
   case TapirTargetID::OMPTask:
   case TapirTargetID::Qthreads:

@@ -18,6 +18,7 @@
 #include "PS4CPU.h"
 #include "clang/Basic/CLWarnings.h"
 #include "clang/Basic/CodeGenOptions.h"
+#include "clang/Basic/DiagnosticDriver.h"
 #include "clang/Basic/HeaderInclude.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/MakeSupport.h"
@@ -6667,9 +6668,11 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
     bool OpenCilk = Args.hasArgNoClaim(options::OPT_fopencilk);
     bool Cheetah = false;
     bool CustomTarget = false;
+    bool Plugin = false;
 
     if (Arg *TapirRuntime = Args.getLastArgNoClaim(options::OPT_ftapir_EQ)) {
       Cheetah = TapirRuntime->getValue() == StringRef("cheetah");
+      Plugin = TapirRuntime->getValue() == StringRef("custom");
       if (TapirRuntime->getValue() == StringRef("opencilk")) {
         OpenCilk = true;
       } else {
@@ -6715,6 +6718,13 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
       if (!CustomTarget)
         // Add the OpenCilk ABI bitcode file.
         getToolChain().AddOpenCilkABIBitcode(Args, CmdArgs);
+    }
+    if (Plugin) {
+      if (!Args.hasArgNoClaim(options::OPT_tapir_plugin_EQ)) {
+        D.Diag(diag::err_drv_tapir_plugin_missing);
+      } else {
+        getToolChain().AddTapirPlugin(Args, CmdArgs);
+      }
     }
   }
 

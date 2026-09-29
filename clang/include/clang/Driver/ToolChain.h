@@ -882,6 +882,9 @@ public:
   /// given Tapir runtime library type.
   virtual void AddTapirRuntimeLibArgs(const llvm::opt::ArgList &Args,
                                       llvm::opt::ArgStringList &CmdArgs) const;
+
+  virtual void AddTapirPlugin(const llvm::opt::ArgList &Args,
+                              llvm::opt::ArgStringList &CmdArgs) const;
 };
 
 /// Set a ToolChain's effective triple. Reset it when the registration object

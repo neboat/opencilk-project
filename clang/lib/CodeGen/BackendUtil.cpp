@@ -12,6 +12,7 @@
 #include "clang/Basic/CodeGenOptions.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Basic/Tapir.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Frontend/FrontendDiagnostic.h"
 #include "clang/Frontend/Utils.h"
@@ -88,7 +89,8 @@
 #include "llvm/Transforms/Scalar/EarlyCSE.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 #include "llvm/Transforms/Scalar/JumpThreading.h"
-#include "llvm/Transforms/Tapir/TapirToTarget.h"
+#include "llvm/Transforms/Tapir/TapirTargetOptions.h"
+#include "llvm/Transforms/Tapir/TapirTargetPlugin.h"
 #include "llvm/Transforms/Utils/Debugify.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
 #include <limits>
@@ -149,6 +151,8 @@ class EmitAssemblyHelper {
   const LangOptions &LangOpts;
   llvm::Module *TheModule;
   IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS;
+
+  std::optional<TapirTargetPlugin> TTPlugin = std::nullopt;
 
   std::unique_ptr<raw_pwrite_stream> OS;
 
@@ -652,6 +656,23 @@ void EmitAssemblyHelper::CreateTargetMachine(bool MustCreateTM) {
     TM->setLargeDataThreshold(CodeGenOpts.LargeDataThreshold);
 }
 
+namespace {
+TapirTargetOptions *
+createTapirTargetOptions(const CodeGenOptions &CodeGenOpts,
+                         DiagnosticsEngine &Diags,
+                         std::optional<TapirTargetPlugin> &TTPlugin) {
+  TapirTargetID ID = CodeGenOpts.getTapirTarget();
+  switch (ID) {
+  case TapirTargetID::OpenCilk:
+    return new OpenCilkABIOptions(CodeGenOpts.OpenCilkABIBitcodeFile);
+  case TapirTargetID::Custom:
+    return new TapirTargetPluginOptions(std::move(*TTPlugin));
+  default:
+    return nullptr;
+  }
+}
+} // namespace
+
 bool EmitAssemblyHelper::AddEmitPasses(legacy::PassManager &CodeGenPasses,
                                        BackendAction Action,
                                        raw_pwrite_stream &OS,
@@ -659,7 +680,7 @@ bool EmitAssemblyHelper::AddEmitPasses(legacy::PassManager &CodeGenPasses,
   // Add LibraryInfo.
   std::unique_ptr<TargetLibraryInfoImpl> TLII(llvm::driver::createTLII(
       TargetTriple, CodeGenOpts.getVecLib(), CodeGenOpts.getTapirTarget(),
-      CodeGenOpts.OpenCilkABIBitcodeFile));
+      createTapirTargetOptions(CodeGenOpts, Diags, TTPlugin)));
   CodeGenPasses.add(new TargetLibraryInfoWrapperPass(*TLII));
 
   // Normal mode, emit a .s or .o file by running the code generator. Note,
@@ -1032,11 +1053,14 @@ void EmitAssemblyHelper::RunOptimizationPipeline(
   get##Ext##PluginInfo().RegisterPassBuilderCallbacks(PB);
 #include "llvm/Support/Extension.def"
 
+  if (TTPlugin)
+    TTPlugin->registerPassBuilderCallbacks(PB);
+
   // Register the target library analysis directly and give it a customized
   // preset TLI.
   std::unique_ptr<TargetLibraryInfoImpl> TLII(llvm::driver::createTLII(
       TargetTriple, CodeGenOpts.getVecLib(), CodeGenOpts.getTapirTarget(),
-      CodeGenOpts.OpenCilkABIBitcodeFile));
+      createTapirTargetOptions(CodeGenOpts, Diags, TTPlugin)));
   FAM.registerPass([&] { return TargetLibraryAnalysis(*TLII); });
 
   // Register all the basic analyses with the managers.
@@ -1389,6 +1413,15 @@ void EmitAssemblyHelper::RunCodegenPipeline(
 void EmitAssemblyHelper::emitAssembly(BackendAction Action,
                                       std::unique_ptr<raw_pwrite_stream> OS,
                                       BackendConsumer *BC) {
+  if (CodeGenOpts.getTapirTarget() == TapirTargetID::Custom) {
+    if (Expected<TapirTargetPlugin> Plugin =
+            TapirTargetPlugin::load(CodeGenOpts.TapirPlugin))
+      TTPlugin = std::move(*Plugin);
+    else
+      Diags.Report(diag::err_fe_unable_to_load_plugin)
+          << CodeGenOpts.TapirPlugin << toString(Plugin.takeError());
+  }
+
   setCommandLineOpts(CodeGenOpts);
 
   bool RequiresCodeGen = actionRequiresCodeGen(Action);

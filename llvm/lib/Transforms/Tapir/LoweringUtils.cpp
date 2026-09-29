@@ -28,6 +28,7 @@
 #include "llvm/Transforms/Tapir/SerialABI.h"
 #include "llvm/Transforms/Tapir/TapirLoopInfo.h"
 #include "llvm/Transforms/Tapir/TapirTargetOptions.h"
+#include "llvm/Transforms/Tapir/TapirTargetPlugin.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/Local.h"
@@ -53,6 +54,10 @@ TapirTarget *llvm::getTapirTargetFromID(Module &M, TapirTargetID ID,
   case TapirTargetID::Cheetah:
   case TapirTargetID::OpenCilk:
     return new OpenCilkABI(M);
+  case TapirTargetID::Custom:
+    return cast<TapirTargetPluginOptions>(TTOptions)
+        ->getPlugin()
+        ->makeTapirTarget(M, *TTOptions, MAM);
   case TapirTargetID::Lambda:
     return new LambdaABI(M);
   case TapirTargetID::OMPTask:
